@@ -2,6 +2,7 @@ package com.adikabuyer.catalog.service;
 
 import com.adikabuyer.catalog.domain.Variant;
 import com.adikabuyer.catalog.dto.ProductDto;
+import com.adikabuyer.catalog.exception.OutOfStockException;
 import com.adikabuyer.catalog.mapper.ProductMapper;
 import com.adikabuyer.catalog.repository.ProductRepository;
 import com.adikabuyer.catalog.repository.VariantRepository;
@@ -36,6 +37,9 @@ public class CatalogService {
     public boolean isVariantAvailable(Long variantId, int requestedQuantity) {
         Variant variant = variantRepository.findById(variantId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Variant not found: " + variantId));
-        return variant.isActive() && variant.getStockQuantity() >= requestedQuantity;
+        if (!variant.isActive() || variant.getStockQuantity() < requestedQuantity) {
+            throw new OutOfStockException("Variant out of stock: " + variantId);
+        }
+        return true;
     }
 }
