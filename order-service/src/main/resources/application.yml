@@ -15,3 +15,11 @@ app:
     exchange: order.exchange
     queue: order.queue
     routing-key: order.new
+  whatsapp:
+    store-phone-number: "996707660433"
+  delivery:
+    default-fee: 250
+    fees:
+      bishkek: 150
+      osh: 200
+      chui: 200
