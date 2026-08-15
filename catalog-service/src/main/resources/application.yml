@@ -5,7 +5,7 @@ spring:
   application:
     name: catalog-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/adikabuyer
+    url: jdbc:postgresql://localhost:5433/adikabuyer
     username: adikabuyer
     password: adikabuyer
     driver-class-name: org.postgresql.Driver
