@@ -2,15 +2,21 @@ import type { ProductDto } from '../types/catalog'
 
 type ProductCardProps = {
   product: ProductDto
+  onAddToCart?: (product: ProductDto) => void
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const initials = product.name
     .split(' ')
     .slice(0, 2)
     .map((word) => word[0])
     .join('')
     .toUpperCase()
+
+  const primaryVariantAttributes = product.variants[0]?.attributes
+  const attributeSummary = primaryVariantAttributes
+    ? Object.values(primaryVariantAttributes).join(', ')
+    : null
 
   return (
     <div className="flex flex-col overflow-hidden rounded-3xl border border-ink/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
@@ -33,6 +39,8 @@ export default function ProductCard({ product }: ProductCardProps) {
           <p className="line-clamp-2 text-sm text-ink/60">{product.description}</p>
         )}
 
+        {attributeSummary && <p className="text-xs text-ink/50">{attributeSummary}</p>}
+
         <div className="mt-auto flex items-center justify-between pt-3">
           <span className="text-base font-semibold text-ink">
             ${product.basePrice.toFixed(2)}
@@ -41,6 +49,14 @@ export default function ProductCard({ product }: ProductCardProps) {
             {product.variants.length} variant{product.variants.length === 1 ? '' : 's'}
           </span>
         </div>
+
+        <button
+          type="button"
+          onClick={() => onAddToCart?.(product)}
+          className="mt-3 rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-bubblegum-dark"
+        >
+          Add to cart
+        </button>
       </div>
     </div>
   )
