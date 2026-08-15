@@ -1,1 +1,13 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
+@config "../tailwind.config.js";
+
+@layer base {
+  html {
+    font-family: "Space Grotesk", system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-white text-ink antialiased;
+  }
+}
