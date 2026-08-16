@@ -71,6 +71,27 @@ cd frontend && npm run test
 
 Coverage reports: `mvn test` generates a JaCoCo report at `target/site/jacoco/index.html` for each backend service; `npx vitest run --coverage` generates one at `frontend/coverage/index.html`.
 
+## Running the production-style stack locally
+
+`catalog-service`, `order-service`, and `api-gateway` each have a multi-stage `Dockerfile` (Maven build stage, `eclipse-temurin` JRE Alpine runtime stage, non-root user). `docker-compose.prod.yml` runs the entire stack — Postgres, RabbitMQ, MinIO, and all three Java services — as containers on one Docker network, using container DNS names (`postgres-db`, `rabbitmq`, `minio`, `catalog-service`, `order-service`) instead of `host.docker.internal`. Each service's JVM heap is capped via a `JAVA_OPTS` env var (default `-Xmx256m -Xms128m`, override per-service with `CATALOG_SERVICE_JAVA_OPTS` / `ORDER_SERVICE_JAVA_OPTS` / `GATEWAY_JAVA_OPTS`) to avoid OOM kills on small hosts.
+
+Copy `.env.prod.example` to `.env.prod` and fill in real values — `POSTGRES_PASSWORD`, `RABBITMQ_PASSWORD`, `MINIO_ROOT_PASSWORD`, `APP_JWT_SECRET`, and `APP_SECURITY_ADMIN_PASSWORD_HASH` are all required (compose refuses to start without them); everything else has a local-friendly default. Note: literal `$` characters (e.g. in a bcrypt hash) must be escaped as `$$` in `.env.prod`, or Compose's variable interpolation will silently corrupt the value.
+
+`catalog-service` always runs with `SPRING_PROFILES_ACTIVE=prod` in its container (baked into the `Dockerfile`), which activates `application-prod.yml`: this removes the local-dev fallback values for `APP_JWT_SECRET`/`APP_SECURITY_ADMIN_PASSWORD_HASH`, so the app fails fast at startup with a clear `Could not resolve placeholder` error if either is missing, rather than silently running with a known default, and disables verbose SQL logging.
+
+All three Java services expose a Docker `HEALTHCHECK` (`catalog-service` via HTTP against its own public `GET /api/catalog/products`; `order-service`/`api-gateway`, which have no suitable public GET endpoint, via a TCP check on their listening port). Every service in `docker-compose.prod.yml` also has a `mem_limit` set above its JVM `-Xmx` to cap total container memory (heap plus off-heap usage like metaspace and thread stacks), so one runaway container can't take down the host.
+
+`api-gateway` is not exposed on a host port in the prod stack — a `caddy` reverse proxy (`Caddyfile`, repo root) is the only container with published ports (80/443) and terminates TLS in front of it. With `DOMAIN=localhost` (the default), Caddy issues itself a local, self-signed certificate for `https://localhost`; set `DOMAIN` to a real hostname pointing at the host to get automatic Let's Encrypt HTTPS instead. `CORS_ALLOWED_ORIGIN` should be set to match wherever the frontend is actually served from once it's not `localhost:5173`.
+
+`catalog-service` rate-limits `POST /api/auth/login` to 5 attempts per minute per client IP (in-memory, resets on restart) to slow down credential brute-forcing; a 6th attempt within the window gets `429 Too Many Requests`. This relies on `server.forward-headers-strategy: framework` to read the real client IP forwarded by Caddy/the gateway rather than the proxy's own address.
+
+```bash
+cp .env.prod.example .env.prod
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
+
+This is still local tooling for production-parity testing, not a cloud deployment — no cloud-provider-specific config is included.
+
 ## CI
 
 GitHub Actions (`.github/workflows/ci.yml`) runs the backend and frontend test suites on every push and pull request to `main`.
@@ -82,7 +103,9 @@ catalog-service/   Spring Boot - product catalog, inventory, order event consume
 order-service/     Spring Boot - checkout, WhatsApp link, RabbitMQ events
 api-gateway/        Spring Cloud Gateway - single entry point + CORS
 frontend/          React + TypeScript + Tailwind - customer UI
-docker-compose.yml  Local infrastructure (Postgres, RabbitMQ, API gateway)
+docker-compose.yml       Local infrastructure (Postgres, RabbitMQ, MinIO, API gateway)
+docker-compose.prod.yml  Full containerized stack for production-parity local testing
+.env.prod.example        Required/optional env vars for docker-compose.prod.yml
 ```
 
 ---
