@@ -1,0 +1,144 @@
+services:
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: adikabuyer-postgres
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-adikabuyer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-adikabuyer}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - adikabuyer-network
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: adikabuyer-rabbitmq
+    restart: unless-stopped
+    mem_limit: 256m
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-adikabuyer}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD must be set}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - adikabuyer-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: adikabuyer-minio
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-adikabuyer}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set}
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - adikabuyer-network
+
+  catalog-service:
+    build:
+      context: ./catalog-service
+    container_name: adikabuyer-catalog-service
+    restart: unless-stopped
+    mem_limit: 384m
+    depends_on:
+      - postgres-db
+      - rabbitmq
+      - minio
+    environment:
+      JAVA_OPTS: ${CATALOG_SERVICE_JAVA_OPTS:--Xmx256m -Xms128m}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/${POSTGRES_DB:-adikabuyer}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-adikabuyer}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-adikabuyer}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-adikabuyer}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${S3_BUCKET:-adikabuyer-media}
+      S3_PUBLIC_URL_BASE: ${S3_PUBLIC_URL_BASE:-http://localhost:9000/adikabuyer-media}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:?APP_JWT_SECRET must be set}
+      APP_SECURITY_ADMIN_USERNAME: ${APP_SECURITY_ADMIN_USERNAME:-admin}
+      APP_SECURITY_ADMIN_PASSWORD_HASH: ${APP_SECURITY_ADMIN_PASSWORD_HASH:?APP_SECURITY_ADMIN_PASSWORD_HASH must be set}
+    networks:
+      - adikabuyer-network
+
+  order-service:
+    build:
+      context: ./order-service
+    container_name: adikabuyer-order-service
+    restart: unless-stopped
+    mem_limit: 384m
+    depends_on:
+      - rabbitmq
+    environment:
+      JAVA_OPTS: ${ORDER_SERVICE_JAVA_OPTS:--Xmx256m -Xms128m}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-adikabuyer}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      APP_WHATSAPP_STORE_PHONE_NUMBER: ${APP_WHATSAPP_STORE_PHONE_NUMBER:-996707660433}
+    networks:
+      - adikabuyer-network
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: adikabuyer-api-gateway
+    restart: unless-stopped
+    mem_limit: 384m
+    depends_on:
+      - catalog-service
+      - order-service
+    environment:
+      JAVA_OPTS: ${GATEWAY_JAVA_OPTS:--Xmx256m -Xms128m}
+      CATALOG_SERVICE_URL: http://catalog-service:8081
+      ORDER_SERVICE_URL: http://order-service:8082
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:5173}
+    networks:
+      - adikabuyer-network
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: adikabuyer-caddy
+    restart: unless-stopped
+    mem_limit: 128m
+    depends_on:
+      - api-gateway
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - adikabuyer-network
+
+networks:
+  adikabuyer-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
+  minio-data:
+  caddy-data:
+  caddy-config:
