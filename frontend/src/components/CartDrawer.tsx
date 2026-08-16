@@ -1,12 +1,57 @@
+import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import useCartStore from '../store/useCartStore'
+import submitCheckout from '../api/checkout'
 
 export default function CartDrawer() {
   const items = useCartStore((state) => state.items)
   const isOpen = useCartStore((state) => state.isOpen)
   const closeCart = useCartStore((state) => state.closeCart)
   const removeItem = useCartStore((state) => state.removeItem)
+  const clearCart = useCartStore((state) => state.clearCart)
   const totalPrice = useCartStore((state) => state.totalPrice())
+
+  const [customerName, setCustomerName] = useState('')
+  const [customerPhone, setCustomerPhone] = useState('')
+  const [region, setRegion] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  const canCheckout =
+    items.length > 0 && customerName.trim() !== '' && customerPhone.trim() !== '' && region.trim() !== ''
+
+  const handleCheckout = async () => {
+    if (!canCheckout) {
+      return
+    }
+
+    setIsSubmitting(true)
+    setSubmitError(null)
+
+    try {
+      const response = await submitCheckout({
+        customerName,
+        customerPhone,
+        region,
+        items: items.map((item) => ({
+          variantId: item.variantId,
+          productName: item.productName,
+          sku: item.sku,
+          attributes: item.attributes,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+        })),
+      })
+
+      clearCart()
+      closeCart()
+      window.location.href = response.whatsappUrl
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Checkout failed. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -68,13 +113,48 @@ export default function CartDrawer() {
                   </div>
                 </div>
               ))}
+
+              {items.length > 0 && (
+                <div className="mt-4 flex flex-col gap-3">
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(event) => setCustomerName(event.target.value)}
+                    placeholder="Full name"
+                    className="rounded-xl border border-ink/15 px-4 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+                  />
+                  <input
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(event) => setCustomerPhone(event.target.value)}
+                    placeholder="Phone number"
+                    className="rounded-xl border border-ink/15 px-4 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+                  />
+                  <input
+                    type="text"
+                    value={region}
+                    onChange={(event) => setRegion(event.target.value)}
+                    placeholder="City"
+                    className="rounded-xl border border-ink/15 px-4 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+                  />
+                  {submitError && <p className="text-xs text-red-500">{submitError}</p>}
+                </div>
+              )}
             </div>
 
             <div className="border-t border-ink/10 px-6 py-4">
-              <div className="flex items-center justify-between text-base font-semibold text-ink">
+              <div className="mb-4 flex items-center justify-between text-base font-semibold text-ink">
                 <span>Total</span>
                 <span>${totalPrice.toFixed(2)}</span>
               </div>
+              <button
+                type="button"
+                onClick={handleCheckout}
+                disabled={!canCheckout || isSubmitting}
+                className="w-full rounded-pill bg-ink px-4 py-3 text-sm font-semibold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {isSubmitting ? 'Placing order...' : 'Checkout'}
+              </button>
             </div>
           </motion.aside>
         </>

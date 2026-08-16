@@ -15,6 +15,7 @@ type CartStore = {
   isOpen: boolean
   addItem: (item: CartItem) => void
   removeItem: (variantId: number) => void
+  clearCart: () => void
   openCart: () => void
   closeCart: () => void
   toggleCart: () => void
@@ -43,6 +44,7 @@ const useCartStore = create<CartStore>()((set, get) => ({
     set((state) => ({
       items: state.items.filter((cartItem) => cartItem.variantId !== variantId),
     })),
+  clearCart: () => set({ items: [] }),
   openCart: () => set({ isOpen: true }),
   closeCart: () => set({ isOpen: false }),
   toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
