@@ -1,11 +1,13 @@
 import type { ProductDto } from '../types/catalog'
+import useCartStore from '../store/useCartStore'
 
 type ProductCardProps = {
   product: ProductDto
-  onAddToCart?: (product: ProductDto) => void
 }
 
-export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
+export default function ProductCard({ product }: ProductCardProps) {
+  const addItem = useCartStore((state) => state.addItem)
+
   const initials = product.name
     .split(' ')
     .slice(0, 2)
@@ -13,10 +15,25 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
     .join('')
     .toUpperCase()
 
-  const primaryVariantAttributes = product.variants[0]?.attributes
-  const attributeSummary = primaryVariantAttributes
-    ? Object.values(primaryVariantAttributes).join(', ')
+  const primaryVariant = product.variants[0]
+  const attributeSummary = primaryVariant
+    ? Object.values(primaryVariant.attributes).join(', ')
     : null
+
+  const handleAddToCart = () => {
+    if (!primaryVariant) {
+      return
+    }
+    addItem({
+      variantId: primaryVariant.id,
+      productId: product.id,
+      productName: product.name,
+      sku: primaryVariant.sku,
+      attributes: primaryVariant.attributes,
+      unitPrice: primaryVariant.priceOverride ?? product.basePrice,
+      quantity: 1,
+    })
+  }
 
   return (
     <div className="flex flex-col overflow-hidden rounded-3xl border border-ink/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
@@ -52,8 +69,9 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
 
         <button
           type="button"
-          onClick={() => onAddToCart?.(product)}
-          className="mt-3 rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-bubblegum-dark"
+          onClick={handleAddToCart}
+          disabled={!primaryVariant}
+          className="mt-3 rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
         >
           Add to cart
         </button>
