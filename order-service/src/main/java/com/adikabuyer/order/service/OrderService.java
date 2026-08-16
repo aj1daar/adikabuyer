@@ -65,7 +65,7 @@ public class OrderService {
         if (region == null) {
             return deliveryFeeProperties.getDefaultFee();
         }
-        return deliveryFeeProperties.getFees().getOrDefault(region.toLowerCase(), deliveryFeeProperties.getDefaultFee());
+        return deliveryFeeProperties.getFees().getOrDefault(region.strip().toLowerCase(), deliveryFeeProperties.getDefaultFee());
     }
 
     private String buildWhatsappUrl(String orderId, CartDto cart, BigDecimal itemsTotal, BigDecimal deliveryFee, BigDecimal grandTotal) {

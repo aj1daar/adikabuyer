@@ -3,6 +3,7 @@ package com.adikabuyer.order.controller;
 import com.adikabuyer.order.dto.CartDto;
 import com.adikabuyer.order.dto.CheckoutResponseDto;
 import com.adikabuyer.order.service.OrderService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,7 +18,7 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("/checkout")
-    public CheckoutResponseDto checkout(@RequestBody CartDto cart) {
+    public CheckoutResponseDto checkout(@Valid @RequestBody CartDto cart) {
         return orderService.checkout(cart);
     }
 }
