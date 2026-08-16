@@ -21,6 +21,8 @@ The frontend talks only to the API gateway (`http://localhost:8080`), which rout
 
 When `order-service` publishes an order to the `order.exchange`/`order.queue` RabbitMQ topology, `catalog-service` consumes the same queue and deducts purchased quantities from `variant.stock_quantity`. A variant's `status` flips from `IN_STOCK` to `PRE_ORDER` once its stock reaches zero.
 
+`catalog-service` write endpoints (`POST`/`PUT`/`DELETE` under `/api/catalog/**`) require a JWT with `ROLE_ADMIN`, obtained from `POST /api/auth/login`. `GET` endpoints stay public. Local dev admin credentials: username `admin`, password `admin123` (hash lives in `catalog-service/application.yml`, for local development only).
+
 ## Running locally
 
 1. Start infrastructure and the gateway:

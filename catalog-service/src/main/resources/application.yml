@@ -31,3 +31,9 @@ app:
     exchange: order.exchange
     queue: order.queue
     routing-key: order.new
+  jwt:
+    secret: "3f8a1c9d4b7e2f6a8c1d5e9f3a7b2c6d8e1f4a9c3b7d2e6f8a1c4d9e3b7f2a6c"
+    expiration-ms: 3600000
+  security:
+    admin-username: admin
+    admin-password-hash: "$2a$10$lCNeUqJeSoXyb6k4Mh6lLe.hWP9dJ0aVqFVwp9GyjjN0B4s3KJV32"
