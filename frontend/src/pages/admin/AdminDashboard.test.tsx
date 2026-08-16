@@ -24,6 +24,7 @@ const productWithVariant: ProductDto = {
   category: 'Drinkware',
   basePrice: 25,
   active: true,
+  imageUrl: null,
   variants: [
     {
       id: 10,
@@ -45,6 +46,7 @@ const productWithoutVariants: ProductDto = {
   category: null,
   basePrice: 10,
   active: true,
+  imageUrl: null,
   variants: [],
 }
 

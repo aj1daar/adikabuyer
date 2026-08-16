@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, type ChangeEvent } from 'react'
 import type { ProductDto } from '../../types/catalog'
 import type { ProductPayload, VariantPayload } from '../../types/admin'
+import uploadMedia from '../../api/media'
 
 type AttributeRow = {
   key: string
@@ -47,7 +48,29 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   const [category, setCategory] = useState(product?.category ?? '')
   const [basePrice, setBasePrice] = useState(product?.basePrice.toString() ?? '')
   const [active, setActive] = useState(product?.active ?? true)
+  const [imageUrl, setImageUrl] = useState<string | null>(product?.imageUrl ?? null)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null)
   const [variants, setVariants] = useState<VariantDraft[]>(toVariantDraft(product))
+
+  const handleImageSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) {
+      return
+    }
+
+    setIsUploadingImage(true)
+    setImageUploadError(null)
+
+    try {
+      const response = await uploadMedia(file)
+      setImageUrl(response.url)
+    } catch (err) {
+      setImageUploadError(err instanceof Error ? err.message : 'Не удалось загрузить изображение.')
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
 
   const addVariant = () => {
     setVariants([
@@ -103,13 +126,14 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
       category: category.trim() === '' ? null : category,
       basePrice: Number(basePrice),
       active,
+      imageUrl,
       variants: variantPayloads,
     }
 
     onSubmit(payload)
   }
 
-  const canSubmit = name.trim() !== '' && basePrice.trim() !== ''
+  const canSubmit = name.trim() !== '' && basePrice.trim() !== '' && !isUploadingImage
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4">
@@ -160,6 +184,27 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               />
               Активен
             </label>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-medium uppercase tracking-wide text-ink/50">
+                Изображение
+              </label>
+              {imageUrl && (
+                <img
+                  src={imageUrl}
+                  alt="Предпросмотр изображения товара"
+                  className="h-24 w-24 rounded-xl border border-ink/10 object-cover"
+                />
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelected}
+                className="text-sm text-ink"
+              />
+              {isUploadingImage && <p className="text-xs text-ink/50">Загружаем изображение...</p>}
+              {imageUploadError && <p className="text-xs text-red-500">{imageUploadError}</p>}
+            </div>
           </div>
 
           <div className="mt-6 flex items-center justify-between">

@@ -11,6 +11,7 @@ const buildProduct = (id: number, name: string): ProductDto => ({
   category: null,
   basePrice: 10,
   active: true,
+  imageUrl: null,
   variants: [],
 })
 

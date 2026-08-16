@@ -18,5 +18,6 @@ export type ProductDto = {
   category: string | null
   basePrice: number
   active: boolean
+  imageUrl: string | null
   variants: VariantDto[]
 }

@@ -18,6 +18,7 @@ const payload: ProductPayload = {
   category: null,
   basePrice: 25,
   active: true,
+  imageUrl: null,
   variants: [],
 }
 
@@ -28,6 +29,7 @@ const product: ProductDto = {
   category: null,
   basePrice: 25,
   active: true,
+  imageUrl: null,
   variants: [],
 }
 
