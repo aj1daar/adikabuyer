@@ -28,6 +28,9 @@ const useCartStore = create<CartStore>()((set, get) => ({
   isOpen: false,
   addItem: (item) =>
     set((state) => {
+      if (item.quantity <= 0) {
+        return state
+      }
       const existing = state.items.find((cartItem) => cartItem.variantId === item.variantId)
       if (existing) {
         return {
