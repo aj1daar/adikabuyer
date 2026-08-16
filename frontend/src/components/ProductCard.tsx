@@ -60,7 +60,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         <div className="mt-auto flex items-center justify-between pt-3">
           <span className="text-base font-semibold text-ink">
-            ${product.basePrice.toFixed(2)}
+            {product.basePrice.toFixed(2)} ⃀
           </span>
           <span className="rounded-pill bg-silver px-3 py-1 text-xs font-medium text-ink/60">
             Вариантов: {product.variants.length}

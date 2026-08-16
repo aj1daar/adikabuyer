@@ -101,7 +101,7 @@ export default function CartDrawer() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-semibold text-ink">
-                      ${(item.unitPrice * item.quantity).toFixed(2)}
+                      {(item.unitPrice * item.quantity).toFixed(2)} ⃀
                     </span>
                     <button
                       type="button"
@@ -145,7 +145,7 @@ export default function CartDrawer() {
             <div className="border-t border-ink/10 px-6 py-4">
               <div className="mb-4 flex items-center justify-between text-base font-semibold text-ink">
                 <span>Итого</span>
-                <span>${totalPrice.toFixed(2)}</span>
+                <span>{totalPrice.toFixed(2)} ⃀</span>
               </div>
               <button
                 type="button"

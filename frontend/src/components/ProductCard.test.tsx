@@ -35,7 +35,7 @@ describe('ProductCard', () => {
     render(<ProductCard product={product} />)
 
     expect(screen.getByText('Custom Tumbler')).toBeInTheDocument()
-    expect(screen.getByText('$25.00')).toBeInTheDocument()
+    expect(screen.getByText('25.00 ⃀')).toBeInTheDocument()
     expect(screen.getByText('Black, 500ml')).toBeInTheDocument()
   })
 

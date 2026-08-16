@@ -52,7 +52,7 @@ describe('CartDrawer', () => {
 
     const itemRow = screen.getByText('Custom Tumbler').closest('div')!.parentElement!
     expect(within(itemRow).getByText('black · x2')).toBeInTheDocument()
-    expect(within(itemRow).getByText('$50.00')).toBeInTheDocument()
+    expect(within(itemRow).getByText('50.00 ⃀')).toBeInTheDocument()
   })
 
   it('removes an item from the store when Remove is clicked', () => {
