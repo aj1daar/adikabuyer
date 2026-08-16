@@ -3,6 +3,8 @@ package com.adikabuyer.catalog.controller;
 import com.adikabuyer.catalog.dto.LoginRequest;
 import com.adikabuyer.catalog.dto.LoginResponse;
 import com.adikabuyer.catalog.security.JwtUtil;
+import com.adikabuyer.catalog.security.LoginRateLimiter;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -20,23 +22,31 @@ public class AuthController {
 
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final LoginRateLimiter loginRateLimiter;
     private final String adminUsername;
     private final String adminPasswordHash;
 
     public AuthController(
             JwtUtil jwtUtil,
             PasswordEncoder passwordEncoder,
+            LoginRateLimiter loginRateLimiter,
             @Value("${app.security.admin-username}") String adminUsername,
             @Value("${app.security.admin-password-hash}") String adminPasswordHash
     ) {
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
+        this.loginRateLimiter = loginRateLimiter;
         this.adminUsername = adminUsername;
         this.adminPasswordHash = adminPasswordHash;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        String clientKey = httpRequest.getRemoteAddr();
+        if (!loginRateLimiter.isAllowed(clientKey)) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many login attempts. Please try again later.");
+        }
+
         boolean usernameMatches = adminUsername.equals(request.username());
         boolean passwordMatches = passwordEncoder.matches(request.password(), adminPasswordHash);
 

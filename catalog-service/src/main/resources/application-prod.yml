@@ -1,0 +1,9 @@
+spring:
+  jpa:
+    show-sql: false
+
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET}
+  security:
+    admin-password-hash: ${APP_SECURITY_ADMIN_PASSWORD_HASH}

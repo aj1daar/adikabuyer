@@ -4,6 +4,7 @@ import com.adikabuyer.catalog.controller.AuthController;
 import com.adikabuyer.catalog.controller.CatalogController;
 import com.adikabuyer.catalog.dto.ProductDto;
 import com.adikabuyer.catalog.service.CatalogService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -23,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = {CatalogController.class, AuthController.class})
-@Import({SecurityConfig.class, JwtUtil.class, JsonAuthenticationEntryPoint.class, JsonAccessDeniedHandler.class})
+@Import({SecurityConfig.class, JwtUtil.class, JsonAuthenticationEntryPoint.class, JsonAccessDeniedHandler.class, LoginRateLimiter.class})
 @TestPropertySource(properties = {
         "app.jwt.secret=test-secret-key-that-is-at-least-32-bytes-long",
         "app.jwt.expiration-ms=3600000",
@@ -40,6 +41,14 @@ class SecurityConfigTest {
 
     @MockBean
     private CatalogService catalogService;
+
+    @Autowired
+    private LoginRateLimiter loginRateLimiter;
+
+    @BeforeEach
+    void resetRateLimiter() {
+        loginRateLimiter.reset();
+    }
 
     @Test
     void publicGetEndpoint_isAccessibleWithoutAuthentication() throws Exception {
@@ -105,6 +114,20 @@ class SecurityConfigTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"admin\",\"password\":\"wrong-password\"}"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void login_returns429_afterExceedingRateLimit() throws Exception {
+        for (int i = 0; i < 5; i++) {
+            mockMvc.perform(post("/api/auth/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"username\":\"admin\",\"password\":\"wrong-password\"}"));
+        }
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"admin\",\"password\":\"admin123\"}"))
+                .andExpect(status().isTooManyRequests());
     }
 
     @Test
