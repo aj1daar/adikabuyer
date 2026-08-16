@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from 'react'
+import { useId, useState, type ChangeEvent } from 'react'
 import type { ProductDto } from '../../types/catalog'
 import type { ProductPayload, VariantPayload } from '../../types/admin'
 import uploadMedia from '../../api/media'
@@ -43,6 +43,7 @@ function toVariantDraft(product?: ProductDto): VariantDraft[] {
 }
 
 export default function ProductForm({ product, onSubmit, onClose, isSubmitting }: ProductFormProps) {
+  const imageUploadId = useId()
   const [name, setName] = useState(product?.name ?? '')
   const [description, setDescription] = useState(product?.description ?? '')
   const [category, setCategory] = useState(product?.category ?? '')
@@ -197,11 +198,20 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                 />
               )}
               <input
+                id={imageUploadId}
                 type="file"
                 accept="image/*"
                 onChange={handleImageSelected}
-                className="text-sm text-ink"
+                disabled={isUploadingImage}
+                className="hidden"
               />
+              <label
+                htmlFor={imageUploadId}
+                className="flex w-fit cursor-pointer items-center gap-2 rounded-pill border border-dashed border-ink/20 bg-silver px-4 py-2 text-sm font-medium text-ink transition hover:border-bubblegum hover:bg-silver-dark aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                aria-disabled={isUploadingImage}
+              >
+                Выбрать фото
+              </label>
               {isUploadingImage && <p className="text-xs text-ink/50">Загружаем изображение...</p>}
               {imageUploadError && <p className="text-xs text-red-500">{imageUploadError}</p>}
             </div>
