@@ -33,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/catalog/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/catalog/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/catalog/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/media/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);

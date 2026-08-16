@@ -14,6 +14,7 @@ This project is currently **local development only**. There is no cloud deployme
 | `order-service` | Spring Boot + RabbitMQ | 8082 | Checkout, WhatsApp link generation, publishes order-placed events |
 | `postgres-db` | PostgreSQL 16 | 5433 (host) | Catalog data, migrated via Flyway |
 | `rabbitmq` | RabbitMQ 3.13 (management) | 5672 / 15672 | Order-placed event bus |
+| `minio` | MinIO | 9000 / 9001 (console) | Local S3-compatible stand-in for Cloudflare R2, product media storage |
 
 The frontend talks only to the API gateway (`http://localhost:8080`), which routes `/api/catalog/**` to `catalog-service` and `/api/orders/**` to `order-service`.
 
@@ -24,6 +25,8 @@ When `order-service` publishes an order to the `order.exchange`/`order.queue` Ra
 `catalog-service` write endpoints (`POST`/`PUT`/`DELETE` under `/api/catalog/**`) require a JWT with `ROLE_ADMIN`, obtained from `POST /api/auth/login` (routed through the gateway). `GET` endpoints stay public. Local dev admin credentials: username `admin`, password `admin123` (hash lives in `catalog-service/application.yml`, for local development only).
 
 The frontend is routed with `react-router-dom`: `/` is the public storefront, `/admin/login` is the admin login form, `/admin` is the protected dashboard (redirects to `/admin/login` if no JWT is stored). The JWT is kept in a persisted Zustand store (`localStorage`) and attached to `catalog-service` write requests automatically. Note: `catalog-service` does not yet implement the actual `POST`/`PUT`/`DELETE` product handlers — the admin dashboard's create/update/delete actions are wired but will 405 until those endpoints exist.
+
+`catalog-service` uploads product images to S3-compatible storage via `POST /api/media/upload` (`ROLE_ADMIN` required, routed through the gateway), returning a public object URL. Locally this talks to the `minio` container; in a real environment it points at Cloudflare R2 via the same S3 API (configured through `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`, `S3_ENDPOINT`, `S3_REGION`, `S3_PUBLIC_URL_BASE` env vars). The target bucket is created automatically on `catalog-service` startup if missing, with a public-read policy applied so returned URLs are actually fetchable.
 
 ## Running locally
 
@@ -51,6 +54,8 @@ The frontend is routed with `react-router-dom`: `/` is the public storefront, `/
 4. Open `http://localhost:5173`.
 
 RabbitMQ management UI: `http://localhost:15672` (user/pass: `adikabuyer` / `adikabuyer`).
+
+MinIO console: `http://localhost:9001` (user/pass: `adikabuyer` / `adikabuyer123`).
 
 ## Testing
 
