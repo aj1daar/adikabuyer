@@ -6,6 +6,10 @@ type ApiErrorBody = {
 }
 
 export default function notifyApiError(error: AxiosError<ApiErrorBody>): Promise<never> {
+  if (error.code === 'ERR_CANCELED') {
+    return Promise.reject(error)
+  }
+
   const status = error.response?.status
 
   if (status === 401) {

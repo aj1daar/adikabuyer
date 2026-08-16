@@ -63,4 +63,12 @@ describe('notifyApiError', () => {
 
     await expect(notifyApiError(error)).rejects.toBe(error)
   })
+
+  it('does not show a toast when the request was canceled', async () => {
+    const error = { ...buildError(undefined), code: 'ERR_CANCELED' }
+
+    await expect(notifyApiError(error)).rejects.toBe(error)
+
+    expect(mockedToastError).not.toHaveBeenCalled()
+  })
 })

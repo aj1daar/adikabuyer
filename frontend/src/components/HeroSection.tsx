@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 
 export default function HeroSection() {
   return (
@@ -25,27 +26,36 @@ export default function HeroSection() {
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-4">
-          <button
-            type="button"
+          <Link
+            to="/catalog"
             className="rounded-pill bg-ink px-8 py-3 text-sm font-semibold text-white transition hover:bg-bubblegum-dark"
           >
             Смотреть каталог
-          </button>
-          <button
-            type="button"
+          </Link>
+          <Link
+            to="/about"
             className="rounded-pill border border-ink/15 px-8 py-3 text-sm font-semibold text-ink transition hover:border-ink/40"
           >
             Подробнее
-          </button>
+          </Link>
         </div>
 
-        <div
-          aria-hidden="true"
-          className="relative mt-8 h-56 w-56 sm:h-72 sm:w-72"
+        <a
+          href="https://www.instagram.com/adika.buyer/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="relative mt-8 block h-56 w-56 sm:h-72 sm:w-72"
         >
-          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-bubblegum via-bubblegum-light to-silver blur-2xl opacity-70" />
-          <div className="absolute inset-6 rounded-full bg-gradient-to-tr from-silver-dark via-white to-silver shadow-xl" />
-        </div>
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 rounded-full bg-gradient-to-br from-bubblegum via-bubblegum-light to-silver blur-2xl opacity-70"
+          />
+          <img
+            src="/adika-buyer-instagram.jpg"
+            alt="Adika Buyer в Instagram"
+            className="relative h-full w-full rounded-full object-cover shadow-2xl ring-4 ring-white"
+          />
+        </a>
       </motion.div>
     </section>
   )
