@@ -21,7 +21,9 @@ The frontend talks only to the API gateway (`http://localhost:8080`), which rout
 
 When `order-service` publishes an order to the `order.exchange`/`order.queue` RabbitMQ topology, `catalog-service` consumes the same queue and deducts purchased quantities from `variant.stock_quantity`. A variant's `status` flips from `IN_STOCK` to `PRE_ORDER` once its stock reaches zero.
 
-`catalog-service` write endpoints (`POST`/`PUT`/`DELETE` under `/api/catalog/**`) require a JWT with `ROLE_ADMIN`, obtained from `POST /api/auth/login`. `GET` endpoints stay public. Local dev admin credentials: username `admin`, password `admin123` (hash lives in `catalog-service/application.yml`, for local development only).
+`catalog-service` write endpoints (`POST`/`PUT`/`DELETE` under `/api/catalog/**`) require a JWT with `ROLE_ADMIN`, obtained from `POST /api/auth/login` (routed through the gateway). `GET` endpoints stay public. Local dev admin credentials: username `admin`, password `admin123` (hash lives in `catalog-service/application.yml`, for local development only).
+
+The frontend is routed with `react-router-dom`: `/` is the public storefront, `/admin/login` is the admin login form, `/admin` is the protected dashboard (redirects to `/admin/login` if no JWT is stored). The JWT is kept in a persisted Zustand store (`localStorage`) and attached to `catalog-service` write requests automatically. Note: `catalog-service` does not yet implement the actual `POST`/`PUT`/`DELETE` product handlers — the admin dashboard's create/update/delete actions are wired but will 405 until those endpoints exist.
 
 ## Running locally
 

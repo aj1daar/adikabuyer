@@ -2,6 +2,7 @@ package com.adikabuyer.catalog.mapper;
 
 import com.adikabuyer.catalog.domain.Product;
 import com.adikabuyer.catalog.domain.Variant;
+import com.adikabuyer.catalog.domain.VariantStatus;
 import com.adikabuyer.catalog.dto.VariantDto;
 import org.junit.jupiter.api.Test;
 
@@ -25,6 +26,7 @@ class VariantMapperTest {
                 .priceOverride(BigDecimal.valueOf(19.99))
                 .stockQuantity(5)
                 .active(true)
+                .status(VariantStatus.PRE_ORDER)
                 .build();
 
         VariantDto dto = variantMapper.toDto(variant);
@@ -36,6 +38,7 @@ class VariantMapperTest {
         assertThat(dto.priceOverride()).isEqualByComparingTo("19.99");
         assertThat(dto.stockQuantity()).isEqualTo(5);
         assertThat(dto.active()).isTrue();
+        assertThat(dto.status()).isEqualTo(VariantStatus.PRE_ORDER);
     }
 
     @Test
