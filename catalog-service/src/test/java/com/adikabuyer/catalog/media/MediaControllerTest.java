@@ -1,5 +1,7 @@
 package com.adikabuyer.catalog.media;
 
+import com.adikabuyer.catalog.security.JsonAccessDeniedHandler;
+import com.adikabuyer.catalog.security.JsonAuthenticationEntryPoint;
 import com.adikabuyer.catalog.security.JwtUtil;
 import com.adikabuyer.catalog.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
@@ -19,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = MediaController.class)
-@Import({SecurityConfig.class, JwtUtil.class})
+@Import({SecurityConfig.class, JwtUtil.class, JsonAuthenticationEntryPoint.class, JsonAccessDeniedHandler.class})
 @TestPropertySource(properties = {
         "app.jwt.secret=test-secret-key-that-is-at-least-32-bytes-long",
         "app.jwt.expiration-ms=3600000"
@@ -51,11 +53,11 @@ class MediaControllerTest {
     }
 
     @Test
-    void upload_returns403_whenNoTokenProvided() throws Exception {
+    void upload_returns401_whenNoTokenProvided() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", "content".getBytes());
 
         mockMvc.perform(multipart("/api/media/upload").file(file))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(s3StorageService);
     }
@@ -89,5 +91,31 @@ class MediaControllerTest {
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(s3StorageService);
+    }
+
+    @Test
+    void upload_returns400WithStandardEnvelope_whenFileExceedsMaxUploadSize() throws Exception {
+        when(s3StorageService.uploadFile(any())).thenThrow(
+                new org.springframework.web.multipart.MaxUploadSizeExceededException(5_000_000)
+        );
+
+        MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", "content".getBytes());
+
+        mockMvc.perform(multipart("/api/media/upload").file(file).header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("Uploaded file exceeds the maximum allowed size"));
+    }
+
+    @Test
+    void upload_returns500WithStandardEnvelope_whenStorageThrowsUnexpectedException() throws Exception {
+        when(s3StorageService.uploadFile(any())).thenThrow(new RuntimeException("S3 connection refused"));
+
+        MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", "content".getBytes());
+
+        mockMvc.perform(multipart("/api/media/upload").file(file).header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.status").value(500))
+                .andExpect(jsonPath("$.error").value("Internal Server Error"));
     }
 }

@@ -23,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = {CatalogController.class, AuthController.class})
-@Import({SecurityConfig.class, JwtUtil.class})
+@Import({SecurityConfig.class, JwtUtil.class, JsonAuthenticationEntryPoint.class, JsonAccessDeniedHandler.class})
 @TestPropertySource(properties = {
         "app.jwt.secret=test-secret-key-that-is-at-least-32-bytes-long",
         "app.jwt.expiration-ms=3600000",
@@ -53,7 +53,9 @@ class SecurityConfigTest {
     @Test
     void writeEndpoint_isRejected_whenNoTokenProvided() throws Exception {
         mockMvc.perform(post("/api/catalog/products"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("Unauthorized"));
     }
 
     @Test
@@ -61,7 +63,9 @@ class SecurityConfigTest {
         String token = jwtUtil.generateToken("staff-user", "STAFF");
 
         mockMvc.perform(post("/api/catalog/products").header("Authorization", "Bearer " + token))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").value("Forbidden"));
     }
 
     @Test
@@ -70,7 +74,7 @@ class SecurityConfigTest {
         String tamperedToken = token.substring(0, token.length() - 2) + "xx";
 
         mockMvc.perform(post("/api/catalog/products").header("Authorization", "Bearer " + tamperedToken))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
