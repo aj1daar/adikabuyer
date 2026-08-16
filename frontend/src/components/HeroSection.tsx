@@ -10,18 +10,18 @@ export default function HeroSection() {
         className="relative mx-auto flex max-w-6xl flex-col items-center gap-10 text-center"
       >
         <span className="rounded-pill bg-bubblegum-light px-4 py-1 text-sm font-medium text-bubblegum-dark">
-          Made to order
+          Под заказ
         </span>
 
         <h1 className="font-grotesk text-display font-semibold text-ink">
-          made for
+          сделано
           <br />
-          <span className="text-bubblegum">your</span> style
+          для <span className="text-bubblegum">тебя</span>
         </h1>
 
         <p className="max-w-xl text-lg text-ink/70">
-          Tumblers, apparel, footwear, and more. Pick your variation, we build your order,
-          and send it straight to WhatsApp.
+          Термостаканы, одежда, обувь и многое другое. Выбери вариант, мы соберём заказ
+          и отправим его прямо в WhatsApp.
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-4">
@@ -29,13 +29,13 @@ export default function HeroSection() {
             type="button"
             className="rounded-pill bg-ink px-8 py-3 text-sm font-semibold text-white transition hover:bg-bubblegum-dark"
           >
-            Shop the drop
+            Смотреть каталог
           </button>
           <button
             type="button"
             className="rounded-pill border border-ink/15 px-8 py-3 text-sm font-semibold text-ink transition hover:border-ink/40"
           >
-            Learn more
+            Подробнее
           </button>
         </div>
 

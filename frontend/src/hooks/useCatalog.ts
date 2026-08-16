@@ -26,7 +26,7 @@ export default function useCatalog(): UseCatalogResult {
         setProducts(response.data)
       } catch (err) {
         if (!controller.signal.aborted) {
-          setError(err instanceof Error ? err.message : 'Failed to load products')
+          setError(err instanceof Error ? err.message : 'Не удалось загрузить товары')
         }
       } finally {
         if (!controller.signal.aborted) {

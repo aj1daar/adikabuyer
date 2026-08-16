@@ -47,7 +47,7 @@ export default function CartDrawer() {
       closeCart()
       window.location.href = response.whatsappUrl
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Checkout failed. Please try again.')
+      setSubmitError(err instanceof Error ? err.message : 'Не удалось оформить заказ. Попробуйте ещё раз.')
     } finally {
       setIsSubmitting(false)
     }
@@ -74,19 +74,19 @@ export default function CartDrawer() {
             className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-xl"
           >
             <div className="flex items-center justify-between border-b border-ink/10 px-6 py-4">
-              <h2 className="font-grotesk text-lg font-semibold text-ink">Your cart</h2>
+              <h2 className="font-grotesk text-lg font-semibold text-ink">Корзина</h2>
               <button
                 type="button"
                 onClick={closeCart}
                 className="text-sm text-ink/50 transition hover:text-ink"
               >
-                Close
+                Закрыть
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-4">
               {items.length === 0 && (
-                <p className="text-sm text-ink/50">Your cart is empty.</p>
+                <p className="text-sm text-ink/50">Корзина пуста.</p>
               )}
               {items.map((item) => (
                 <div
@@ -108,7 +108,7 @@ export default function CartDrawer() {
                       onClick={() => removeItem(item.variantId)}
                       className="text-xs text-ink/40 transition hover:text-bubblegum-dark"
                     >
-                      Remove
+                      Удалить
                     </button>
                   </div>
                 </div>
@@ -120,21 +120,21 @@ export default function CartDrawer() {
                     type="text"
                     value={customerName}
                     onChange={(event) => setCustomerName(event.target.value)}
-                    placeholder="Full name"
+                    placeholder="Имя и фамилия"
                     className="rounded-xl border border-ink/15 px-4 py-2 text-sm text-ink outline-none focus:border-bubblegum"
                   />
                   <input
                     type="tel"
                     value={customerPhone}
                     onChange={(event) => setCustomerPhone(event.target.value)}
-                    placeholder="Phone number"
+                    placeholder="Номер телефона"
                     className="rounded-xl border border-ink/15 px-4 py-2 text-sm text-ink outline-none focus:border-bubblegum"
                   />
                   <input
                     type="text"
                     value={region}
                     onChange={(event) => setRegion(event.target.value)}
-                    placeholder="City"
+                    placeholder="Город"
                     className="rounded-xl border border-ink/15 px-4 py-2 text-sm text-ink outline-none focus:border-bubblegum"
                   />
                   {submitError && <p className="text-xs text-red-500">{submitError}</p>}
@@ -144,7 +144,7 @@ export default function CartDrawer() {
 
             <div className="border-t border-ink/10 px-6 py-4">
               <div className="mb-4 flex items-center justify-between text-base font-semibold text-ink">
-                <span>Total</span>
+                <span>Итого</span>
                 <span>${totalPrice.toFixed(2)}</span>
               </div>
               <button
@@ -153,7 +153,7 @@ export default function CartDrawer() {
                 disabled={!canCheckout || isSubmitting}
                 className="w-full rounded-pill bg-ink px-4 py-3 text-sm font-semibold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {isSubmitting ? 'Placing order...' : 'Checkout'}
+                {isSubmitting ? 'Оформляем заказ...' : 'Оформить заказ'}
               </button>
             </div>
           </motion.aside>

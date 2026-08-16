@@ -63,7 +63,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             ${product.basePrice.toFixed(2)}
           </span>
           <span className="rounded-pill bg-silver px-3 py-1 text-xs font-medium text-ink/60">
-            {product.variants.length} variant{product.variants.length === 1 ? '' : 's'}
+            Вариантов: {product.variants.length}
           </span>
         </div>
 
@@ -73,7 +73,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           disabled={!primaryVariant}
           className="mt-3 rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Add to cart
+          В корзину
         </button>
       </div>
     </div>

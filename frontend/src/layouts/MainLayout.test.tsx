@@ -39,7 +39,7 @@ describe('MainLayout', () => {
       </MainLayout>
     )
 
-    expect(screen.getByRole('button', { name: /cart \(3\)/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /корзина \(3\)/i })).toBeInTheDocument()
   })
 
   it('toggles the cart drawer open state when clicked', () => {
@@ -51,7 +51,7 @@ describe('MainLayout', () => {
 
     expect(useCartStore.getState().isOpen).toBe(false)
 
-    fireEvent.click(screen.getByRole('button', { name: /cart/i }))
+    fireEvent.click(screen.getByRole('button', { name: /корзина/i }))
 
     expect(useCartStore.getState().isOpen).toBe(true)
   })

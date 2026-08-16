@@ -32,17 +32,17 @@ beforeEach(() => {
 })
 
 const fillCheckoutForm = () => {
-  fireEvent.change(screen.getByPlaceholderText('Full name'), { target: { value: 'John Doe' } })
-  fireEvent.change(screen.getByPlaceholderText('Phone number'), { target: { value: '996700123456' } })
-  fireEvent.change(screen.getByPlaceholderText('City'), { target: { value: 'Bishkek' } })
+  fireEvent.change(screen.getByPlaceholderText('Имя и фамилия'), { target: { value: 'John Doe' } })
+  fireEvent.change(screen.getByPlaceholderText('Номер телефона'), { target: { value: '996700123456' } })
+  fireEvent.change(screen.getByPlaceholderText('Город'), { target: { value: 'Bishkek' } })
 }
 
 describe('CartDrawer', () => {
   it('shows an empty cart message and no form when there are no items', () => {
     render(<CartDrawer />)
 
-    expect(screen.getByText('Your cart is empty.')).toBeInTheDocument()
-    expect(screen.queryByPlaceholderText('Full name')).not.toBeInTheDocument()
+    expect(screen.getByText('Корзина пуста.')).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Имя и фамилия')).not.toBeInTheDocument()
   })
 
   it('renders cart items with quantity and line total', () => {
@@ -59,7 +59,7 @@ describe('CartDrawer', () => {
     useCartStore.setState({ items: [cartItem()], isOpen: true })
 
     render(<CartDrawer />)
-    fireEvent.click(screen.getByRole('button', { name: /remove/i }))
+    fireEvent.click(screen.getByRole('button', { name: /удалить/i }))
 
     expect(useCartStore.getState().items).toEqual([])
   })
@@ -69,24 +69,24 @@ describe('CartDrawer', () => {
 
     render(<CartDrawer />)
 
-    expect(screen.getByRole('button', { name: /checkout/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /оформить заказ/i })).toBeDisabled()
   })
 
   it('disables checkout when fields contain only whitespace', () => {
     useCartStore.setState({ items: [cartItem()], isOpen: true })
 
     render(<CartDrawer />)
-    fireEvent.change(screen.getByPlaceholderText('Full name'), { target: { value: '   ' } })
-    fireEvent.change(screen.getByPlaceholderText('Phone number'), { target: { value: '   ' } })
-    fireEvent.change(screen.getByPlaceholderText('City'), { target: { value: '   ' } })
+    fireEvent.change(screen.getByPlaceholderText('Имя и фамилия'), { target: { value: '   ' } })
+    fireEvent.change(screen.getByPlaceholderText('Номер телефона'), { target: { value: '   ' } })
+    fireEvent.change(screen.getByPlaceholderText('Город'), { target: { value: '   ' } })
 
-    expect(screen.getByRole('button', { name: /checkout/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /оформить заказ/i })).toBeDisabled()
   })
 
   it('disables checkout when the cart is empty regardless of form state', () => {
     render(<CartDrawer />)
 
-    expect(screen.queryByRole('button', { name: /checkout/i })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /оформить заказ/i })).toBeDisabled()
   })
 
   it('enables checkout once the cart has items and all fields are filled', () => {
@@ -95,7 +95,7 @@ describe('CartDrawer', () => {
     render(<CartDrawer />)
     fillCheckoutForm()
 
-    expect(screen.getByRole('button', { name: /checkout/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /оформить заказ/i })).toBeEnabled()
   })
 
   it('on success calls the api, clears the cart, closes the drawer, and redirects to whatsapp', async () => {
@@ -110,7 +110,7 @@ describe('CartDrawer', () => {
 
     render(<CartDrawer />)
     fillCheckoutForm()
-    fireEvent.click(screen.getByRole('button', { name: /checkout/i }))
+    fireEvent.click(screen.getByRole('button', { name: /оформить заказ/i }))
 
     await waitFor(() => expect(useCartStore.getState().items).toEqual([]))
 
@@ -124,7 +124,7 @@ describe('CartDrawer', () => {
 
     render(<CartDrawer />)
     fillCheckoutForm()
-    fireEvent.click(screen.getByRole('button', { name: /checkout/i }))
+    fireEvent.click(screen.getByRole('button', { name: /оформить заказ/i }))
 
     await waitFor(() => expect(screen.getByText('Server exploded')).toBeInTheDocument())
 

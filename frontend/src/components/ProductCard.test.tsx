@@ -40,7 +40,7 @@ describe('ProductCard', () => {
   it('adds the primary variant to the cart store when the button is clicked', () => {
     render(<ProductCard product={product} />)
 
-    fireEvent.click(screen.getByRole('button', { name: /add to cart/i }))
+    fireEvent.click(screen.getByRole('button', { name: /в корзину/i }))
 
     expect(useCartStore.getState().items).toEqual([
       {

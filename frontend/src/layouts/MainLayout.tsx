@@ -18,7 +18,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           onClick={toggleCart}
           className="rounded-pill bg-silver px-4 py-2 text-sm font-medium text-ink transition hover:bg-silver-dark"
         >
-          Cart ({totalCount})
+          Корзина ({totalCount})
         </button>
       </header>
       <main className="flex-1 px-6">{children}</main>

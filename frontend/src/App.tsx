@@ -13,10 +13,10 @@ function App() {
         <HeroSection />
 
         <div className="py-12">
-          {loading && <p className="text-ink/60">Loading products...</p>}
+          {loading && <p className="text-ink/60">Загрузка товаров...</p>}
           {error && <p className="text-red-500">{error}</p>}
           {!loading && !error && products.length === 0 && (
-            <p className="text-ink/60">No products available.</p>
+            <p className="text-ink/60">Товары не найдены.</p>
           )}
           {!loading && !error && products.length > 0 && <ProductGrid products={products} />}
         </div>

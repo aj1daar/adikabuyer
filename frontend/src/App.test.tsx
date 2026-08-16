@@ -29,7 +29,7 @@ describe('App', () => {
 
     render(<App />)
 
-    expect(screen.getByText('Loading products...')).toBeInTheDocument()
+    expect(screen.getByText('Загрузка товаров...')).toBeInTheDocument()
   })
 
   it('shows an error message when the catalog fails to load', () => {
@@ -45,7 +45,7 @@ describe('App', () => {
 
     render(<App />)
 
-    expect(screen.getByText('No products available.')).toBeInTheDocument()
+    expect(screen.getByText('Товары не найдены.')).toBeInTheDocument()
   })
 
   it('renders the product grid once products load', () => {

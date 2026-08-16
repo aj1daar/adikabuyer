@@ -6,7 +6,7 @@ describe('HeroSection', () => {
   it('renders without crashing and shows the headline and call to action', () => {
     render(<HeroSection />)
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('made foryour style')
-    expect(screen.getByRole('button', { name: /shop the drop/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('сделанодля тебя')
+    expect(screen.getByRole('button', { name: /смотреть каталог/i })).toBeInTheDocument()
   })
 })
