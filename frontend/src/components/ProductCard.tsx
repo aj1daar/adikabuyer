@@ -36,7 +36,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   }
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-3xl border border-ink/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+    <div className="flex flex-col overflow-hidden rounded-3xl border border-ink/10 bg-white shadow-sm transition select-none hover:-translate-y-1 hover:shadow-lg active:scale-[0.98]">
       <div className="flex aspect-[4/5] items-center justify-center bg-silver">
         <span className="font-grotesk text-4xl font-semibold text-ink/20">
           {initials}

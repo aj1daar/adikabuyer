@@ -5,9 +5,20 @@
 @layer base {
   html {
     font-family: "Space Grotesk", system-ui, sans-serif;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
   }
 
   body {
     @apply bg-white text-ink antialiased;
+  }
+
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  button,
+  a {
+    @apply select-none transition active:scale-95;
   }
 }
