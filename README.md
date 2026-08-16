@@ -10,14 +10,16 @@ This project is currently **local development only**. There is no cloud deployme
 |---|---|---|---|
 | `frontend` | React + TypeScript + Vite + Tailwind | 5173 | Customer catalog/cart UI |
 | `api-gateway` | Spring Cloud Gateway | 8080 | Single entry point, routes to backend services, handles CORS |
-| `catalog-service` | Spring Boot + JPA + PostgreSQL | 8081 | Products, variants, inventory |
-| `order-service` | Spring Boot + RabbitMQ | 8082 | Checkout, WhatsApp link generation, order events |
+| `catalog-service` | Spring Boot + JPA + PostgreSQL + RabbitMQ | 8081 | Products, variants, inventory, consumes order events to deduct stock |
+| `order-service` | Spring Boot + RabbitMQ | 8082 | Checkout, WhatsApp link generation, publishes order-placed events |
 | `postgres-db` | PostgreSQL 16 | 5433 (host) | Catalog data, migrated via Flyway |
 | `rabbitmq` | RabbitMQ 3.13 (management) | 5672 / 15672 | Order-placed event bus |
 
 The frontend talks only to the API gateway (`http://localhost:8080`), which routes `/api/catalog/**` to `catalog-service` and `/api/orders/**` to `order-service`.
 
 `postgres-db`, `rabbitmq`, and `api-gateway` run in Docker (`docker-compose.yml`). `catalog-service`, `order-service`, and the frontend dev server currently run directly on the host — the gateway reaches them via `host.docker.internal`.
+
+When `order-service` publishes an order to the `order.exchange`/`order.queue` RabbitMQ topology, `catalog-service` consumes the same queue and deducts purchased quantities from `variant.stock_quantity`. A variant's `status` flips from `IN_STOCK` to `PRE_ORDER` once its stock reaches zero.
 
 ## Running locally
 
@@ -63,7 +65,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs the backend and frontend test s
 ## Project structure
 
 ```
-catalog-service/   Spring Boot - product catalog, inventory
+catalog-service/   Spring Boot - product catalog, inventory, order event consumer
 order-service/     Spring Boot - checkout, WhatsApp link, RabbitMQ events
 api-gateway/        Spring Cloud Gateway - single entry point + CORS
 frontend/          React + TypeScript + Tailwind - customer UI
