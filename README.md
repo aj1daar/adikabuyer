@@ -1,0 +1,75 @@
+# Adikabuyer
+
+E-commerce catalog application for custom product ordering. Customers browse products, pick variations (size/color/etc.), add them to a cart, and checkout generates a formatted WhatsApp message with the order details — no payment gateway involved.
+
+This project is currently **local development only**. There is no cloud deployment configuration.
+
+## Architecture
+
+| Service | Tech | Port | Purpose |
+|---|---|---|---|
+| `frontend` | React + TypeScript + Vite + Tailwind | 5173 | Customer catalog/cart UI |
+| `api-gateway` | Spring Cloud Gateway | 8080 | Single entry point, routes to backend services, handles CORS |
+| `catalog-service` | Spring Boot + JPA + PostgreSQL | 8081 | Products, variants, inventory |
+| `order-service` | Spring Boot + RabbitMQ | 8082 | Checkout, WhatsApp link generation, order events |
+| `postgres-db` | PostgreSQL 16 | 5433 (host) | Catalog data, migrated via Flyway |
+| `rabbitmq` | RabbitMQ 3.13 (management) | 5672 / 15672 | Order-placed event bus |
+
+The frontend talks only to the API gateway (`http://localhost:8080`), which routes `/api/catalog/**` to `catalog-service` and `/api/orders/**` to `order-service`.
+
+`postgres-db`, `rabbitmq`, and `api-gateway` run in Docker (`docker-compose.yml`). `catalog-service`, `order-service`, and the frontend dev server currently run directly on the host — the gateway reaches them via `host.docker.internal`.
+
+## Running locally
+
+1. Start infrastructure and the gateway:
+   ```bash
+   docker compose up -d
+   ```
+
+2. Build and run the backend services (separate terminals):
+   ```bash
+   cd catalog-service && mvn clean package -DskipTests
+   java -jar target/catalog-service-0.0.1-SNAPSHOT.jar
+
+   cd order-service && mvn clean package -DskipTests
+   java -jar target/order-service-0.0.1-SNAPSHOT.jar
+   ```
+
+3. Start the frontend dev server:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+4. Open `http://localhost:5173`.
+
+RabbitMQ management UI: `http://localhost:15672` (user/pass: `adikabuyer` / `adikabuyer`).
+
+## Testing
+
+```bash
+cd catalog-service && mvn test
+cd order-service && mvn test
+cd frontend && npm run test
+```
+
+Coverage reports: `mvn test` generates a JaCoCo report at `target/site/jacoco/index.html` for each backend service; `npx vitest run --coverage` generates one at `frontend/coverage/index.html`.
+
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs the backend and frontend test suites on every push and pull request to `main`.
+
+## Project structure
+
+```
+catalog-service/   Spring Boot - product catalog, inventory
+order-service/     Spring Boot - checkout, WhatsApp link, RabbitMQ events
+api-gateway/        Spring Cloud Gateway - single entry point + CORS
+frontend/          React + TypeScript + Tailwind - customer UI
+docker-compose.yml  Local infrastructure (Postgres, RabbitMQ, API gateway)
+```
+
+---
+
+This README is kept up to date as the project evolves — update it whenever services, ports, routes, or the local setup steps change.
