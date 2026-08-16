@@ -71,5 +71,3 @@ docker-compose.yml  Local infrastructure (Postgres, RabbitMQ, API gateway)
 ```
 
 ---
-
-This README is kept up to date as the project evolves — update it whenever services, ports, routes, or the local setup steps change.
