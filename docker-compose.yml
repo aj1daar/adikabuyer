@@ -29,6 +29,21 @@ services:
     networks:
       - adikabuyer-network
 
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: adikabuyer-api-gateway
+    restart: unless-stopped
+    environment:
+      CATALOG_SERVICE_URL: http://host.docker.internal:8081
+      ORDER_SERVICE_URL: http://host.docker.internal:8082
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - adikabuyer-network
+
 networks:
   adikabuyer-network:
     driver: bridge
