@@ -21,10 +21,22 @@ beforeEach(() => {
 })
 
 describe('App routing', () => {
-  it('renders the storefront at the root path', () => {
+  it('renders the landing page at the root path', () => {
     renderAt('/')
 
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('сделанодля тебя')
+  })
+
+  it('renders the catalog page at /catalog', () => {
+    renderAt('/catalog')
+
     expect(screen.getByText('Товары не найдены.')).toBeInTheDocument()
+  })
+
+  it('renders the about page at /about', () => {
+    renderAt('/about')
+
+    expect(screen.getByRole('heading', { name: /о нас/i })).toBeInTheDocument()
   })
 
   it('renders the login page at /admin/login', () => {

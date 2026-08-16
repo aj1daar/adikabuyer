@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import type { ReactNode } from 'react'
 import MainLayout from './MainLayout'
 import useCartStore from '../store/useCartStore'
 
@@ -7,13 +9,17 @@ beforeEach(() => {
   useCartStore.setState({ items: [], isOpen: false })
 })
 
+function renderLayout(children: ReactNode) {
+  return render(
+    <MemoryRouter>
+      <MainLayout>{children}</MainLayout>
+    </MemoryRouter>
+  )
+}
+
 describe('MainLayout', () => {
   it('renders children inside the layout', () => {
-    render(
-      <MainLayout>
-        <p>Catalog content</p>
-      </MainLayout>
-    )
+    renderLayout(<p>Catalog content</p>)
 
     expect(screen.getByText('Catalog content')).toBeInTheDocument()
   })
@@ -33,21 +39,13 @@ describe('MainLayout', () => {
       ],
     })
 
-    render(
-      <MainLayout>
-        <p>Content</p>
-      </MainLayout>
-    )
+    renderLayout(<p>Content</p>)
 
     expect(screen.getByRole('button', { name: /корзина \(3\)/i })).toBeInTheDocument()
   })
 
   it('toggles the cart drawer open state when clicked', () => {
-    render(
-      <MainLayout>
-        <p>Content</p>
-      </MainLayout>
-    )
+    renderLayout(<p>Content</p>)
 
     expect(useCartStore.getState().isOpen).toBe(false)
 

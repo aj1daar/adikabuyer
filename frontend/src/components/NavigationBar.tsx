@@ -1,0 +1,66 @@
+import { Link, NavLink } from 'react-router-dom'
+import Logo from './Logo'
+import useCartStore from '../store/useCartStore'
+
+const navItems = [
+  { to: '/catalog', label: 'Каталог' },
+  { to: '/about', label: 'О нас' },
+]
+
+export default function NavigationBar() {
+  const toggleCart = useCartStore((state) => state.toggleCart)
+  const totalCount = useCartStore((state) => state.totalCount())
+
+  const desktopLinkClass = ({ isActive }: { isActive: boolean }) =>
+    `text-sm font-medium transition ${isActive ? 'text-bubblegum-dark' : 'text-ink/60 hover:text-ink'}`
+
+  const tabLinkClass = ({ isActive }: { isActive: boolean }) =>
+    `flex flex-1 flex-col items-center gap-1 py-2 text-xs font-medium transition ${
+      isActive ? 'text-bubblegum-dark' : 'text-ink/50'
+    }`
+
+  return (
+    <>
+      <header
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        className="sticky top-0 z-40 border-b border-ink/10 bg-white/90 backdrop-blur"
+      >
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <Link to="/" aria-label="Adika Buyer">
+            <Logo className="h-16 w-auto" />
+          </Link>
+
+          <nav className="hidden items-center gap-6 sm:flex">
+            {navItems.map((item) => (
+              <NavLink key={item.to} to={item.to} className={desktopLinkClass}>
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <button
+            type="button"
+            onClick={toggleCart}
+            className="rounded-pill bg-silver px-4 py-2 text-sm font-medium text-ink transition hover:bg-silver-dark"
+          >
+            Корзина ({totalCount})
+          </button>
+        </div>
+      </header>
+
+      <nav
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-ink/10 bg-white/95 backdrop-blur sm:hidden"
+      >
+        <NavLink to="/" end className={tabLinkClass}>
+          Главная
+        </NavLink>
+        {navItems.map((item) => (
+          <NavLink key={item.to} to={item.to} className={tabLinkClass}>
+            {item.label}
+          </NavLink>
+        ))}
+      </nav>
+    </>
+  )
+}
