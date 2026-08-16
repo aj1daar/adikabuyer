@@ -35,6 +35,9 @@ public class CatalogService {
     }
 
     public boolean isVariantAvailable(Long variantId, int requestedQuantity) {
+        if (requestedQuantity <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Requested quantity must be positive");
+        }
         Variant variant = variantRepository.findById(variantId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Variant not found: " + variantId));
         if (!variant.isActive() || variant.getStockQuantity() < requestedQuantity) {
