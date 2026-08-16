@@ -1,5 +1,6 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
 import useAuthStore from '../store/useAuthStore'
+import notifyApiError from './notifyApiError'
 
 const catalogClient = axios.create({
   baseURL: import.meta.env.VITE_CATALOG_API_URL ?? 'http://localhost:8080/api/catalog',
@@ -25,5 +26,6 @@ export function handleAuthError(error: { response?: { status?: number } }): Prom
 
 catalogClient.interceptors.request.use(attachAuthHeader)
 catalogClient.interceptors.response.use((response) => response, handleAuthError)
+catalogClient.interceptors.response.use((response) => response, notifyApiError)
 
 export default catalogClient

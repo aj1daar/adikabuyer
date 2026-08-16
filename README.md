@@ -28,6 +28,10 @@ The frontend is routed with `react-router-dom`: `/` is the public storefront, `/
 
 `catalog-service` uploads product images to S3-compatible storage via `POST /api/media/upload` (`ROLE_ADMIN` required, routed through the gateway), returning a public object URL. Locally this talks to the `minio` container; in a real environment it points at Cloudflare R2 via the same S3 API (configured through `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`, `S3_ENDPOINT`, `S3_REGION`, `S3_PUBLIC_URL_BASE` env vars). The target bucket is created automatically on `catalog-service` startup if missing, with a public-read policy applied so returned URLs are actually fetchable. `product.image_url` stores the result; the admin `ProductForm` uploads the selected file immediately on selection and includes the returned URL in the create/update payload.
 
+`catalog-service` and `order-service` both return a standardized JSON error envelope from a `@RestControllerAdvice` (`{status, error, message, path, timestamp, fieldErrors?}`) for validation failures, malformed JSON, not-found/conflict errors, and unexpected exceptions (500, without leaking internal details). In `catalog-service`, 401/403 from Spring Security itself (missing/invalid JWT, insufficient role) go through a custom `AuthenticationEntryPoint`/`AccessDeniedHandler` so they get the same JSON shape instead of Spring Security's default empty body — `401` means no/invalid credentials, `403` means authenticated but the wrong role.
+
+The frontend wraps the app root in an `ErrorBoundary` (`main.tsx`) so a rendering crash shows a fallback screen instead of a blank page. `catalogClient`, `orderClient`, and `mediaClient` all show a `react-hot-toast` notification on API errors — the server's `message` field when present, a "session expired" message on `401`, a generic fallback otherwise. `authClient` (login) is intentionally excluded since `Login.tsx` already surfaces its own inline error.
+
 ## Running locally
 
 1. Start infrastructure and the gateway:
