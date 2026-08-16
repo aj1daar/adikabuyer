@@ -16,10 +16,16 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -121,5 +127,112 @@ class CatalogControllerTest {
     void getVariantAvailability_returns400_whenQuantityIsNotNumeric() throws Exception {
         mockMvc.perform(get("/api/catalog/variants/1/availability").param("quantity", "banana"))
                 .andExpect(status().isBadRequest());
+    }
+
+    private String validProductJson() {
+        return """
+                {
+                  "name": "Custom Tumbler",
+                  "description": "desc",
+                  "category": "Drinkware",
+                  "basePrice": 25,
+                  "active": true,
+                  "variants": [
+                    {
+                      "sku": "TUM-BLK-500",
+                      "attributes": { "color": "black" },
+                      "priceOverride": null,
+                      "stockQuantity": 10,
+                      "active": true
+                    }
+                  ]
+                }
+                """;
+    }
+
+    @Test
+    void createProduct_returns201WithCreatedProduct() throws Exception {
+        ProductDto created = new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, List.of());
+        when(catalogService.createProduct(any())).thenReturn(created);
+
+        mockMvc.perform(post("/api/catalog/products").contentType("application/json").content(validProductJson()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Custom Tumbler"));
+    }
+
+    @Test
+    void createProduct_returns400_whenNameIsBlank() throws Exception {
+        String payload = validProductJson().replace("\"Custom Tumbler\"", "\"\"");
+
+        mockMvc.perform(post("/api/catalog/products").contentType("application/json").content(payload))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(catalogService);
+    }
+
+    @Test
+    void createProduct_returns400_whenBasePriceIsMissing() throws Exception {
+        String payload = validProductJson().replace("\"basePrice\": 25,", "");
+
+        mockMvc.perform(post("/api/catalog/products").contentType("application/json").content(payload))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(catalogService);
+    }
+
+    @Test
+    void createProduct_returns400_whenVariantStockIsNegative() throws Exception {
+        String payload = validProductJson().replace("\"stockQuantity\": 10", "\"stockQuantity\": -1");
+
+        mockMvc.perform(post("/api/catalog/products").contentType("application/json").content(payload))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(catalogService);
+    }
+
+    @Test
+    void createProduct_returns409_whenServiceReportsSkuConflict() throws Exception {
+        when(catalogService.createProduct(any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "One or more variant SKUs already exist"));
+
+        mockMvc.perform(post("/api/catalog/products").contentType("application/json").content(validProductJson()))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void updateProduct_returns200WithUpdatedProduct() throws Exception {
+        ProductDto updated = new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, List.of());
+        when(catalogService.updateProduct(eq(1L), any())).thenReturn(updated);
+
+        mockMvc.perform(put("/api/catalog/products/1").contentType("application/json").content(validProductJson()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Custom Tumbler"));
+    }
+
+    @Test
+    void updateProduct_returns404_whenProductMissing() throws Exception {
+        when(catalogService.updateProduct(eq(99L), any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: 99"));
+
+        mockMvc.perform(put("/api/catalog/products/99").contentType("application/json").content(validProductJson()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteProduct_returns204_whenSuccessful() throws Exception {
+        mockMvc.perform(delete("/api/catalog/products/1"))
+                .andExpect(status().isNoContent());
+
+        verify(catalogService).deleteProduct(1L);
+    }
+
+    @Test
+    void deleteProduct_returns404_whenProductMissing() throws Exception {
+        org.mockito.Mockito.doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: 99"))
+                .when(catalogService).deleteProduct(99L);
+
+        mockMvc.perform(delete("/api/catalog/products/99"))
+                .andExpect(status().isNotFound());
     }
 }

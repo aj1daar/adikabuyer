@@ -3,6 +3,8 @@ package com.adikabuyer.catalog.service;
 import com.adikabuyer.catalog.domain.Product;
 import com.adikabuyer.catalog.domain.Variant;
 import com.adikabuyer.catalog.dto.ProductDto;
+import com.adikabuyer.catalog.dto.ProductRequest;
+import com.adikabuyer.catalog.dto.VariantRequest;
 import com.adikabuyer.catalog.exception.OutOfStockException;
 import com.adikabuyer.catalog.mapper.ProductMapper;
 import com.adikabuyer.catalog.repository.ProductRepository;
@@ -12,16 +14,21 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -148,4 +155,174 @@ class CatalogServiceTest {
         verify(variantRepository).findById(1L);
     }
 
+    private VariantRequest buildVariantRequest(Long id, String sku, int stock) {
+        return new VariantRequest(id, sku, Map.of("color", "black"), null, stock, true);
+    }
+
+    private ProductRequest buildProductRequest(List<VariantRequest> variants) {
+        return new ProductRequest("Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, variants);
+    }
+
+    @Test
+    void createProduct_savesProductWithLinkedVariants_andReturnsMappedDto() {
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        ProductDto dto = new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, List.of());
+        when(productMapper.toDto(any(Product.class))).thenReturn(dto);
+
+        ProductRequest request = buildProductRequest(List.of(buildVariantRequest(null, "TUM-BLK-500", 10)));
+
+        ProductDto result = catalogService.createProduct(request);
+
+        ArgumentCaptor<Product> savedCaptor = ArgumentCaptor.forClass(Product.class);
+        verify(productRepository).save(savedCaptor.capture());
+
+        Product saved = savedCaptor.getValue();
+        assertThat(saved.getName()).isEqualTo("Custom Tumbler");
+        assertThat(saved.getVariants()).hasSize(1);
+        assertThat(saved.getVariants().get(0).getSku()).isEqualTo("TUM-BLK-500");
+        assertThat(saved.getVariants().get(0).getProduct()).isSameAs(saved);
+        assertThat(result).isEqualTo(dto);
+    }
+
+    @Test
+    void createProduct_throwsConflict_whenSkuAlreadyExists() {
+        when(productRepository.save(any(Product.class))).thenThrow(new DataIntegrityViolationException("duplicate key"));
+
+        ProductRequest request = buildProductRequest(List.of(buildVariantRequest(null, "DUPLICATE-SKU", 1)));
+
+        assertThatThrownBy(() -> catalogService.createProduct(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409");
+    }
+
+    @Test
+    void createProduct_allowsEmptyVariantList() {
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(productMapper.toDto(any(Product.class))).thenReturn(
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, List.of())
+        );
+
+        ProductRequest request = buildProductRequest(List.of());
+
+        catalogService.createProduct(request);
+
+        ArgumentCaptor<Product> savedCaptor = ArgumentCaptor.forClass(Product.class);
+        verify(productRepository).save(savedCaptor.capture());
+        assertThat(savedCaptor.getValue().getVariants()).isEmpty();
+    }
+
+    @Test
+    void updateProduct_throwsNotFound_whenProductMissing() {
+        when(productRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> catalogService.updateProduct(99L, buildProductRequest(List.of())))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
+    }
+
+    @Test
+    void updateProduct_updatesScalarFieldsOnExistingProduct() {
+        Product existing = Product.builder().id(1L).name("Old Name").basePrice(BigDecimal.ONE).active(false).build();
+        when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(productMapper.toDto(any(Product.class))).thenReturn(
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, List.of())
+        );
+
+        catalogService.updateProduct(1L, buildProductRequest(List.of()));
+
+        assertThat(existing.getName()).isEqualTo("Custom Tumbler");
+        assertThat(existing.getBasePrice()).isEqualByComparingTo("25");
+        assertThat(existing.isActive()).isTrue();
+    }
+
+    @Test
+    void updateProduct_addsNewVariant_whenRequestVariantHasNoId() {
+        Product existing = Product.builder().id(1L).name("Custom Tumbler").basePrice(BigDecimal.TEN).active(true).build();
+        when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(productMapper.toDto(any(Product.class))).thenReturn(
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, List.of())
+        );
+
+        catalogService.updateProduct(1L, buildProductRequest(List.of(buildVariantRequest(null, "NEW-SKU", 5))));
+
+        assertThat(existing.getVariants()).hasSize(1);
+        assertThat(existing.getVariants().get(0).getSku()).isEqualTo("NEW-SKU");
+        assertThat(existing.getVariants().get(0).getProduct()).isSameAs(existing);
+    }
+
+    @Test
+    void updateProduct_updatesExistingVariant_whenRequestIdMatches() {
+        Variant existingVariant = Variant.builder().id(10L).sku("OLD-SKU").stockQuantity(2).active(true).build();
+        Product existing = Product.builder().id(1L).name("Custom Tumbler").basePrice(BigDecimal.TEN).active(true).build();
+        existing.setVariants(new java.util.ArrayList<>(List.of(existingVariant)));
+        existingVariant.setProduct(existing);
+
+        when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(productMapper.toDto(any(Product.class))).thenReturn(
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, List.of())
+        );
+
+        catalogService.updateProduct(1L, buildProductRequest(List.of(buildVariantRequest(10L, "UPDATED-SKU", 20))));
+
+        assertThat(existing.getVariants()).hasSize(1);
+        assertThat(existing.getVariants().get(0).getId()).isEqualTo(10L);
+        assertThat(existing.getVariants().get(0).getSku()).isEqualTo("UPDATED-SKU");
+        assertThat(existing.getVariants().get(0).getStockQuantity()).isEqualTo(20);
+    }
+
+    @Test
+    void updateProduct_removesVariant_whenAbsentFromRequest() {
+        Variant existingVariant = Variant.builder().id(10L).sku("TO-REMOVE").stockQuantity(2).active(true).build();
+        Product existing = Product.builder().id(1L).name("Custom Tumbler").basePrice(BigDecimal.TEN).active(true).build();
+        existing.setVariants(new java.util.ArrayList<>(List.of(existingVariant)));
+        existingVariant.setProduct(existing);
+
+        when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(productMapper.toDto(any(Product.class))).thenReturn(
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, List.of())
+        );
+
+        catalogService.updateProduct(1L, buildProductRequest(List.of()));
+
+        assertThat(existing.getVariants()).isEmpty();
+    }
+
+    @Test
+    void updateProduct_throwsNotFound_whenVariantIdDoesNotBelongToProduct() {
+        Product existing = Product.builder().id(1L).name("Custom Tumbler").basePrice(BigDecimal.TEN).active(true).build();
+        existing.setVariants(new java.util.ArrayList<>());
+
+        when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
+
+        ProductRequest request = buildProductRequest(List.of(buildVariantRequest(999L, "GHOST-SKU", 1)));
+
+        assertThatThrownBy(() -> catalogService.updateProduct(1L, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
+
+        verify(productRepository, never()).save(any(Product.class));
+    }
+
+    @Test
+    void deleteProduct_deletesExistingProduct() {
+        Product existing = Product.builder().id(1L).name("Custom Tumbler").build();
+        when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
+
+        catalogService.deleteProduct(1L);
+
+        verify(productRepository).delete(existing);
+    }
+
+    @Test
+    void deleteProduct_throwsNotFound_whenProductMissing() {
+        when(productRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> catalogService.deleteProduct(99L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
+    }
 }
