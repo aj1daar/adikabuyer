@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import useCartStore from '../store/useCartStore'
+import Logo from '../components/Logo'
 
 type MainLayoutProps = {
   children: ReactNode
@@ -12,7 +13,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="flex min-h-screen flex-col bg-white text-ink">
       <header className="flex items-center justify-between border-b border-ink/10 px-6 py-4">
-        <h1 className="font-grotesk text-xl font-semibold">Adikabuyer</h1>
+        <Logo className="h-10 w-auto" />
         <button
           type="button"
           onClick={toggleCart}

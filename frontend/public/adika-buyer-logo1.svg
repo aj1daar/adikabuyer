@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;display=swap');
+      .brand-text {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
+        font-size: 115px;
+        fill: #000000;
+        letter-spacing: -5px;
+      }
+      .badge-text {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 600;
+        font-size: 14px;
+        fill: #FFFFFF;
+        letter-spacing: 6px;
+      }
+    </style>
+    <linearGradient id="pinkFluid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF75A0" />
+      <stop offset="50%" stop-color="#FFA6C9" />
+      <stop offset="100%" stop-color="#FF1493" />
+    </linearGradient>
+    <linearGradient id="silverChrome" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E0E0E0" />
+      <stop offset="25%" stop-color="#FFFFFF" />
+      <stop offset="50%" stop-color="#888888" />
+      <stop offset="75%" stop-color="#E0E0E0" />
+      <stop offset="100%" stop-color="#FFFFFF" />
+    </linearGradient>
+  </defs>
+  <path d="M 120 50 C 220 -30, 380 140, 480 70 C 580 0, 520 190, 420 160 C 320 130, 180 230, 80 130 C -20 30, 20 130, 120 50 Z" fill="url(#pinkFluid)" opacity="0.9"/>
+  <path d="M 500 40 L 505 60 L 525 65 L 508 78 L 512 98 L 495 86 L 478 98 L 482 78 L 465 65 L 485 60 Z" fill="url(#silverChrome)"/>
+  <text x="300" y="135" text-anchor="middle" class="brand-text">
+    adika
+  </text>
+  <rect x="230" y="145" width="140" height="28" rx="14" fill="#000000" />
+  <text x="300" y="164" text-anchor="middle" class="badge-text">
+    BUYER
+  </text>
+</svg>
