@@ -27,8 +27,13 @@ public class CatalogController {
     private final CatalogService catalogService;
 
     @GetMapping("/products")
-    public List<ProductDto> getAllProducts() {
-        return catalogService.getAllProducts();
+    public List<ProductDto> getAllProducts(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String color,
+            @RequestParam(required = false) String size,
+            @RequestParam(required = false) String volume
+    ) {
+        return catalogService.getAllProducts(search, color, size, volume);
     }
 
     @GetMapping("/products/{id}")

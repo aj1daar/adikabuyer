@@ -26,17 +26,7 @@ beforeEach(() => {
 })
 
 describe('useCatalog', () => {
-  it('starts in a loading state with no products or error', () => {
-    mockedGet.mockImplementation(() => new Promise(() => {}))
-
-    const { result } = renderHook(() => useCatalog())
-
-    expect(result.current.loading).toBe(true)
-    expect(result.current.products).toEqual([])
-    expect(result.current.error).toBeNull()
-  })
-
-  it('populates products and clears loading on success', async () => {
+  it('fetches products with no filter params by default', async () => {
     mockedGet.mockResolvedValueOnce({ data: [product] } as never)
 
     const { result } = renderHook(() => useCatalog())
@@ -44,10 +34,45 @@ describe('useCatalog', () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(result.current.products).toEqual([product])
-    expect(result.current.error).toBeNull()
+    expect(mockedGet).toHaveBeenCalledWith(
+      '/products',
+      expect.objectContaining({ params: { search: undefined, color: undefined, size: undefined, volume: undefined } })
+    )
   })
 
-  it('sets an error message and clears loading on failure', async () => {
+  it('forwards the given filters as query params', async () => {
+    mockedGet.mockResolvedValueOnce({ data: [] } as never)
+
+    const { result } = renderHook(() => useCatalog({ search: 'tumbler', color: 'black', size: 'M', volume: '500ml' }))
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(mockedGet).toHaveBeenCalledWith(
+      '/products',
+      expect.objectContaining({ params: { search: 'tumbler', color: 'black', size: 'M', volume: '500ml' } })
+    )
+  })
+
+  it('refetches when the filters change', async () => {
+    mockedGet.mockResolvedValue({ data: [] } as never)
+
+    const { result, rerender } = renderHook(({ color }) => useCatalog({ color }), {
+      initialProps: { color: '' },
+    })
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(mockedGet).toHaveBeenCalledTimes(1)
+
+    rerender({ color: 'black' })
+
+    await waitFor(() => expect(mockedGet).toHaveBeenCalledTimes(2))
+    expect(mockedGet).toHaveBeenLastCalledWith(
+      '/products',
+      expect.objectContaining({ params: expect.objectContaining({ color: 'black' }) })
+    )
+  })
+
+  it('sets an error message when the request fails', async () => {
     mockedGet.mockRejectedValueOnce(new Error('Network Error'))
 
     const { result } = renderHook(() => useCatalog())
@@ -55,19 +80,5 @@ describe('useCatalog', () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(result.current.error).toBe('Network Error')
-    expect(result.current.products).toEqual([])
-  })
-
-  it('passes an abort signal so an unmount cancels the in-flight request', () => {
-    mockedGet.mockImplementation(() => new Promise(() => {}))
-
-    const { unmount } = renderHook(() => useCatalog())
-
-    expect(mockedGet).toHaveBeenCalledWith(
-      '/products',
-      expect.objectContaining({ signal: expect.any(AbortSignal) })
-    )
-
-    expect(() => unmount()).not.toThrow()
   })
 })

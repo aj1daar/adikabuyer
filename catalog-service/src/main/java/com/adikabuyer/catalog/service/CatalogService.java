@@ -30,11 +30,23 @@ public class CatalogService {
     private final VariantRepository variantRepository;
     private final ProductMapper productMapper;
 
-    public List<ProductDto> getAllProducts() {
-        return productRepository.findAll()
+    public List<ProductDto> getAllProducts(String search, String color, String size, String volume) {
+        return productRepository.search(
+                        normalize(search),
+                        normalize(color),
+                        normalize(size),
+                        normalize(volume)
+                )
                 .stream()
                 .map(productMapper::toDto)
                 .toList();
+    }
+
+    private String normalize(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     public ProductDto getProductById(Long id) {
