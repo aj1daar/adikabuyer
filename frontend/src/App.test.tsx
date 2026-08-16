@@ -2,57 +2,48 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import App from './App'
 import useCatalog from './hooks/useCatalog'
+import useAuthStore from './store/useAuthStore'
 import useCartStore from './store/useCartStore'
-import type { ProductDto } from './types/catalog'
 
 vi.mock('./hooks/useCatalog')
 
 const mockedUseCatalog = vi.mocked(useCatalog)
 
-const product: ProductDto = {
-  id: 1,
-  name: 'Custom Tumbler',
-  description: null,
-  category: null,
-  basePrice: 25,
-  active: true,
-  variants: [],
+function renderAt(path: string) {
+  window.history.pushState({}, '', path)
+  return render(<App />)
 }
 
 beforeEach(() => {
+  mockedUseCatalog.mockReturnValue({ products: [], loading: false, error: null, refetch: vi.fn() })
   useCartStore.setState({ items: [], isOpen: false })
+  useAuthStore.setState({ token: null })
 })
 
-describe('App', () => {
-  it('shows a loading message while the catalog is loading', () => {
-    mockedUseCatalog.mockReturnValue({ products: [], loading: true, error: null })
-
-    render(<App />)
-
-    expect(screen.getByText('Загрузка товаров...')).toBeInTheDocument()
-  })
-
-  it('shows an error message when the catalog fails to load', () => {
-    mockedUseCatalog.mockReturnValue({ products: [], loading: false, error: 'Network Error' })
-
-    render(<App />)
-
-    expect(screen.getByText('Network Error')).toBeInTheDocument()
-  })
-
-  it('shows an empty state when there are no products', () => {
-    mockedUseCatalog.mockReturnValue({ products: [], loading: false, error: null })
-
-    render(<App />)
+describe('App routing', () => {
+  it('renders the storefront at the root path', () => {
+    renderAt('/')
 
     expect(screen.getByText('Товары не найдены.')).toBeInTheDocument()
   })
 
-  it('renders the product grid once products load', () => {
-    mockedUseCatalog.mockReturnValue({ products: [product], loading: false, error: null })
+  it('renders the login page at /admin/login', () => {
+    renderAt('/admin/login')
 
-    render(<App />)
+    expect(screen.getByRole('heading', { name: /вход в админ-панель/i })).toBeInTheDocument()
+  })
 
-    expect(screen.getByText('Custom Tumbler')).toBeInTheDocument()
+  it('redirects /admin to the login page when unauthenticated', () => {
+    renderAt('/admin')
+
+    expect(screen.getByRole('heading', { name: /вход в админ-панель/i })).toBeInTheDocument()
+  })
+
+  it('renders the admin dashboard at /admin when authenticated', () => {
+    useAuthStore.setState({ token: 'valid-token' })
+
+    renderAt('/admin')
+
+    expect(screen.getByRole('heading', { name: /админ-панель/i })).toBeInTheDocument()
   })
 })

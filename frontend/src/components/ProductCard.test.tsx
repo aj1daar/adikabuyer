@@ -20,6 +20,7 @@ const product: ProductDto = {
       priceOverride: null,
       stockQuantity: 10,
       active: true,
+      status: 'IN_STOCK',
     },
   ],
 }

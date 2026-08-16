@@ -1,3 +1,5 @@
+export type VariantStatus = 'IN_STOCK' | 'PRE_ORDER'
+
 export type VariantDto = {
   id: number
   productId: number
@@ -6,6 +8,7 @@ export type VariantDto = {
   priceOverride: number | null
   stockQuantity: number
   active: boolean
+  status: VariantStatus
 }
 
 export type ProductDto = {
