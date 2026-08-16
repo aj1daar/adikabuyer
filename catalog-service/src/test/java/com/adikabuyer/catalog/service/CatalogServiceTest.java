@@ -55,7 +55,7 @@ class CatalogServiceTest {
     @Test
     void getAllProducts_returnsMappedDtos_whenRepositoryHasProducts() {
         Product product = Product.builder().id(1L).name("Tumbler").basePrice(BigDecimal.TEN).active(true).build();
-        ProductDto dto = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, true, List.of());
+        ProductDto dto = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, true, null, List.of());
 
         when(productRepository.findAll()).thenReturn(List.of(product));
         when(productMapper.toDto(product)).thenReturn(dto);
@@ -75,7 +75,7 @@ class CatalogServiceTest {
     @Test
     void getProductById_returnsDto_whenProductExists() {
         Product product = Product.builder().id(1L).name("Tumbler").basePrice(BigDecimal.TEN).active(true).build();
-        ProductDto dto = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, true, List.of());
+        ProductDto dto = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, true, null, List.of());
 
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
         when(productMapper.toDto(product)).thenReturn(dto);
@@ -160,13 +160,16 @@ class CatalogServiceTest {
     }
 
     private ProductRequest buildProductRequest(List<VariantRequest> variants) {
-        return new ProductRequest("Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, variants);
+        return new ProductRequest(
+                "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true,
+                "http://localhost:9000/adikabuyer-media/photo.png", variants
+        );
     }
 
     @Test
     void createProduct_savesProductWithLinkedVariants_andReturnsMappedDto() {
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        ProductDto dto = new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, List.of());
+        ProductDto dto = new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, null, List.of());
         when(productMapper.toDto(any(Product.class))).thenReturn(dto);
 
         ProductRequest request = buildProductRequest(List.of(buildVariantRequest(null, "TUM-BLK-500", 10)));
@@ -181,6 +184,7 @@ class CatalogServiceTest {
         assertThat(saved.getVariants()).hasSize(1);
         assertThat(saved.getVariants().get(0).getSku()).isEqualTo("TUM-BLK-500");
         assertThat(saved.getVariants().get(0).getProduct()).isSameAs(saved);
+        assertThat(saved.getImageUrl()).isEqualTo("http://localhost:9000/adikabuyer-media/photo.png");
         assertThat(result).isEqualTo(dto);
     }
 
@@ -199,7 +203,7 @@ class CatalogServiceTest {
     void createProduct_allowsEmptyVariantList() {
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(productMapper.toDto(any(Product.class))).thenReturn(
-                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, List.of())
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, null, List.of())
         );
 
         ProductRequest request = buildProductRequest(List.of());
@@ -226,7 +230,7 @@ class CatalogServiceTest {
         when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(productMapper.toDto(any(Product.class))).thenReturn(
-                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, List.of())
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, null, List.of())
         );
 
         catalogService.updateProduct(1L, buildProductRequest(List.of()));
@@ -234,6 +238,7 @@ class CatalogServiceTest {
         assertThat(existing.getName()).isEqualTo("Custom Tumbler");
         assertThat(existing.getBasePrice()).isEqualByComparingTo("25");
         assertThat(existing.isActive()).isTrue();
+        assertThat(existing.getImageUrl()).isEqualTo("http://localhost:9000/adikabuyer-media/photo.png");
     }
 
     @Test
@@ -242,7 +247,7 @@ class CatalogServiceTest {
         when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(productMapper.toDto(any(Product.class))).thenReturn(
-                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, List.of())
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, null, List.of())
         );
 
         catalogService.updateProduct(1L, buildProductRequest(List.of(buildVariantRequest(null, "NEW-SKU", 5))));
@@ -262,7 +267,7 @@ class CatalogServiceTest {
         when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(productMapper.toDto(any(Product.class))).thenReturn(
-                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, List.of())
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, null, List.of())
         );
 
         catalogService.updateProduct(1L, buildProductRequest(List.of(buildVariantRequest(10L, "UPDATED-SKU", 20))));
@@ -283,7 +288,7 @@ class CatalogServiceTest {
         when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(productMapper.toDto(any(Product.class))).thenReturn(
-                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, List.of())
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, null, List.of())
         );
 
         catalogService.updateProduct(1L, buildProductRequest(List.of()));

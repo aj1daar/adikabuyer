@@ -65,6 +65,7 @@ public class CatalogService {
                 .category(request.category())
                 .basePrice(request.basePrice())
                 .active(request.active())
+                .imageUrl(request.imageUrl())
                 .createdAt(now)
                 .updatedAt(now)
                 .variants(new ArrayList<>())
@@ -89,6 +90,7 @@ public class CatalogService {
         product.setCategory(request.category());
         product.setBasePrice(request.basePrice());
         product.setActive(request.active());
+        product.setImageUrl(request.imageUrl());
         product.setUpdatedAt(now);
 
         reconcileVariants(product, nullSafeVariants(request), now);

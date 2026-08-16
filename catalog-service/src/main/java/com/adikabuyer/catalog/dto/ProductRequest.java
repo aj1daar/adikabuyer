@@ -15,6 +15,7 @@ public record ProductRequest(
         @Size(max = 100) String category,
         @NotNull @Positive BigDecimal basePrice,
         boolean active,
+        @Size(max = 500) String imageUrl,
         @Valid @Size(max = 100) List<VariantRequest> variants
 ) {
 }

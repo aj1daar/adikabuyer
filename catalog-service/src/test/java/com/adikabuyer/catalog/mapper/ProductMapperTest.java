@@ -33,6 +33,7 @@ class ProductMapperTest {
                 .category("Drinkware")
                 .basePrice(BigDecimal.valueOf(25))
                 .active(true)
+                .imageUrl("http://localhost:9000/adikabuyer-media/photo.png")
                 .build();
         Variant variant = Variant.builder()
                 .id(10L)
@@ -51,6 +52,7 @@ class ProductMapperTest {
         assertThat(dto.variants()).hasSize(1);
         assertThat(dto.variants().get(0).sku()).isEqualTo("TUM-BLK-500");
         assertThat(dto.variants().get(0).attributes()).containsEntry("color", "black");
+        assertThat(dto.imageUrl()).isEqualTo("http://localhost:9000/adikabuyer-media/photo.png");
     }
 
     @Test

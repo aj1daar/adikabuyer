@@ -10,6 +10,7 @@ public record ProductDto(
         String category,
         BigDecimal basePrice,
         boolean active,
+        String imageUrl,
         List<VariantDto> variants
 ) {
 }
