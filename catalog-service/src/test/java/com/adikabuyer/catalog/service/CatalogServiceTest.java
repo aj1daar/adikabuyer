@@ -218,7 +218,7 @@ class CatalogServiceTest {
     }
 
     @Test
-    void createProduct_allowsEmptyVariantList() {
+    void createProduct_createsDefaultVariant_whenVariantListIsEmpty() {
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(productMapper.toDto(any(Product.class))).thenReturn(
                 new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true, null, List.of())
@@ -230,7 +230,16 @@ class CatalogServiceTest {
 
         ArgumentCaptor<Product> savedCaptor = ArgumentCaptor.forClass(Product.class);
         verify(productRepository).save(savedCaptor.capture());
-        assertThat(savedCaptor.getValue().getVariants()).isEmpty();
+
+        Product saved = savedCaptor.getValue();
+        assertThat(saved.getVariants()).hasSize(1);
+        Variant defaultVariant = saved.getVariants().get(0);
+        assertThat(defaultVariant.getSku()).startsWith("DEFAULT-");
+        assertThat(defaultVariant.getAttributes()).isEmpty();
+        assertThat(defaultVariant.getPriceOverride()).isNull();
+        assertThat(defaultVariant.getStockQuantity()).isEqualTo(100);
+        assertThat(defaultVariant.isActive()).isTrue();
+        assertThat(defaultVariant.getProduct()).isSameAs(saved);
     }
 
     @Test

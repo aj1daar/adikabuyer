@@ -21,10 +21,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class CatalogService {
+
+    private static final int DEFAULT_VARIANT_STOCK = 100;
 
     private final ProductRepository productRepository;
     private final VariantRepository variantRepository;
@@ -85,6 +88,10 @@ public class CatalogService {
 
         for (VariantRequest variantRequest : nullSafeVariants(request)) {
             product.getVariants().add(buildVariant(variantRequest, product, now));
+        }
+
+        if (product.getVariants().isEmpty()) {
+            product.getVariants().add(buildDefaultVariant(product, now));
         }
 
         return productMapper.toDto(saveOrConflict(product));
@@ -151,6 +158,19 @@ public class CatalogService {
                 .priceOverride(request.priceOverride())
                 .stockQuantity(request.stockQuantity())
                 .active(request.active())
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+    }
+
+    private Variant buildDefaultVariant(Product product, Instant now) {
+        return Variant.builder()
+                .product(product)
+                .sku("DEFAULT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .attributes(new HashMap<>())
+                .priceOverride(null)
+                .stockQuantity(DEFAULT_VARIANT_STOCK)
+                .active(true)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
