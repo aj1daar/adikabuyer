@@ -37,10 +37,19 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div className="flex flex-col overflow-hidden rounded-3xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000] transition select-none hover:-translate-y-1 hover:shadow-[8px_8px_0_0_#E8799F] active:scale-[0.98]">
-      <div className="flex aspect-[4/5] items-center justify-center bg-silver">
-        <span className="font-grotesk text-4xl font-semibold text-ink/20">
-          {initials}
-        </span>
+      <div className="flex aspect-[4/5] items-center justify-center overflow-hidden border-b-2 border-black bg-silver">
+        {product.imageUrl ? (
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            loading="lazy"
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <span className="font-grotesk text-4xl font-semibold text-ink/20">
+            {initials}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-5">
@@ -62,7 +71,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           <span className="font-grotesk text-base font-bold text-ink">
             {product.basePrice.toFixed(2)} ⃀
           </span>
-          <span className="rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink/60">
+          <span className="rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink">
             Вариантов: {product.variants.length}
           </span>
         </div>

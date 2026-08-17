@@ -39,6 +39,18 @@ describe('ProductCard', () => {
     expect(screen.getByText('Black, 500ml')).toBeInTheDocument()
   })
 
+  it('renders the product image when imageUrl is set and initials otherwise', () => {
+    const { rerender } = render(<ProductCard product={product} />)
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.getByText('CT')).toBeInTheDocument()
+
+    rerender(
+      <ProductCard product={{ ...product, imageUrl: 'http://localhost:9000/adikabuyer-media/photo.jpg' }} />,
+    )
+    const image = screen.getByRole('img', { name: 'Custom Tumbler' })
+    expect(image).toHaveAttribute('src', 'http://localhost:9000/adikabuyer-media/photo.jpg')
+  })
+
   it('adds the primary variant to the cart store when the button is clicked', () => {
     render(<ProductCard product={product} />)
 
