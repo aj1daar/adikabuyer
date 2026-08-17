@@ -15,6 +15,7 @@ type CartStore = {
   isOpen: boolean
   addItem: (item: CartItem) => void
   removeItem: (variantId: number) => void
+  changeQuantity: (variantId: number, delta: number) => void
   clearCart: () => void
   openCart: () => void
   closeCart: () => void
@@ -46,6 +47,14 @@ const useCartStore = create<CartStore>()((set, get) => ({
   removeItem: (variantId) =>
     set((state) => ({
       items: state.items.filter((cartItem) => cartItem.variantId !== variantId),
+    })),
+  changeQuantity: (variantId, delta) =>
+    set((state) => ({
+      items: state.items.map((cartItem) =>
+        cartItem.variantId === variantId
+          ? { ...cartItem, quantity: Math.max(1, cartItem.quantity + delta) }
+          : cartItem
+      ),
     })),
   clearCart: () => set({ items: [] }),
   openCart: () => set({ isOpen: true }),

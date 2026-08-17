@@ -51,8 +51,24 @@ describe('CartDrawer', () => {
     render(<CartDrawer />)
 
     const itemRow = screen.getByText('Custom Tumbler').closest('div')!.parentElement!
-    expect(within(itemRow).getByText('black · x2')).toBeInTheDocument()
+    expect(within(itemRow).getByText('black')).toBeInTheDocument()
+    expect(within(itemRow).getByText('2')).toBeInTheDocument()
     expect(within(itemRow).getByText('50.00 ⃀')).toBeInTheDocument()
+  })
+
+  it('changes quantity with plus and minus buttons and disables minus at one', () => {
+    useCartStore.setState({ items: [cartItem({ quantity: 2 })], isOpen: true })
+
+    render(<CartDrawer />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Увеличить количество' }))
+    expect(useCartStore.getState().items[0].quantity).toBe(3)
+
+    const minus = screen.getByRole('button', { name: 'Уменьшить количество' })
+    fireEvent.click(minus)
+    fireEvent.click(minus)
+    expect(useCartStore.getState().items[0].quantity).toBe(1)
+    expect(minus).toBeDisabled()
   })
 
   it('removes an item from the store when Remove is clicked', () => {

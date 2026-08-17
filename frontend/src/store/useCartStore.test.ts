@@ -39,6 +39,24 @@ describe('useCartStore', () => {
     expect(useCartStore.getState().items).toEqual([])
   })
 
+  it('increments and decrements quantity via changeQuantity', () => {
+    useCartStore.getState().addItem(item({ quantity: 2 }))
+
+    useCartStore.getState().changeQuantity(1, 1)
+    expect(useCartStore.getState().items[0].quantity).toBe(3)
+
+    useCartStore.getState().changeQuantity(1, -1)
+    expect(useCartStore.getState().items[0].quantity).toBe(2)
+  })
+
+  it('never drops quantity below one via changeQuantity', () => {
+    useCartStore.getState().addItem(item({ quantity: 1 }))
+
+    useCartStore.getState().changeQuantity(1, -1)
+
+    expect(useCartStore.getState().items[0].quantity).toBe(1)
+  })
+
   it('keeps distinct variants as separate line items', () => {
     useCartStore.getState().addItem(item({ variantId: 1 }))
     useCartStore.getState().addItem(item({ variantId: 2 }))

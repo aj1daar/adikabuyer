@@ -8,6 +8,7 @@ export default function CartDrawer() {
   const isOpen = useCartStore((state) => state.isOpen)
   const closeCart = useCartStore((state) => state.closeCart)
   const removeItem = useCartStore((state) => state.removeItem)
+  const changeQuantity = useCartStore((state) => state.changeQuantity)
   const clearCart = useCartStore((state) => state.clearCart)
   const totalPrice = useCartStore((state) => state.totalPrice())
 
@@ -107,8 +108,30 @@ export default function CartDrawer() {
                   <div>
                     <p className="font-grotesk text-sm font-bold text-ink">{item.productName}</p>
                     <p className="text-xs text-ink/50">
-                      {Object.values(item.attributes).join(', ')} · x{item.quantity}
+                      {Object.values(item.attributes).join(', ')}
                     </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => changeQuantity(item.variantId, -1)}
+                        disabled={item.quantity <= 1}
+                        aria-label="Уменьшить количество"
+                        className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                      >
+                        −
+                      </button>
+                      <span className="min-w-6 text-center font-grotesk text-sm font-bold text-ink">
+                        {item.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => changeQuantity(item.variantId, 1)}
+                        aria-label="Увеличить количество"
+                        className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-grotesk text-sm font-bold text-ink">
