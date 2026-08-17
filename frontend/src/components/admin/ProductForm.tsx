@@ -138,12 +138,12 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4">
-      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-ink/10 px-6 py-4">
-          <h2 className="font-grotesk text-lg font-semibold text-ink">
+      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border-4 border-black bg-white shadow-[8px_8px_0_0_#000]">
+        <div className="flex items-center justify-between border-b-2 border-black px-6 py-4">
+          <h2 className="font-grotesk text-lg font-bold text-ink">
             {product ? 'Редактировать товар' : 'Новый товар'}
           </h2>
-          <button type="button" onClick={onClose} className="text-sm text-ink/50 hover:text-ink">
+          <button type="button" onClick={onClose} className="font-grotesk text-sm font-bold text-ink/50 hover:text-ink">
             Закрыть
           </button>
         </div>
@@ -155,27 +155,27 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Название"
-              className="rounded-xl border border-ink/15 px-4 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+              className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
             />
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Описание"
-              className="rounded-xl border border-ink/15 px-4 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+              className="rounded-3xl border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
             />
             <input
               type="text"
               value={category}
               onChange={(event) => setCategory(event.target.value)}
               placeholder="Категория"
-              className="rounded-xl border border-ink/15 px-4 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+              className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
             />
             <input
               type="number"
               value={basePrice}
               onChange={(event) => setBasePrice(event.target.value)}
               placeholder="Базовая цена"
-              className="rounded-xl border border-ink/15 px-4 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+              className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
             />
             <label className="flex items-center gap-2 text-sm text-ink">
               <input
@@ -187,14 +187,14 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
             </label>
 
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-ink/50">
+              <label className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
                 Изображение
               </label>
               {imageUrl && (
                 <img
                   src={imageUrl}
                   alt="Предпросмотр изображения товара"
-                  className="h-24 w-24 rounded-xl border border-ink/10 object-cover"
+                  className="h-24 w-24 rounded-2xl border-2 border-black object-cover"
                 />
               )}
               <input
@@ -207,7 +207,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               />
               <label
                 htmlFor={imageUploadId}
-                className="flex w-fit cursor-pointer items-center gap-2 rounded-pill border border-dashed border-ink/20 bg-silver px-4 py-2 text-sm font-medium text-ink transition hover:border-bubblegum hover:bg-silver-dark aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                className="flex w-fit cursor-pointer items-center gap-2 rounded-pill border-2 border-dashed border-black bg-silver px-4 py-2 font-grotesk text-sm font-bold text-ink transition hover:bg-bubblegum hover:text-white aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                 aria-disabled={isUploadingImage}
               >
                 Выбрать фото
@@ -218,24 +218,24 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
           </div>
 
           <div className="mt-6 flex items-center justify-between">
-            <h3 className="font-grotesk text-base font-semibold text-ink">Варианты</h3>
+            <h3 className="font-grotesk text-base font-bold text-ink">Варианты</h3>
             <button
               type="button"
               onClick={addVariant}
-              className="rounded-pill bg-silver px-3 py-1 text-xs font-medium text-ink hover:bg-silver-dark"
+              className="rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink hover:bg-bubblegum hover:text-white"
             >
               Добавить вариант
             </button>
           </div>
 
           {variants.map((variant, variantIndex) => (
-            <div key={variantIndex} className="mt-4 rounded-2xl border border-ink/10 p-4">
+            <div key={variantIndex} className="mt-4 rounded-2xl border-2 border-black p-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-ink">Вариант {variantIndex + 1}</span>
+                <span className="font-grotesk text-sm font-bold text-ink">Вариант {variantIndex + 1}</span>
                 <button
                   type="button"
                   onClick={() => removeVariant(variantIndex)}
-                  className="text-xs text-ink/40 hover:text-bubblegum-dark"
+                  className="font-grotesk text-xs font-bold text-ink/40 hover:text-bubblegum-dark"
                 >
                   Удалить вариант
                 </button>
@@ -247,21 +247,21 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   value={variant.sku}
                   onChange={(event) => updateVariant(variantIndex, { sku: event.target.value })}
                   placeholder="SKU"
-                  className="rounded-xl border border-ink/15 px-3 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+                  className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
                 />
                 <input
                   type="number"
                   value={variant.priceOverride}
                   onChange={(event) => updateVariant(variantIndex, { priceOverride: event.target.value })}
                   placeholder="Цена (переопределение)"
-                  className="rounded-xl border border-ink/15 px-3 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+                  className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
                 />
                 <input
                   type="number"
                   value={variant.stockQuantity}
                   onChange={(event) => updateVariant(variantIndex, { stockQuantity: event.target.value })}
                   placeholder="Остаток"
-                  className="rounded-xl border border-ink/15 px-3 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+                  className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
                 />
                 <label className="flex items-center gap-2 text-sm text-ink">
                   <input
@@ -275,11 +275,11 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
 
               <div className="mt-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium uppercase tracking-wide text-ink/50">Атрибуты</span>
+                  <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">Атрибуты</span>
                   <button
                     type="button"
                     onClick={() => addAttribute(variantIndex)}
-                    className="text-xs text-bubblegum-dark hover:underline"
+                    className="font-grotesk text-xs font-bold text-bubblegum-dark hover:underline"
                   >
                     Добавить атрибут
                   </button>
@@ -294,7 +294,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                         updateAttribute(variantIndex, attributeIndex, { key: event.target.value })
                       }
                       placeholder="Ключ"
-                      className="w-1/2 rounded-xl border border-ink/15 px-3 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+                      className="w-1/2 rounded-pill border-2 border-black px-3 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
                     />
                     <input
                       type="text"
@@ -303,12 +303,12 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                         updateAttribute(variantIndex, attributeIndex, { value: event.target.value })
                       }
                       placeholder="Значение"
-                      className="w-1/2 rounded-xl border border-ink/15 px-3 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+                      className="w-1/2 rounded-pill border-2 border-black px-3 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
                     />
                     <button
                       type="button"
                       onClick={() => removeAttribute(variantIndex, attributeIndex)}
-                      className="text-xs text-ink/40 hover:text-bubblegum-dark"
+                      className="font-grotesk text-xs font-bold text-ink/40 hover:text-bubblegum-dark"
                     >
                       Удалить
                     </button>
@@ -319,12 +319,12 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
           ))}
         </div>
 
-        <div className="border-t border-ink/10 px-6 py-4">
+        <div className="border-t-2 border-black px-6 py-4">
           <button
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit || isSubmitting}
-            className="w-full rounded-pill bg-ink px-4 py-3 text-sm font-semibold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
+            className="w-full rounded-pill border-2 border-black bg-ink px-4 py-3 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isSubmitting ? 'Сохраняем...' : 'Сохранить'}
           </button>

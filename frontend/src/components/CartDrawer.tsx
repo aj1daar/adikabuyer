@@ -71,14 +71,14 @@ export default function CartDrawer() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.3, ease: 'easeOut' }}
-            className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-xl"
+            className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col border-l-4 border-black bg-white shadow-[-8px_0_0_0_#000]"
           >
-            <div className="flex items-center justify-between border-b border-ink/10 px-6 py-4">
-              <h2 className="font-grotesk text-lg font-semibold text-ink">Корзина</h2>
+            <div className="flex items-center justify-between border-b-2 border-black px-6 py-4">
+              <h2 className="font-grotesk text-lg font-bold text-ink">Корзина</h2>
               <button
                 type="button"
                 onClick={closeCart}
-                className="text-sm text-ink/50 transition hover:text-ink"
+                className="font-grotesk text-sm font-bold text-ink/50 transition hover:text-ink"
               >
                 Закрыть
               </button>
@@ -91,22 +91,22 @@ export default function CartDrawer() {
               {items.map((item) => (
                 <div
                   key={item.variantId}
-                  className="flex items-center justify-between gap-3 border-b border-ink/5 py-3"
+                  className="flex items-center justify-between gap-3 border-b border-ink/10 py-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-ink">{item.productName}</p>
+                    <p className="font-grotesk text-sm font-bold text-ink">{item.productName}</p>
                     <p className="text-xs text-ink/50">
                       {Object.values(item.attributes).join(', ')} · x{item.quantity}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-ink">
+                    <span className="font-grotesk text-sm font-bold text-ink">
                       {(item.unitPrice * item.quantity).toFixed(2)} ⃀
                     </span>
                     <button
                       type="button"
                       onClick={() => removeItem(item.variantId)}
-                      className="text-xs text-ink/40 transition hover:text-bubblegum-dark"
+                      className="font-grotesk text-xs font-bold text-ink/40 transition hover:text-bubblegum-dark"
                     >
                       Удалить
                     </button>
@@ -121,29 +121,29 @@ export default function CartDrawer() {
                     value={customerName}
                     onChange={(event) => setCustomerName(event.target.value)}
                     placeholder="Имя и фамилия"
-                    className="rounded-xl border border-ink/15 px-4 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+                    className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
                   />
                   <input
                     type="tel"
                     value={customerPhone}
                     onChange={(event) => setCustomerPhone(event.target.value)}
                     placeholder="Номер телефона"
-                    className="rounded-xl border border-ink/15 px-4 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+                    className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
                   />
                   <input
                     type="text"
                     value={region}
                     onChange={(event) => setRegion(event.target.value)}
                     placeholder="Город"
-                    className="rounded-xl border border-ink/15 px-4 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+                    className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
                   />
                   {submitError && <p className="text-xs text-red-500">{submitError}</p>}
                 </div>
               )}
             </div>
 
-            <div className="border-t border-ink/10 px-6 py-4">
-              <div className="mb-4 flex items-center justify-between text-base font-semibold text-ink">
+            <div className="border-t-2 border-black px-6 py-4">
+              <div className="mb-4 flex items-center justify-between font-grotesk text-base font-bold text-ink">
                 <span>Итого</span>
                 <span>{totalPrice.toFixed(2)} ⃀</span>
               </div>
@@ -151,7 +151,7 @@ export default function CartDrawer() {
                 type="button"
                 onClick={handleCheckout}
                 disabled={!canCheckout || isSubmitting}
-                className="w-full rounded-pill bg-ink px-4 py-3 text-sm font-semibold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
+                className="w-full rounded-pill border-2 border-black bg-ink px-4 py-3 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {isSubmitting ? 'Оформляем заказ...' : 'Оформить заказ'}
               </button>

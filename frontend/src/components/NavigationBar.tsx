@@ -12,10 +12,10 @@ export default function NavigationBar() {
   const totalCount = useCartStore((state) => state.totalCount())
 
   const desktopLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `text-sm font-medium transition ${isActive ? 'text-bubblegum-dark' : 'text-ink/60 hover:text-ink'}`
+    `font-grotesk text-sm font-bold transition ${isActive ? 'text-bubblegum-dark' : 'text-ink/60 hover:text-ink'}`
 
   const tabLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex flex-1 flex-col items-center gap-1 py-2 text-xs font-medium transition ${
+    `flex flex-1 flex-col items-center gap-1 py-2 font-grotesk text-xs font-bold transition ${
       isActive ? 'text-bubblegum-dark' : 'text-ink/50'
     }`
 
@@ -23,7 +23,7 @@ export default function NavigationBar() {
     <>
       <header
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
-        className="sticky top-0 z-40 border-b border-ink/10 bg-white/90 backdrop-blur"
+        className="sticky top-0 z-40 border-b-2 border-black bg-white/90 backdrop-blur"
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link to="/" aria-label="Adika Buyer">
@@ -41,7 +41,7 @@ export default function NavigationBar() {
           <button
             type="button"
             onClick={toggleCart}
-            className="rounded-pill bg-silver px-4 py-2 text-sm font-medium text-ink transition hover:bg-silver-dark"
+            className="rounded-pill border-2 border-black bg-silver px-4 py-2 font-grotesk text-sm font-bold text-ink transition hover:bg-bubblegum hover:text-white"
           >
             Корзина ({totalCount})
           </button>
@@ -50,7 +50,7 @@ export default function NavigationBar() {
 
       <nav
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-ink/10 bg-white/95 backdrop-blur sm:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t-2 border-black bg-white/95 backdrop-blur sm:hidden"
       >
         <NavLink to="/" end className={tabLinkClass}>
           Главная

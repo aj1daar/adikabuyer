@@ -76,7 +76,7 @@ export default function FilterDropdown({ label, options, value, onApply }: Filte
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full z-30 mt-2 flex max-h-80 w-56 flex-col overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-xl">
+        <div className="absolute left-0 top-full z-30 mt-2 flex max-h-80 w-56 flex-col overflow-hidden rounded-2xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000]">
           <div className="flex-1 overflow-y-auto p-2">
             {options.map((option) => {
               const isSelected = draft === option.value
@@ -86,7 +86,7 @@ export default function FilterDropdown({ label, options, value, onApply }: Filte
                   type="button"
                   onClick={() => setDraft(isSelected ? '' : option.value)}
                   aria-pressed={isSelected}
-                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${
+                  className={`w-full rounded-pill px-3 py-2 text-left font-grotesk text-sm font-bold transition ${
                     isSelected ? 'bg-ink text-white' : 'text-ink hover:bg-silver'
                   }`}
                 >
@@ -96,18 +96,18 @@ export default function FilterDropdown({ label, options, value, onApply }: Filte
             })}
           </div>
 
-          <div className="flex items-center justify-between gap-2 border-t border-ink/10 p-3">
+          <div className="flex items-center justify-between gap-2 border-t-2 border-black p-3">
             <button
               type="button"
               onClick={handleReset}
-              className="rounded-pill px-4 py-2 text-sm font-medium text-ink/50 transition hover:text-ink"
+              className="rounded-pill px-4 py-2 font-grotesk text-sm font-bold text-ink/50 transition hover:text-ink"
             >
               Сбросить
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-bubblegum-dark"
+              className="rounded-pill border-2 border-black bg-ink px-4 py-2 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark"
             >
               Сохранить
             </button>

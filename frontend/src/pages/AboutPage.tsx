@@ -28,18 +28,18 @@ export default function AboutPage() {
           className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-gradient-to-tr from-silver-dark via-white to-bubblegum-light blur-3xl opacity-50"
         />
 
-        <div className="relative mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
-          <span className="rounded-pill bg-bubblegum-light px-4 py-1 text-sm font-medium text-bubblegum-dark">
+        <div className="relative mx-auto flex max-w-3xl flex-col items-center gap-5 text-center">
+          <span className="rounded-pill border-2 border-black bg-bubblegum-light px-4 py-1 font-grotesk text-sm font-bold text-bubblegum-dark">
             О нас
           </span>
           <h1 className="font-grotesk text-display font-semibold text-ink">О нас</h1>
-          <p className="max-w-xl text-lg text-ink/70">
+          <p className="max-w-xl text-lg px-24 text-ink/70">
             Adika Buyer — это вещи под заказ, собранные под тебя, а не с полки.
           </p>
         </div>
       </section>
 
-      <section className="relative mx-auto max-w-3xl px-6 py-12 text-center">
+      <section className="relative mx-auto max-w-3xl px-6 text-center">
         <h2 className="font-grotesk text-2xl font-semibold text-ink">Наша история</h2>
         <p className="mt-4 text-lg leading-relaxed text-ink/70">
           Всё началось с маленького Instagram-аккаунта, куда друзья писали в директ, чтобы заказать
@@ -55,12 +55,12 @@ export default function AboutPage() {
           {steps.map((step, index) => (
             <div
               key={step.title}
-              className="flex flex-col items-center gap-3 rounded-3xl border border-ink/10 p-6 text-center"
+              className="flex flex-col items-center gap-3 rounded-3xl border-2 border-black p-6 text-center shadow-[6px_6px_0_0_#E8799F]"
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ink text-sm font-semibold text-white">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ink font-grotesk text-sm font-bold text-white">
                 {index + 1}
               </span>
-              <h3 className="font-grotesk text-lg font-semibold text-ink">{step.title}</h3>
+              <h3 className="font-grotesk text-lg font-bold text-ink">{step.title}</h3>
               <p className="text-sm text-ink/60">{step.description}</p>
             </div>
           ))}

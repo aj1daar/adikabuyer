@@ -8,9 +8,9 @@ export default function HeroSection() {
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: 'easeOut' }}
-        className="relative mx-auto flex max-w-6xl flex-col items-center gap-10 text-center"
+        className="relative mx-auto flex max-w-6xl flex-col items-center gap-5 text-center"
       >
-        <span className="rounded-pill bg-bubblegum-light px-4 py-1 text-sm font-medium text-bubblegum-dark">
+        <span className="rounded-pill border-2 border-black bg-bubblegum-light px-4 py-1 font-grotesk text-sm font-bold text-bubblegum-dark">
           Под заказ
         </span>
 
@@ -28,13 +28,13 @@ export default function HeroSection() {
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link
             to="/catalog"
-            className="rounded-pill bg-ink px-8 py-3 text-sm font-semibold text-white transition hover:bg-bubblegum-dark"
+            className="rounded-pill border-2 border-black bg-ink px-8 py-3 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F]"
           >
             Смотреть каталог
           </Link>
           <Link
             to="/about"
-            className="rounded-pill border border-ink/15 px-8 py-3 text-sm font-semibold text-ink transition hover:border-ink/40"
+            className="rounded-pill border-2 border-black bg-white px-8 py-3 font-grotesk text-sm font-bold text-ink transition hover:bg-bubblegum hover:text-white"
           >
             Подробнее
           </Link>
@@ -53,7 +53,7 @@ export default function HeroSection() {
           <img
             src="/adika-buyer-instagram.jpg"
             alt="Adika Buyer в Instagram"
-            className="relative h-full w-full rounded-full object-cover shadow-2xl ring-4 ring-white"
+            className="relative h-full w-full rounded-full border-4 border-black object-cover shadow-[8px_8px_0_0_#000]"
           />
         </a>
       </motion.div>

@@ -68,20 +68,20 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-white px-6 py-8">
       <div className="mx-auto max-w-6xl">
-        <div className="flex items-center justify-between border-b border-ink/10 pb-4">
-          <h1 className="font-grotesk text-xl font-semibold text-ink">Админ-панель</h1>
+        <div className="flex items-center justify-between border-b-2 border-black pb-4">
+          <h1 className="font-grotesk text-xl font-bold text-ink">Админ-панель</h1>
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={openCreateForm}
-              className="rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white hover:bg-bubblegum-dark"
+              className="rounded-pill border-2 border-black bg-ink px-4 py-2 font-grotesk text-sm font-bold text-white hover:bg-bubblegum-dark"
             >
               Добавить товар
             </button>
             <button
               type="button"
               onClick={handleLogout}
-              className="rounded-pill bg-silver px-4 py-2 text-sm font-medium text-ink hover:bg-silver-dark"
+              className="rounded-pill border-2 border-black bg-silver px-4 py-2 font-grotesk text-sm font-bold text-ink hover:bg-bubblegum hover:text-white"
             >
               Выйти
             </button>
@@ -96,7 +96,7 @@ export default function AdminDashboard() {
           <div className="mt-6 overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead>
-                <tr className="border-b border-ink/10 text-xs uppercase tracking-wide text-ink/50">
+                <tr className="border-b-2 border-black font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
                   <th className="py-2 pr-4">Товар</th>
                   <th className="py-2 pr-4">Категория</th>
                   <th className="py-2 pr-4">Цена</th>
@@ -129,7 +129,7 @@ export default function AdminDashboard() {
                             <button
                               type="button"
                               onClick={() => openEditForm(product)}
-                              className="mr-3 text-xs text-bubblegum-dark hover:underline"
+                              className="mr-3 font-grotesk text-xs font-bold text-bubblegum-dark hover:underline"
                             >
                               Изменить
                             </button>
@@ -155,7 +155,7 @@ export default function AdminDashboard() {
                             <button
                               type="button"
                               onClick={() => openEditForm(product)}
-                              className="mr-3 text-xs text-bubblegum-dark hover:underline"
+                              className="mr-3 font-grotesk text-xs font-bold text-bubblegum-dark hover:underline"
                             >
                               Изменить
                             </button>

@@ -36,7 +36,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   }
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-3xl border border-ink/10 bg-white shadow-sm transition select-none hover:-translate-y-1 hover:shadow-lg active:scale-[0.98]">
+    <div className="flex flex-col overflow-hidden rounded-3xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000] transition select-none hover:-translate-y-1 hover:shadow-[8px_8px_0_0_#E8799F] active:scale-[0.98]">
       <div className="flex aspect-[4/5] items-center justify-center bg-silver">
         <span className="font-grotesk text-4xl font-semibold text-ink/20">
           {initials}
@@ -45,12 +45,12 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       <div className="flex flex-1 flex-col gap-2 p-5">
         {product.category && (
-          <span className="text-xs font-medium uppercase tracking-wide text-bubblegum-dark">
+          <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-bubblegum-dark">
             {product.category}
           </span>
         )}
 
-        <h3 className="font-grotesk text-lg font-semibold text-ink">{product.name}</h3>
+        <h3 className="font-grotesk text-lg font-bold text-ink">{product.name}</h3>
 
         {product.description && (
           <p className="line-clamp-2 text-sm text-ink/60">{product.description}</p>
@@ -59,10 +59,10 @@ export default function ProductCard({ product }: ProductCardProps) {
         {attributeSummary && <p className="text-xs text-ink/50">{attributeSummary}</p>}
 
         <div className="mt-auto flex items-center justify-between pt-3">
-          <span className="text-base font-semibold text-ink">
+          <span className="font-grotesk text-base font-bold text-ink">
             {product.basePrice.toFixed(2)} ⃀
           </span>
-          <span className="rounded-pill bg-silver px-3 py-1 text-xs font-medium text-ink/60">
+          <span className="rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink/60">
             Вариантов: {product.variants.length}
           </span>
         </div>
@@ -71,7 +71,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           type="button"
           onClick={handleAddToCart}
           disabled={!primaryVariant}
-          className="mt-3 rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
+          className="mt-3 rounded-pill border-2 border-black bg-ink px-4 py-2 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
         >
           В корзину
         </button>
