@@ -18,7 +18,7 @@ const steps = [
 export default function AboutPage() {
   return (
     <MainLayout>
-      <section className="relative overflow-hidden py-20 sm:py-28">
+      <section className="relative -mx-6 overflow-hidden px-6 py-20 sm:py-28">
         <div
           aria-hidden="true"
           className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-br from-bubblegum via-bubblegum-light to-silver blur-3xl opacity-50"
