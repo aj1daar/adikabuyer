@@ -76,7 +76,7 @@ export default function FilterDropdown({ label, options, value, onApply }: Filte
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full z-30 mt-2 flex max-h-80 w-64 flex-col overflow-hidden rounded-2xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000]">
+        <div className="absolute left-0 top-full z-30 mt-2 flex max-h-80 w-64 max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000]">
           <div className="flex-1 overflow-y-auto p-2">
             {options.map((option) => {
               const isSelected = draft === option.value

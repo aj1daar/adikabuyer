@@ -33,7 +33,7 @@ export default function AboutPage() {
             Наша история
           </span>
           <h1 className="font-grotesk text-display font-semibold text-ink">О нас</h1>
-          <p className="max-w-xl text-lg px-24 text-ink/70">
+          <p className="max-w-xl px-0 text-lg text-ink/70 sm:px-24">
             <span className="font-grotesk font-bold text-bubblegum-dark">Adika Buyer</span> — это вещи{' '}
             <span className="font-grotesk font-bold text-bubblegum-dark">под заказ</span>, собранные{' '}
             <span className="font-grotesk font-bold text-bubblegum-dark">под тебя</span>, а не с полки.
