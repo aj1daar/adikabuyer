@@ -6,6 +6,7 @@
   html {
     font-family: "Space Grotesk", system-ui, sans-serif;
     scroll-behavior: smooth;
+    scrollbar-gutter: stable;
     -webkit-overflow-scrolling: touch;
   }
 
