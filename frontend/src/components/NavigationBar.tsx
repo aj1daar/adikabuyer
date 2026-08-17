@@ -41,7 +41,7 @@ export default function NavigationBar() {
           <button
             type="button"
             onClick={toggleCart}
-            className="rounded-pill border-2 border-black bg-silver px-4 py-2 font-grotesk text-sm font-bold text-ink transition hover:bg-bubblegum hover:text-white"
+            className="rounded-pill border-2 border-black bg-silver px-4 py-2 font-grotesk text-sm font-bold tabular-nums text-ink transition hover:bg-bubblegum hover:text-white"
           >
             Корзина ({totalCount})
           </button>
