@@ -17,6 +17,17 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  a,
+  input,
+  label {
+    touch-action: manipulation;
+  }
+
   button,
   a {
     @apply select-none transition active:scale-95;
