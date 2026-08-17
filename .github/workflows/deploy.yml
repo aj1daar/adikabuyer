@@ -27,4 +27,5 @@ jobs:
             git reset --hard origin/main
             printf '%s' "${{ secrets.ENV_PROD }}" > .env.prod
             docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build --remove-orphans
+            docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate caddy
             docker image prune -f
