@@ -89,11 +89,11 @@ export default function AdminDashboard() {
         </div>
 
         {actionError && <p className="mt-4 text-sm text-red-500">{actionError}</p>}
-        {loading && <p className="mt-4 text-ink/60">Загрузка товаров...</p>}
+        {loading && products.length === 0 && <p className="mt-4 text-ink/60">Загрузка товаров...</p>}
         {error && <p className="mt-4 text-red-500">{error}</p>}
 
-        {!loading && !error && (
-          <div className="mt-6 overflow-x-auto">
+        {!error && (products.length > 0 || !loading) && (
+          <div className={`mt-6 overflow-x-auto ${loading ? 'opacity-60' : ''} transition-opacity`}>
             <table className="w-full border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b-2 border-black font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">

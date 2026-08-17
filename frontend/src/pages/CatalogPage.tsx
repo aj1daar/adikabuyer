@@ -35,12 +35,16 @@ export default function CatalogPage() {
             onVolumeChange={setVolume}
           />
 
-          {loading && <p className="text-ink/60">Загрузка товаров...</p>}
+          {loading && products.length === 0 && <p className="text-ink/60">Загрузка товаров...</p>}
           {error && <p className="text-red-500">{error}</p>}
           {!loading && !error && products.length === 0 && (
             <p className="text-ink/60">Товары не найдены.</p>
           )}
-          {!loading && !error && products.length > 0 && <ProductGrid products={products} />}
+          {!error && products.length > 0 && (
+            <div className={loading ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
+              <ProductGrid products={products} />
+            </div>
+          )}
         </div>
       </MainLayout>
       <CartDrawer />
