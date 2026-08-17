@@ -51,6 +51,24 @@ describe('ProductCard', () => {
     expect(image).toHaveAttribute('src', 'http://localhost:9000/adikabuyer-media/photo.jpg')
   })
 
+  it('adds the selected quantity and resets the stepper afterwards', () => {
+    render(<ProductCard product={product} />)
+
+    const plus = screen.getByRole('button', { name: 'Увеличить количество' })
+    fireEvent.click(plus)
+    fireEvent.click(plus)
+    expect(screen.getByText('3')).toBeInTheDocument()
+
+    const minus = screen.getByRole('button', { name: 'Уменьшить количество' })
+    fireEvent.click(minus)
+
+    fireEvent.click(screen.getByRole('button', { name: /в корзину/i }))
+
+    expect(useCartStore.getState().items[0].quantity).toBe(2)
+    expect(screen.getByText('1')).toBeInTheDocument()
+    expect(minus).toBeDisabled()
+  })
+
   it('adds the primary variant to the cart store when the button is clicked', () => {
     render(<ProductCard product={product} />)
 

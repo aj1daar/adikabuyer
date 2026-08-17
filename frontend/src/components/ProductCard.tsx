@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { ProductDto } from '../types/catalog'
 import useCartStore from '../store/useCartStore'
 
@@ -7,6 +8,7 @@ type ProductCardProps = {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem)
+  const [quantity, setQuantity] = useState(1)
 
   const initials = product.name
     .split(' ')
@@ -31,8 +33,9 @@ export default function ProductCard({ product }: ProductCardProps) {
       sku: primaryVariant.sku,
       attributes: primaryVariant.attributes,
       unitPrice: primaryVariant.priceOverride ?? product.basePrice,
-      quantity: 1,
+      quantity,
     })
+    setQuantity(1)
   }
 
   return (
@@ -76,14 +79,37 @@ export default function ProductCard({ product }: ProductCardProps) {
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={handleAddToCart}
-          disabled={!primaryVariant}
-          className="mt-3 rounded-pill border-2 border-black bg-ink px-4 py-2 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          В корзину
-        </button>
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+            disabled={!primaryVariant || quantity <= 1}
+            aria-label="Уменьшить количество"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            −
+          </button>
+          <span className="min-w-6 text-center font-grotesk text-sm font-bold text-ink">
+            {quantity}
+          </span>
+          <button
+            type="button"
+            onClick={() => setQuantity((current) => current + 1)}
+            disabled={!primaryVariant}
+            aria-label="Увеличить количество"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            disabled={!primaryVariant}
+            className="flex-1 rounded-pill border-2 border-black bg-ink px-4 py-2 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            В корзину
+          </button>
+        </div>
       </div>
     </div>
   )
