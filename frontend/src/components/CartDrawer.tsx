@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import useCartStore from '../store/useCartStore'
 import submitCheckout from '../api/checkout'
@@ -16,6 +16,17 @@ export default function CartDrawer() {
   const [region, setRegion] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previous
+    }
+  }, [isOpen])
 
   const canCheckout =
     items.length > 0 && customerName.trim() !== '' && customerPhone.trim() !== '' && region.trim() !== ''
@@ -71,7 +82,7 @@ export default function CartDrawer() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.3, ease: 'easeOut' }}
-            className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col border-l-4 border-black bg-white shadow-[-8px_0_0_0_#000]"
+            className="fixed right-0 top-0 z-50 flex h-dvh w-full max-w-sm flex-col border-l-4 border-black bg-white pt-[env(safe-area-inset-top)] shadow-[-8px_0_0_0_#000]"
           >
             <div className="flex items-center justify-between border-b-2 border-black px-6 py-4">
               <h2 className="font-grotesk text-lg font-bold text-ink">Корзина</h2>
@@ -84,7 +95,7 @@ export default function CartDrawer() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-4">
               {items.length === 0 && (
                 <p className="text-sm text-ink/50">Корзина пуста.</p>
               )}
@@ -142,7 +153,7 @@ export default function CartDrawer() {
               )}
             </div>
 
-            <div className="border-t-2 border-black px-6 py-4">
+            <div className="border-t-2 border-black px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
               <div className="mb-4 flex items-center justify-between font-grotesk text-base font-bold text-ink">
                 <span>Итого</span>
                 <span>{totalPrice.toFixed(2)} ⃀</span>
