@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import ProductCard from './ProductCard'
 import useCartStore from '../store/useCartStore'
 import type { ProductDto } from '../types/catalog'
@@ -17,6 +18,7 @@ const product: ProductDto = {
       id: 1,
       productId: 1,
       sku: 'TUM-BLK-500',
+      imageUrl: null,
       attributes: { color: 'Black', size: '500ml' },
       priceOverride: null,
       stockQuantity: 10,
@@ -32,7 +34,7 @@ beforeEach(() => {
 
 describe('ProductCard', () => {
   it('renders product title, price, and dynamic variant attributes', () => {
-    render(<ProductCard product={product} />)
+    render(<ProductCard product={product} />, { wrapper: MemoryRouter })
 
     expect(screen.getByText('Custom Tumbler')).toBeInTheDocument()
     expect(screen.getByText('25.00 ⃀')).toBeInTheDocument()
@@ -40,7 +42,7 @@ describe('ProductCard', () => {
   })
 
   it('renders the product image when imageUrl is set and initials otherwise', () => {
-    const { rerender } = render(<ProductCard product={product} />)
+    const { rerender } = render(<ProductCard product={product} />, { wrapper: MemoryRouter })
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
     expect(screen.getByText('CT')).toBeInTheDocument()
 
@@ -52,7 +54,7 @@ describe('ProductCard', () => {
   })
 
   it('adds the selected quantity and resets the stepper afterwards', () => {
-    render(<ProductCard product={product} />)
+    render(<ProductCard product={product} />, { wrapper: MemoryRouter })
 
     const plus = screen.getByRole('button', { name: 'Увеличить количество' })
     fireEvent.click(plus)
@@ -70,7 +72,7 @@ describe('ProductCard', () => {
   })
 
   it('adds the primary variant to the cart store when the button is clicked', () => {
-    render(<ProductCard product={product} />)
+    render(<ProductCard product={product} />, { wrapper: MemoryRouter })
 
     fireEvent.click(screen.getByRole('button', { name: /в корзину/i }))
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { ProductDto } from '../types/catalog'
 import useCartStore from '../store/useCartStore'
 
@@ -40,7 +41,10 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div className="flex flex-col overflow-hidden rounded-3xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000] transition select-none hover:-translate-y-1 hover:shadow-[8px_8px_0_0_#E8799F] active:scale-[0.98]">
-      <div className="flex aspect-[4/5] items-center justify-center overflow-hidden border-b-2 border-black bg-silver">
+      <Link
+        to={`/catalog/${product.id}`}
+        className="flex aspect-[4/5] items-center justify-center overflow-hidden border-b-2 border-black bg-silver"
+      >
         {product.imageUrl ? (
           <img
             src={product.imageUrl}
@@ -53,7 +57,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             {initials}
           </span>
         )}
-      </div>
+      </Link>
 
       <div className="flex flex-1 flex-col gap-2 p-5">
         {product.category && (
@@ -62,7 +66,11 @@ export default function ProductCard({ product }: ProductCardProps) {
           </span>
         )}
 
-        <h3 className="font-grotesk text-lg font-bold text-ink">{product.name}</h3>
+        <Link to={`/catalog/${product.id}`}>
+          <h3 className="font-grotesk text-lg font-bold text-ink transition hover:text-bubblegum-dark">
+            {product.name}
+          </h3>
+        </Link>
 
         {product.description && (
           <p className="line-clamp-2 text-sm text-ink/60">{product.description}</p>

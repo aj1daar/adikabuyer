@@ -23,6 +23,7 @@ const existingProduct: ProductDto = {
       id: 10,
       productId: 1,
       sku: 'TUM-BLK-500',
+      imageUrl: null,
       attributes: { color: 'black' },
       priceOverride: 22.5,
       stockQuantity: 4,
