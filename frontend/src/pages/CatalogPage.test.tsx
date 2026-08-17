@@ -102,10 +102,12 @@ describe('CatalogPage', () => {
     })
   })
 
-  it('applies the selected color filter', () => {
+  it('applies the selected color filter once Save is clicked', () => {
     renderCatalogPage()
 
+    fireEvent.click(screen.getByRole('button', { name: /цвет/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Чёрный' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     expect(mockedUseCatalog).toHaveBeenLastCalledWith({
       search: '',
@@ -115,12 +117,14 @@ describe('CatalogPage', () => {
     })
   })
 
-  it('deselects the color filter when the same pill is clicked again', () => {
+  it('deselects the color filter when the same option is clicked again before saving', () => {
     renderCatalogPage()
 
-    const pill = screen.getByRole('button', { name: 'Чёрный' })
-    fireEvent.click(pill)
-    fireEvent.click(pill)
+    fireEvent.click(screen.getByRole('button', { name: /цвет/i }))
+    const option = screen.getByRole('button', { name: 'Чёрный' })
+    fireEvent.click(option)
+    fireEvent.click(option)
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     expect(mockedUseCatalog).toHaveBeenLastCalledWith({
       search: '',

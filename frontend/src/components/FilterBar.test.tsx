@@ -23,34 +23,31 @@ function renderFilterBar(overrides: Partial<Parameters<typeof FilterBar>[0]> = {
 }
 
 describe('FilterBar', () => {
-  it('renders pills for color, size, and volume', () => {
+  it('renders a dropdown trigger for color, size, and volume', () => {
     renderFilterBar()
 
-    expect(screen.getByRole('button', { name: 'Чёрный' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'M' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '500 мл' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /цвет/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /размер/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /объём/i })).toBeInTheDocument()
   })
 
-  it('calls onColorChange with the option value when a color pill is clicked', () => {
+  it('applies the selected color once Save is clicked inside the color dropdown', () => {
     const { onColorChange } = renderFilterBar()
 
+    fireEvent.click(screen.getByRole('button', { name: /цвет/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Розовый' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     expect(onColorChange).toHaveBeenCalledWith('pink')
   })
 
-  it('marks the selected pill as pressed', () => {
-    renderFilterBar({ size: 'M' })
+  it('applies the selected size once Save is clicked inside the size dropdown', () => {
+    const { onSizeChange } = renderFilterBar()
 
-    expect(screen.getByRole('button', { name: 'M' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'S' })).toHaveAttribute('aria-pressed', 'false')
-  })
+    fireEvent.click(screen.getByRole('button', { name: /размер/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'M' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
-  it('calls onSizeChange with an empty string when the selected pill is clicked again', () => {
-    const { onSizeChange } = renderFilterBar({ size: 'L' })
-
-    fireEvent.click(screen.getByRole('button', { name: 'L' }))
-
-    expect(onSizeChange).toHaveBeenCalledWith('')
+    expect(onSizeChange).toHaveBeenCalledWith('M')
   })
 })
