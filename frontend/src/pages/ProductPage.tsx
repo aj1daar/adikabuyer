@@ -5,6 +5,7 @@ import CartDrawer from '../components/CartDrawer'
 import catalogClient from '../api/catalogClient'
 import useCartStore from '../store/useCartStore'
 import resolveVariantImage from '../utils/variantImage'
+import usePageTitle from '../hooks/usePageTitle'
 import type { ProductDto, VariantDto } from '../types/catalog'
 
 function variantLabel(variant: VariantDto): string {
@@ -22,6 +23,31 @@ export default function ProductPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
   const [quantity, setQuantity] = useState(1)
+
+  usePageTitle(product?.name)
+
+  useEffect(() => {
+    if (!product) {
+      return
+    }
+    const script = document.createElement('script')
+    script.type = 'application/ld+json'
+    script.text = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.name,
+      description: product.description ?? undefined,
+      image: product.imageUrl ?? undefined,
+      offers: {
+        '@type': 'Offer',
+        price: product.basePrice,
+        priceCurrency: 'KGS',
+        availability: 'https://schema.org/InStock',
+      },
+    })
+    document.head.appendChild(script)
+    return () => script.remove()
+  }, [product])
 
   useEffect(() => {
     const controller = new AbortController()

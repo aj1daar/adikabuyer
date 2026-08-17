@@ -6,8 +6,10 @@ import ProductForm from '../../components/admin/ProductForm'
 import { createProduct, deleteProduct, updateProduct } from '../../api/adminCatalog'
 import type { ProductDto } from '../../types/catalog'
 import type { ProductPayload } from '../../types/admin'
+import usePageTitle from '../../hooks/usePageTitle'
 
 export default function AdminDashboard() {
+  usePageTitle('Админ-панель')
   const navigate = useNavigate()
   const clearToken = useAuthStore((state) => state.clearToken)
   const { products, loading, error, refetch } = useCatalog()

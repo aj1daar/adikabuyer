@@ -5,8 +5,10 @@ import CartDrawer from '../components/CartDrawer'
 import SearchBar from '../components/SearchBar'
 import FilterBar from '../components/FilterBar'
 import useCatalog from '../hooks/useCatalog'
+import usePageTitle from '../hooks/usePageTitle'
 
 export default function CatalogPage() {
+  usePageTitle('Каталог')
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [color, setColor] = useState('')

@@ -1,4 +1,5 @@
 import MainLayout from '../layouts/MainLayout'
+import usePageTitle from '../hooks/usePageTitle'
 
 const steps = [
   {
@@ -16,6 +17,7 @@ const steps = [
 ]
 
 export default function AboutPage() {
+  usePageTitle('О нас')
   return (
     <MainLayout>
       <section className="relative -mx-6 overflow-hidden px-6 py-20 sm:py-28">

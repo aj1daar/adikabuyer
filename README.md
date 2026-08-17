@@ -32,6 +32,8 @@ cp .env.prod.example .env.prod
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 
+SEO basics are in place: meta description and Open Graph tags in `index.html`, per-page titles via `usePageTitle`, JSON-LD Product markup on product pages, `robots.txt` (blocks `/admin`), and a static `sitemap.xml`. The sitemap and robots URLs use the placeholder domain `adikabuyer.com` — replace it on deploy. Being a client-rendered SPA, link previews for individual products still need prerendering/SSR.
+
 ## Known limitations / not done yet
 
 - No cloud deploy. The prod compose file is for local production-parity testing, not a real target.
