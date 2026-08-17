@@ -6,10 +6,12 @@ import AboutPage from './pages/AboutPage'
 import Login from './pages/admin/Login'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import ProtectedRoute from './router/ProtectedRoute'
+import ScrollToTop from './router/ScrollToTop'
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/catalog" element={<CatalogPage />} />
