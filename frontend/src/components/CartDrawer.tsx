@@ -121,21 +121,21 @@ export default function CartDrawer() {
                     value={customerName}
                     onChange={(event) => setCustomerName(event.target.value)}
                     placeholder="Имя и фамилия"
-                    className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
+                    className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                   />
                   <input
                     type="tel"
                     value={customerPhone}
                     onChange={(event) => setCustomerPhone(event.target.value)}
                     placeholder="Номер телефона"
-                    className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
+                    className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                   />
                   <input
                     type="text"
                     value={region}
                     onChange={(event) => setRegion(event.target.value)}
                     placeholder="Город"
-                    className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
+                    className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                   />
                   {submitError && <p className="text-xs text-red-500">{submitError}</p>}
                 </div>

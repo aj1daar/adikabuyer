@@ -155,27 +155,27 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Название"
-              className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
+              className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
             />
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Описание"
-              className="rounded-3xl border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
+              className="rounded-3xl border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
             />
             <input
               type="text"
               value={category}
               onChange={(event) => setCategory(event.target.value)}
               placeholder="Категория"
-              className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
+              className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
             />
             <input
               type="number"
               value={basePrice}
               onChange={(event) => setBasePrice(event.target.value)}
               placeholder="Базовая цена"
-              className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
+              className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
             />
             <label className="flex items-center gap-2 text-sm text-ink">
               <input
@@ -247,21 +247,21 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   value={variant.sku}
                   onChange={(event) => updateVariant(variantIndex, { sku: event.target.value })}
                   placeholder="SKU"
-                  className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
+                  className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                 />
                 <input
                   type="number"
                   value={variant.priceOverride}
                   onChange={(event) => updateVariant(variantIndex, { priceOverride: event.target.value })}
                   placeholder="Цена (переопределение)"
-                  className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
+                  className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                 />
                 <input
                   type="number"
                   value={variant.stockQuantity}
                   onChange={(event) => updateVariant(variantIndex, { stockQuantity: event.target.value })}
                   placeholder="Остаток"
-                  className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
+                  className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                 />
                 <label className="flex items-center gap-2 text-sm text-ink">
                   <input
@@ -294,7 +294,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                         updateAttribute(variantIndex, attributeIndex, { key: event.target.value })
                       }
                       placeholder="Ключ"
-                      className="w-1/2 rounded-pill border-2 border-black px-3 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
+                      className="w-1/2 rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                     />
                     <input
                       type="text"
@@ -303,7 +303,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                         updateAttribute(variantIndex, attributeIndex, { value: event.target.value })
                       }
                       placeholder="Значение"
-                      className="w-1/2 rounded-pill border-2 border-black px-3 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
+                      className="w-1/2 rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                     />
                     <button
                       type="button"
