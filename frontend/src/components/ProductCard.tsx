@@ -82,9 +82,11 @@ export default function ProductCard({ product }: ProductCardProps) {
           <span className="font-grotesk text-base font-bold text-ink">
             {product.basePrice.toFixed(2)} ⃀
           </span>
-          <span className="rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink">
-            Вариантов: {product.variants.length}
-          </span>
+          {product.variants.length > 1 && (
+            <span className="rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink">
+              Вариантов: {product.variants.length}
+            </span>
+          )}
         </div>
 
         <div className="mt-3 flex items-center gap-2">

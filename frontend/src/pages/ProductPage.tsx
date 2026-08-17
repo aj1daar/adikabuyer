@@ -119,7 +119,7 @@ export default function ProductPage() {
 
                 <p className="font-grotesk text-3xl font-bold text-ink">{price.toFixed(2)} ⃀</p>
 
-                {product.variants.length > 0 && (
+                {product.variants.length > 1 && (
                   <div className="flex flex-col gap-2">
                     <span className="font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
                       Вариант
