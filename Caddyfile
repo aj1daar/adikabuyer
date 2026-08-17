@@ -1,3 +1,21 @@
 {$DOMAIN:localhost} {
-    reverse_proxy api-gateway:8080
+    encode gzip
+
+    handle /api/* {
+        reverse_proxy api-gateway:8080
+    }
+
+    handle_path /media/* {
+        reverse_proxy minio:9000
+    }
+
+    handle {
+        root * /srv/www
+        try_files {path} /index.html
+        file_server
+    }
+}
+
+www.{$DOMAIN:localhost} {
+    redir https://{$DOMAIN:localhost}{uri} permanent
 }

@@ -114,7 +114,8 @@ services:
       - adikabuyer-network
 
   caddy:
-    image: caddy:2-alpine
+    build:
+      context: ./frontend
     container_name: adikabuyer-caddy
     restart: unless-stopped
     mem_limit: 128m

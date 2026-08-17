@@ -25,12 +25,16 @@ Open `http://localhost:5173`. Admin login: `admin` / `admin123`.
 
 Tests: `mvn test` in each backend service, `npm run test` in `frontend`.
 
-Production-parity stack, fully containerized with TLS:
+Production-parity stack, fully containerized with TLS (Caddy serves the built frontend, proxies `/api/*` to the gateway and `/media/*` to MinIO):
 
 ```bash
 cp .env.prod.example .env.prod
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
+
+## Deploy
+
+Pushing to `main` triggers `.github/workflows/deploy.yml`: it SSHes into the production server (`/opt/adikabuyer`), resets to `origin/main`, writes `.env.prod` from the `ENV_PROD` secret, and rebuilds the compose stack. Required GitHub secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `ENV_PROD`. The production domain is `adikabuyer.kg` (DNS at cctld.kg, A record to the server IP).
 
 SEO basics are in place: meta description and Open Graph tags in `index.html`, per-page titles via `usePageTitle`, JSON-LD Product markup on product pages, `robots.txt` (blocks `/admin`), and a static `sitemap.xml`. The sitemap and robots URLs use the placeholder domain `adikabuyer.com` — replace it on deploy. Being a client-rendered SPA, link previews for individual products still need prerendering/SSR.
 
