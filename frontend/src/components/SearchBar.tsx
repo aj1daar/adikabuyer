@@ -34,7 +34,7 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
           type="button"
           onClick={() => onChange('')}
           aria-label="Очистить поиск"
-          className="absolute right-4 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black bg-white text-black transition hover:bg-black hover:text-white"
+          className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black bg-white text-black transition hover:bg-black hover:text-white"
         >
           <svg
             aria-hidden="true"

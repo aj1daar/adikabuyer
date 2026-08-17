@@ -89,7 +89,7 @@ export default function CartDrawer() {
               <button
                 type="button"
                 onClick={closeCart}
-                className="font-grotesk text-sm font-bold text-ink/50 transition hover:text-ink"
+                className="-m-3 p-3 font-grotesk text-sm font-bold text-ink/50 transition hover:text-ink"
               >
                 Закрыть
               </button>
@@ -117,7 +117,7 @@ export default function CartDrawer() {
                     <button
                       type="button"
                       onClick={() => removeItem(item.variantId)}
-                      className="font-grotesk text-xs font-bold text-ink/40 transition hover:text-bubblegum-dark"
+                      className="-m-3 p-3 font-grotesk text-xs font-bold text-ink/40 transition hover:text-bubblegum-dark"
                     >
                       Удалить
                     </button>

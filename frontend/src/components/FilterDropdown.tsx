@@ -86,7 +86,7 @@ export default function FilterDropdown({ label, options, value, onApply }: Filte
                   type="button"
                   onClick={() => setDraft(isSelected ? '' : option.value)}
                   aria-pressed={isSelected}
-                  className={`w-full rounded-pill px-3 py-2 text-left font-grotesk text-sm font-bold transition ${
+                  className={`w-full rounded-pill px-3 py-2.5 text-left font-grotesk text-sm font-bold transition ${
                     isSelected ? 'bg-ink text-white' : 'text-ink hover:bg-silver'
                   }`}
                 >

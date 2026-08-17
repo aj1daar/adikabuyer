@@ -15,7 +15,7 @@ export default function NavigationBar() {
     `font-grotesk text-sm font-bold transition ${isActive ? 'text-bubblegum-dark' : 'text-ink/60 hover:text-ink'}`
 
   const tabLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex flex-1 flex-col items-center gap-1 py-2 font-grotesk text-xs font-bold transition ${
+    `flex flex-1 flex-col items-center gap-1 py-3 font-grotesk text-xs font-bold transition ${
       isActive ? 'text-bubblegum-dark' : 'text-ink/50'
     }`
 
