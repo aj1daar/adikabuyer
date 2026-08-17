@@ -146,8 +146,8 @@ export default function ProductPage() {
 
                 {selectedVariant && (
                   <p className="text-sm text-ink/50">
-                    {selectedVariant.status === 'PRE_ORDER' ? 'Под заказ' : 'В наличии'} · SKU:{' '}
-                    {selectedVariant.sku}
+                    {selectedVariant.status === 'PRE_ORDER' ? 'Под заказ' : 'В наличии'}
+                    {!selectedVariant.sku.startsWith('DEFAULT-') && ` · SKU: ${selectedVariant.sku}`}
                   </p>
                 )}
 
