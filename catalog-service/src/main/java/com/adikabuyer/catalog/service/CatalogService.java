@@ -158,6 +158,7 @@ public class CatalogService {
                 .priceOverride(request.priceOverride())
                 .stockQuantity(request.stockQuantity())
                 .active(request.active())
+                .imageUrl(request.imageUrl())
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -182,6 +183,7 @@ public class CatalogService {
         variant.setPriceOverride(request.priceOverride());
         variant.setStockQuantity(request.stockQuantity());
         variant.setActive(request.active());
+        variant.setImageUrl(request.imageUrl());
         variant.setUpdatedAt(now);
     }
 

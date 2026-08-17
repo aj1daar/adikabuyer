@@ -13,6 +13,7 @@ public record VariantDto(
         BigDecimal priceOverride,
         Integer stockQuantity,
         boolean active,
+        String imageUrl,
         VariantStatus status
 ) {
 }

@@ -58,6 +58,9 @@ public class Variant {
     @Column(nullable = false)
     private boolean active;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

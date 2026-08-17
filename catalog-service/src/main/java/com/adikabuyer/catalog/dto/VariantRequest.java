@@ -15,6 +15,7 @@ public record VariantRequest(
         Map<String, Object> attributes,
         @Positive BigDecimal priceOverride,
         @NotNull @PositiveOrZero Integer stockQuantity,
-        boolean active
+        boolean active,
+        @Size(max = 500) String imageUrl
 ) {
 }
