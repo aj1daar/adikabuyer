@@ -115,6 +115,7 @@ describe('ProductForm', () => {
           priceOverride: null,
           stockQuantity: 7,
           active: true,
+          imageUrl: null,
           attributes: { color: 'red' },
         },
       ],
@@ -129,6 +130,34 @@ describe('ProductForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /удалить вариант/i }))
 
     expect(screen.queryByDisplayValue('TUM-BLK-500')).not.toBeInTheDocument()
+  })
+
+  it('uploads a variant image and includes it in the submit payload', async () => {
+    mockedUploadMedia.mockResolvedValueOnce({ url: 'http://localhost:9000/adikabuyer-media/variant.png' })
+    const onSubmit = vi.fn()
+    render(<ProductForm product={existingProduct} onSubmit={onSubmit} onClose={vi.fn()} />)
+
+    const input = document.querySelector('input[id$="-variant-0"]') as HTMLInputElement
+    fireEvent.change(input, {
+      target: { files: [new File(['content'], 'variant.png', { type: 'image/png' })] },
+    })
+
+    await waitFor(() =>
+      expect(screen.getByAltText('Фото варианта 1')).toHaveAttribute(
+        'src',
+        'http://localhost:9000/adikabuyer-media/variant.png'
+      )
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variants: [
+          expect.objectContaining({ imageUrl: 'http://localhost:9000/adikabuyer-media/variant.png' }),
+        ],
+      })
+    )
   })
 
   it('uploads the selected image immediately and shows a preview on success', async () => {

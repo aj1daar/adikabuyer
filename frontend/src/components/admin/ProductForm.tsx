@@ -14,6 +14,7 @@ type VariantDraft = {
   priceOverride: string
   stockQuantity: string
   active: boolean
+  imageUrl: string | null
   attributes: AttributeRow[]
 }
 
@@ -38,6 +39,7 @@ function toVariantDraft(product?: ProductDto): VariantDraft[] {
     priceOverride: variant.priceOverride?.toString() ?? '',
     stockQuantity: variant.stockQuantity.toString(),
     active: variant.active,
+    imageUrl: variant.imageUrl,
     attributes: toAttributeRows(variant.attributes),
   }))
 }
@@ -53,6 +55,30 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [imageUploadError, setImageUploadError] = useState<string | null>(null)
   const [variants, setVariants] = useState<VariantDraft[]>(toVariantDraft(product))
+  const [uploadingVariantIndex, setUploadingVariantIndex] = useState<number | null>(null)
+  const [variantUploadError, setVariantUploadError] = useState<string | null>(null)
+
+  const handleVariantImageSelected = async (
+    variantIndex: number,
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0]
+    if (!file) {
+      return
+    }
+
+    setUploadingVariantIndex(variantIndex)
+    setVariantUploadError(null)
+
+    try {
+      const response = await uploadMedia(file)
+      updateVariant(variantIndex, { imageUrl: response.url })
+    } catch (err) {
+      setVariantUploadError(err instanceof Error ? err.message : 'Не удалось загрузить изображение.')
+    } finally {
+      setUploadingVariantIndex(null)
+    }
+  }
 
   const handleImageSelected = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -76,7 +102,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   const addVariant = () => {
     setVariants([
       ...variants,
-      { sku: '', priceOverride: '', stockQuantity: '0', active: true, attributes: [] },
+      { sku: '', priceOverride: '', stockQuantity: '0', active: true, imageUrl: null, attributes: [] },
     ])
   }
 
@@ -115,6 +141,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
       priceOverride: variant.priceOverride.trim() === '' ? null : Number(variant.priceOverride),
       stockQuantity: Number(variant.stockQuantity),
       active: variant.active,
+      imageUrl: variant.imageUrl,
       attributes: Object.fromEntries(
         variant.attributes.filter((attribute) => attribute.key.trim() !== '').map((attribute) => [attribute.key, attribute.value])
       ),
@@ -134,7 +161,8 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
     onSubmit(payload)
   }
 
-  const canSubmit = name.trim() !== '' && basePrice.trim() !== '' && !isUploadingImage
+  const canSubmit =
+    name.trim() !== '' && basePrice.trim() !== '' && !isUploadingImage && uploadingVariantIndex === null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4">
@@ -227,6 +255,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               Добавить вариант
             </button>
           </div>
+          {variantUploadError && <p className="mt-2 text-xs text-red-500">{variantUploadError}</p>}
 
           {variants.map((variant, variantIndex) => (
             <div key={variantIndex} className="mt-4 rounded-2xl border-2 border-black p-4">
@@ -271,6 +300,46 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   />
                   Активен
                 </label>
+              </div>
+
+              <div className="mt-3 flex items-center gap-3">
+                {variant.imageUrl ? (
+                  <img
+                    src={variant.imageUrl}
+                    alt={`Фото варианта ${variantIndex + 1}`}
+                    className="h-16 w-16 rounded-2xl border-2 border-black object-cover"
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-dashed border-black bg-silver font-grotesk text-xs font-bold text-ink/40">
+                    нет
+                  </div>
+                )}
+                <div className="flex flex-col gap-1">
+                  <input
+                    id={`${imageUploadId}-variant-${variantIndex}`}
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => handleVariantImageSelected(variantIndex, event)}
+                    disabled={uploadingVariantIndex !== null}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor={`${imageUploadId}-variant-${variantIndex}`}
+                    className="flex w-fit cursor-pointer items-center gap-2 rounded-pill border-2 border-dashed border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink transition hover:bg-bubblegum hover:text-white aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                    aria-disabled={uploadingVariantIndex !== null}
+                  >
+                    {uploadingVariantIndex === variantIndex ? 'Загружаем...' : 'Фото варианта'}
+                  </label>
+                  {variant.imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => updateVariant(variantIndex, { imageUrl: null })}
+                      className="w-fit font-grotesk text-xs font-bold text-ink/40 hover:text-bubblegum-dark"
+                    >
+                      Убрать фото
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="mt-3">

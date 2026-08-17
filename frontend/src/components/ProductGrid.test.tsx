@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import ProductGrid from './ProductGrid'
 import useCartStore from '../store/useCartStore'
 import type { ProductDto } from '../types/catalog'
@@ -24,7 +25,8 @@ describe('ProductGrid', () => {
     render(
       <ProductGrid
         products={[buildProduct(1, 'Tumbler'), buildProduct(2, 'Gym Shorts')]}
-      />
+      />,
+      { wrapper: MemoryRouter }
     )
 
     expect(screen.getByText('Tumbler')).toBeInTheDocument()
@@ -32,7 +34,7 @@ describe('ProductGrid', () => {
   })
 
   it('renders nothing when the product list is empty', () => {
-    const { container } = render(<ProductGrid products={[]} />)
+    const { container } = render(<ProductGrid products={[]} />, { wrapper: MemoryRouter })
 
     expect(container.querySelector('.grid')?.children).toHaveLength(0)
   })
