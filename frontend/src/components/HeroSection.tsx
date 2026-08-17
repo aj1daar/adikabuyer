@@ -10,7 +10,7 @@ export default function HeroSection() {
         transition={{ duration: 0.7, ease: 'easeOut' }}
         className="relative mx-auto flex max-w-6xl flex-col items-center gap-5 text-center"
       >
-        <span className="rounded-pill border-2 border-black bg-bubblegum-light px-4 py-1 font-grotesk text-sm font-bold text-bubblegum-dark">
+        <span className="rounded-pill border-2 border-black bg-gradient-to-r from-bubblegum to-bubblegum-light px-5 py-1.5 font-grotesk text-sm font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]">
           Под заказ
         </span>
 

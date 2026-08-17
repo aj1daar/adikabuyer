@@ -32,23 +32,23 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-white px-6">
       <form
         onSubmit={handleSubmit}
-        className="flex w-full max-w-sm flex-col gap-4 rounded-3xl border border-ink/10 p-8 shadow-sm"
+        className="flex w-full max-w-sm flex-col gap-4 rounded-3xl border-2 border-black bg-white p-8 shadow-[6px_6px_0_0_#E8799F]"
       >
-        <h1 className="font-grotesk text-xl font-semibold text-ink">Вход в админ-панель</h1>
+        <h1 className="font-grotesk text-xl font-bold text-ink">Вход в админ-панель</h1>
 
         <input
           type="text"
           value={username}
           onChange={(event) => setUsername(event.target.value)}
           placeholder="Логин"
-          className="rounded-xl border border-ink/15 px-4 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+          className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
         />
         <input
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           placeholder="Пароль"
-          className="rounded-xl border border-ink/15 px-4 py-2 text-sm text-ink outline-none focus:border-bubblegum"
+          className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-semibold text-ink outline-none focus:border-bubblegum-dark"
         />
 
         {error && <p className="text-xs text-red-500">{error}</p>}
@@ -56,7 +56,7 @@ export default function Login() {
         <button
           type="submit"
           disabled={isSubmitting || username.trim() === '' || password.trim() === ''}
-          className="rounded-pill bg-ink px-4 py-3 text-sm font-semibold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-pill border-2 border-black bg-ink px-4 py-3 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isSubmitting ? 'Входим...' : 'Войти'}
         </button>

@@ -29,12 +29,14 @@ export default function AboutPage() {
         />
 
         <div className="relative mx-auto flex max-w-3xl flex-col items-center gap-5 text-center">
-          <span className="rounded-pill border-2 border-black bg-bubblegum-light px-4 py-1 font-grotesk text-sm font-bold text-bubblegum-dark">
-            О нас
+          <span className="rounded-pill border-2 border-black bg-gradient-to-r from-bubblegum to-bubblegum-light px-5 py-1.5 font-grotesk text-sm font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]">
+            Наша история
           </span>
           <h1 className="font-grotesk text-display font-semibold text-ink">О нас</h1>
           <p className="max-w-xl text-lg px-24 text-ink/70">
-            Adika Buyer — это вещи под заказ, собранные под тебя, а не с полки.
+            <span className="font-grotesk font-bold text-bubblegum-dark">Adika Buyer</span> — это вещи{' '}
+            <span className="font-grotesk font-bold text-bubblegum-dark">под заказ</span>, собранные{' '}
+            <span className="font-grotesk font-bold text-bubblegum-dark">под тебя</span>, а не с полки.
           </p>
         </div>
       </section>
