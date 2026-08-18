@@ -5,7 +5,7 @@ import AdminDashboard from './AdminDashboard'
 import useCatalog from '../../hooks/useCatalog'
 import useAuthStore from '../../store/useAuthStore'
 import { createProduct, deleteProduct, updateProduct } from '../../api/adminCatalog'
-import getOrders from '../../api/adminOrders'
+import getOrders, { deleteOrder } from '../../api/adminOrders'
 import type { ProductDto } from '../../types/catalog'
 import type { OrderDto } from '../../types/order'
 
@@ -18,6 +18,7 @@ const mockedCreateProduct = vi.mocked(createProduct)
 const mockedUpdateProduct = vi.mocked(updateProduct)
 const mockedDeleteProduct = vi.mocked(deleteProduct)
 const mockedGetOrders = vi.mocked(getOrders)
+const mockedDeleteOrder = vi.mocked(deleteOrder)
 
 const order: OrderDto = {
   id: 'order-1',
@@ -39,6 +40,7 @@ const productWithVariant: ProductDto = {
   description: null,
   category: 'Drinkware',
   basePrice: 25,
+  displayPrice: 25,
   active: true,
   imageUrl: null,
   variants: [
@@ -49,6 +51,7 @@ const productWithVariant: ProductDto = {
       imageUrls: [],
       attributes: { color: 'black' },
       priceOverride: null,
+      displayPrice: 25,
       stockQuantity: 0,
       active: true,
       status: 'PRE_ORDER',
@@ -62,6 +65,7 @@ const productWithoutVariants: ProductDto = {
   description: null,
   category: null,
   basePrice: 10,
+  displayPrice: 10,
   active: true,
   imageUrl: null,
   variants: [],
@@ -81,6 +85,7 @@ beforeEach(() => {
   mockedUpdateProduct.mockReset()
   mockedDeleteProduct.mockReset()
   mockedGetOrders.mockReset()
+  mockedDeleteOrder.mockReset()
   useAuthStore.setState({ token: 'valid-token' })
   mockedUseCatalog.mockReturnValue({
     products: [productWithVariant, productWithoutVariants],
@@ -156,7 +161,7 @@ describe('AdminDashboard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /добавить товар/i }))
     fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'Brand New' } })
-    fireEvent.change(screen.getByPlaceholderText('Базовая цена'), { target: { value: '9' } })
+    fireEvent.change(screen.getByPlaceholderText('Закупочная цена (без наценки)'), { target: { value: '9' } })
     fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
 
     await waitFor(() => expect(mockedCreateProduct).toHaveBeenCalled())
@@ -198,5 +203,32 @@ describe('AdminDashboard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Заказы' }))
 
     await waitFor(() => expect(screen.getByText('Orders down')).toBeInTheDocument())
+  })
+
+  it('deletes an order and refetches on success', async () => {
+    mockedGetOrders.mockResolvedValue([order])
+    mockedDeleteOrder.mockResolvedValueOnce(undefined)
+    renderDashboard()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Заказы' }))
+    await waitFor(() => expect(screen.getByText('Jane Doe')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /удалить/i }))
+
+    await waitFor(() => expect(mockedDeleteOrder).toHaveBeenCalledWith('order-1'))
+    expect(mockedGetOrders).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows an error message when order deletion fails', async () => {
+    mockedGetOrders.mockResolvedValue([order])
+    mockedDeleteOrder.mockRejectedValueOnce(new Error('Cannot delete order'))
+    renderDashboard()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Заказы' }))
+    await waitFor(() => expect(screen.getByText('Jane Doe')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /удалить/i }))
+
+    await waitFor(() => expect(screen.getByText('Cannot delete order')).toBeInTheDocument())
   })
 })

@@ -6,7 +6,9 @@ import useAuthStore from '../../store/useAuthStore'
 import ProductForm from '../../components/admin/ProductForm'
 import OrdersTable from '../../components/admin/OrdersTable'
 import { createProduct, deleteProduct, updateProduct } from '../../api/adminCatalog'
+import { deleteOrder } from '../../api/adminOrders'
 import type { ProductDto } from '../../types/catalog'
+import type { OrderDto } from '../../types/order'
 import type { ProductPayload } from '../../types/admin'
 import formatPrice from '../../utils/formatPrice'
 import usePageTitle from '../../hooks/usePageTitle'
@@ -20,7 +22,12 @@ export default function AdminDashboard() {
   const { products, loading, error, refetch } = useCatalog()
 
   const [activeTab, setActiveTab] = useState<AdminTab>('products')
-  const { orders, loading: ordersLoading, error: ordersError } = useOrders(activeTab === 'orders')
+  const {
+    orders,
+    loading: ordersLoading,
+    error: ordersError,
+    refetch: refetchOrders,
+  } = useOrders(activeTab === 'orders')
 
   const [editingProduct, setEditingProduct] = useState<ProductDto | undefined>(undefined)
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -75,6 +82,16 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleDeleteOrder = async (order: OrderDto) => {
+    setActionError(null)
+    try {
+      await deleteOrder(order.id)
+      refetchOrders()
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Не удалось удалить заказ.')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white px-6 py-8">
       <div className="mx-auto max-w-6xl">
@@ -126,7 +143,7 @@ export default function AdminDashboard() {
         {actionError && <p className="mt-4 text-sm text-red-500">{actionError}</p>}
 
         {activeTab === 'orders' && (
-          <OrdersTable orders={orders} loading={ordersLoading} error={ordersError} />
+          <OrdersTable orders={orders} loading={ordersLoading} error={ordersError} onDelete={handleDeleteOrder} />
         )}
 
         {activeTab === 'products' && loading && products.length === 0 && (
@@ -141,7 +158,8 @@ export default function AdminDashboard() {
                 <tr className="border-b-2 border-black font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
                   <th className="py-2 pr-4">Товар</th>
                   <th className="py-2 pr-4">Категория</th>
-                  <th className="py-2 pr-4">Цена</th>
+                  <th className="py-2 pr-4">Закупка</th>
+                  <th className="py-2 pr-4">Цена клиенту</th>
                   <th className="py-2 pr-4">SKU</th>
                   <th className="py-2 pr-4">Атрибуты</th>
                   <th className="py-2 pr-4">Остаток</th>
@@ -156,7 +174,12 @@ export default function AdminDashboard() {
                         <tr key={variant.id} className="border-b border-ink/5">
                           <td className="py-2 pr-4 text-ink">{product.name}</td>
                           <td className="py-2 pr-4 text-ink/70">{product.category ?? '—'}</td>
-                          <td className="py-2 pr-4 text-ink/70">{formatPrice(product.basePrice)}</td>
+                          <td className="py-2 pr-4 text-ink/70">
+                            {formatPrice(variant.priceOverride ?? product.basePrice)}
+                          </td>
+                          <td className="py-2 pr-4 font-grotesk font-bold text-ink">
+                            {formatPrice(variant.displayPrice ?? product.displayPrice)}
+                          </td>
                           <td className="py-2 pr-4 text-ink/70">{variant.sku}</td>
                           <td className="py-2 pr-4 text-ink/70">
                             {Object.entries(variant.attributes)
@@ -190,6 +213,9 @@ export default function AdminDashboard() {
                           <td className="py-2 pr-4 text-ink">{product.name}</td>
                           <td className="py-2 pr-4 text-ink/70">{product.category ?? '—'}</td>
                           <td className="py-2 pr-4 text-ink/70">{formatPrice(product.basePrice)}</td>
+                          <td className="py-2 pr-4 font-grotesk font-bold text-ink">
+                            {formatPrice(product.displayPrice)}
+                          </td>
                           <td className="py-2 pr-4 text-ink/40" colSpan={4}>
                             Нет вариантов
                           </td>
