@@ -52,7 +52,7 @@ class SecurityConfigTest {
 
     @Test
     void publicGetEndpoint_isAccessibleWithoutAuthentication() throws Exception {
-        ProductDto product = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, true, null, List.of());
+        ProductDto product = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, null, true, null, List.of());
         when(catalogService.getAllProducts(null, null, null, null)).thenReturn(List.of(product));
 
         mockMvc.perform(get("/api/catalog/products"))

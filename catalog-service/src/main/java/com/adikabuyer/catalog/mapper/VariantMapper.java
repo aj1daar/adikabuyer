@@ -9,5 +9,9 @@ import org.mapstruct.Mapping;
 public interface VariantMapper {
 
     @Mapping(source = "product.id", target = "productId")
+    @Mapping(
+            target = "displayPrice",
+            expression = "java(com.adikabuyer.catalog.util.PriceCalculator.computeVariantDisplayPrice(variant.getPriceOverride(), variant.getProduct()))"
+    )
     VariantDto toDto(Variant variant);
 }
