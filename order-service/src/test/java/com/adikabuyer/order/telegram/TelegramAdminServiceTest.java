@@ -83,6 +83,22 @@ class TelegramAdminServiceTest {
     }
 
     @Test
+    void unregister_deletesAndReturnsTrue_whenAdminExists() {
+        when(telegramAdminRepository.existsById(42L)).thenReturn(true);
+
+        assertThat(telegramAdminService.unregister(42L)).isTrue();
+        verify(telegramAdminRepository).deleteById(42L);
+    }
+
+    @Test
+    void unregister_returnsFalse_whenAdminDoesNotExist() {
+        when(telegramAdminRepository.existsById(42L)).thenReturn(false);
+
+        assertThat(telegramAdminService.unregister(42L)).isFalse();
+        verify(telegramAdminRepository, never()).deleteById(org.mockito.ArgumentMatchers.anyLong());
+    }
+
+    @Test
     void getAdminChatIds_returnsAllRegisteredChatIds() {
         when(telegramAdminRepository.findAll()).thenReturn(List.of(
                 TelegramAdmin.builder().chatId(1L).build(),

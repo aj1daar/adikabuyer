@@ -18,6 +18,10 @@ public class TelegramUpdatePoller {
             "Вы подключены к уведомлениям о заказах Adika Buyer.";
     private static final String PROMPT_MESSAGE =
             "Отправьте пароль администратора, чтобы получать уведомления о новых заказах.";
+    private static final String DISCONNECTED_MESSAGE =
+            "Вы отключены от уведомлений о заказах Adika Buyer.";
+    private static final String NOT_REGISTERED_MESSAGE =
+            "Вы и так не подписаны на уведомления.";
 
     private final TelegramApiClient telegramApiClient;
     private final TelegramAdminService telegramAdminService;
@@ -70,10 +74,14 @@ public class TelegramUpdatePoller {
         }
         long chatId = message.chat().id();
         String username = message.from() != null ? message.from().username() : null;
+        String text = message.text() != null ? message.text().strip() : null;
 
-        if (telegramAdminService.tryRegister(chatId, username, message.text())) {
+        if (text != null && text.equalsIgnoreCase("/stop")) {
+            boolean removed = telegramAdminService.unregister(chatId);
+            telegramApiClient.sendMessage(chatId, removed ? DISCONNECTED_MESSAGE : NOT_REGISTERED_MESSAGE);
+        } else if (telegramAdminService.tryRegister(chatId, username, message.text())) {
             telegramApiClient.sendMessage(chatId, CONNECTED_MESSAGE);
-        } else if (message.text() != null && message.text().strip().equalsIgnoreCase("/start")) {
+        } else if (text != null && text.equalsIgnoreCase("/start")) {
             telegramApiClient.sendMessage(chatId, PROMPT_MESSAGE);
         }
     }

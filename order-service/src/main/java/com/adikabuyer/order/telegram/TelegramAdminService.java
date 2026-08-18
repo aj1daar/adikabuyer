@@ -36,6 +36,15 @@ public class TelegramAdminService {
         return true;
     }
 
+    @Transactional
+    public boolean unregister(long chatId) {
+        if (!telegramAdminRepository.existsById(chatId)) {
+            return false;
+        }
+        telegramAdminRepository.deleteById(chatId);
+        return true;
+    }
+
     public List<Long> getAdminChatIds() {
         return telegramAdminRepository.findAll().stream().map(TelegramAdmin::getChatId).toList();
     }
