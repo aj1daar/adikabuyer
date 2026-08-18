@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import useCartStore from '../store/useCartStore'
 import submitCheckout from '../api/checkout'
 import formatPrice from '../utils/formatPrice'
+import resolveDeliveryFee, { DELIVERY_CITIES } from '../utils/deliveryFee'
 
 export default function CartDrawer() {
   const items = useCartStore((state) => state.items)
@@ -33,6 +34,9 @@ export default function CartDrawer() {
 
   const canCheckout =
     items.length > 0 && customerName.trim() !== '' && customerPhone.trim() !== '' && region.trim() !== ''
+
+  const deliveryFee = region ? resolveDeliveryFee(region) : 0
+  const grandTotal = totalPrice + deliveryFee
 
   const handleCheckout = async () => {
     if (!canCheckout) {
@@ -194,22 +198,42 @@ export default function CartDrawer() {
                     placeholder="Номер телефона"
                     className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                   />
-                  <input
-                    type="text"
+                  <select
                     value={region}
                     onChange={(event) => setRegion(event.target.value)}
-                    placeholder="Город"
-                    className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
-                  />
+                    className="rounded-pill border-2 border-black bg-white px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+                  >
+                    <option value="" disabled>
+                      Город доставки
+                    </option>
+                    {DELIVERY_CITIES.map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
                   {submitError && <p className="text-xs text-red-500">{submitError}</p>}
                 </div>
               )}
             </div>
 
             <div className="border-t-2 border-black px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-              <div className="mb-4 flex items-center justify-between font-grotesk text-base font-bold text-ink">
-                <span>Итого</span>
+              {items.length > 0 && (
+                <p className="mb-3 text-xs text-ink/50">
+                  Доставка займёт от 7 до 14 дней — заказы едут напрямую из США и Кореи.
+                </p>
+              )}
+              <div className="mb-1 flex items-center justify-between font-grotesk text-sm text-ink/60">
+                <span>Товары</span>
                 <span>{formatPrice(totalPrice)}</span>
+              </div>
+              <div className="mb-4 flex items-center justify-between font-grotesk text-sm text-ink/60">
+                <span>Доставка{region ? '' : ' (выберите город)'}</span>
+                <span>{region ? formatPrice(deliveryFee) : '—'}</span>
+              </div>
+              <div className="mb-4 flex items-center justify-between border-t border-ink/10 pt-3 font-grotesk text-base font-bold text-ink">
+                <span>Итого</span>
+                <span>{formatPrice(grandTotal)}</span>
               </div>
               <button
                 type="button"
