@@ -11,14 +11,25 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.TreeMap;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class OrderService {
+
+    private static final char NBSP = ' ';
+    private static final String DEFAULT_SKU_PREFIX = "DEFAULT-";
 
     private final RabbitTemplate rabbitTemplate;
     private final DeliveryFeeProperties deliveryFeeProperties;
@@ -70,23 +81,55 @@ public class OrderService {
 
     private String buildWhatsappUrl(String orderId, CartDto cart, BigDecimal itemsTotal, BigDecimal deliveryFee, BigDecimal grandTotal) {
         StringBuilder message = new StringBuilder();
-        message.append("New Order ").append(orderId).append('\n');
-        message.append("Customer: ").append(cart.customerName()).append('\n');
-        message.append("Phone: ").append(cart.customerPhone()).append('\n');
-        message.append("Region: ").append(cart.region()).append("\n\n");
+        message.append("Новый заказ ").append(orderId).append('\n');
+        message.append("Имя: ").append(cart.customerName()).append('\n');
+        message.append("Телефон: ").append(cart.customerPhone()).append('\n');
+        message.append("Город: ").append(cart.region()).append("\n\n");
 
         for (CartItemDto item : cart.items()) {
-            BigDecimal lineTotal = item.unitPrice().multiply(BigDecimal.valueOf(item.quantity()));
-            message.append(item.quantity()).append("x ").append(item.productName())
-                    .append(" (").append(item.sku()).append(") - ")
-                    .append(lineTotal).append('\n');
+            message.append(buildItemLine(item)).append('\n');
         }
 
-        message.append('\n').append("Items total: ").append(itemsTotal).append('\n');
-        message.append("Delivery fee: ").append(deliveryFee).append('\n');
-        message.append("Grand total: ").append(grandTotal);
+        message.append('\n').append("Товары: ").append(formatPrice(itemsTotal)).append('\n');
+        message.append("Доставка: ").append(formatPrice(deliveryFee)).append('\n');
+        message.append("Итого: ").append(formatPrice(grandTotal));
 
         String encodedMessage = URLEncoder.encode(message.toString(), StandardCharsets.UTF_8);
         return "https://wa.me/" + storePhoneNumber + "?text=" + encodedMessage;
+    }
+
+    private String buildItemLine(CartItemDto item) {
+        BigDecimal lineTotal = item.unitPrice().multiply(BigDecimal.valueOf(item.quantity()));
+        StringBuilder line = new StringBuilder();
+        line.append(item.quantity()).append("x ").append(item.productName());
+
+        String details = describeVariant(item);
+        if (!details.isEmpty()) {
+            line.append(" (").append(details).append(')');
+        }
+
+        return line.append(" — ").append(formatPrice(lineTotal)).toString();
+    }
+
+    private String describeVariant(CartItemDto item) {
+        List<String> parts = new ArrayList<>();
+        if (item.attributes() != null) {
+            new TreeMap<>(item.attributes()).values().stream()
+                    .filter(Objects::nonNull)
+                    .map(String::valueOf)
+                    .forEach(parts::add);
+        }
+        if (item.sku() != null && !item.sku().startsWith(DEFAULT_SKU_PREFIX)) {
+            parts.add(item.sku());
+        }
+        return String.join(", ", parts);
+    }
+
+    private String formatPrice(BigDecimal value) {
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.ROOT);
+        symbols.setGroupingSeparator(NBSP);
+        DecimalFormat format = new DecimalFormat("#,##0", symbols);
+        format.setRoundingMode(RoundingMode.HALF_UP);
+        return format.format(value) + NBSP + "KGS";
     }
 }
