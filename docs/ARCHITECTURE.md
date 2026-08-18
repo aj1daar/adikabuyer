@@ -18,7 +18,15 @@ In dev, `postgres-db`, `rabbitmq`, and `api-gateway` run in Docker; `catalog-ser
 
 `POST /api/orders/checkout` persists the order and its line items to `order-service`'s own database (`customer_order`/`order_item`), publishes an `OrderPlacedEvent` to the `order.exchange`/`order.queue` topology, and notifies every registered Telegram admin chat with the order details — in that order, with the Telegram call wrapped so a delivery failure there never fails the checkout itself. `catalog-service` consumes the same RabbitMQ queue and decrements `variant.stock_quantity`; a variant flips from `IN_STOCK` to `PRE_ORDER` at zero stock. `GET /api/orders` (admin-only) lists persisted orders for the admin panel's Заказы tab.
 
-Telegram admin registration: `order-service` long-polls `getUpdates` on a daemon thread (no public webhook needed) — set `TELEGRAM_BOT_TOKEN`/`TELEGRAM_REGISTRATION_PASSWORD` and message the bot the password to have that chat's id stored in `telegram_admin` and start receiving order notifications. Without a token configured the poller and notifier no-op.
+Telegram admin registration: `order-service` long-polls `getUpdates` on a daemon thread (no public webhook needed) — set `TELEGRAM_BOT_TOKEN`/`TELEGRAM_REGISTRATION_PASSWORD` and message the bot the password to have that chat's id stored in `telegram_admin` and start receiving order notifications. Sending `/stop` removes the chat from `telegram_admin`. Without a token configured the poller and notifier no-op. Only run one instance of `order-service` against a given bot token at a time — two pollers race for the same `getUpdates` response, and whichever wins registers the admin in *its own* database, not necessarily the one you meant to update.
+
+`DELETE /api/orders/{id}` (admin-only) hard-deletes an order and its items (cascade).
+
+## Delivery pricing and commission
+
+Delivery fee is a flat binary rule in `order-service`, not a per-city lookup table: `Бишкек` (case-insensitive, whitespace-trimmed) costs `app.delivery.bishkek-fee`, every other region costs `app.delivery.default-fee`. This used to be a `Map<String, BigDecimal>` keyed by city name, but a Cyrillic YAML map key (`бишкек: 250`) silently broke Spring's relaxed YAML-to-Map binding — the value flattened onto `app.delivery.fees` itself instead of a nested entry, and the app failed to boot. Plain scalar properties don't have that failure mode. The frontend's city dropdown (`DELIVERY_CITIES` in `utils/deliveryFee.ts`) mirrors this exact rule for a live cart preview only; the checkout response is what's actually charged.
+
+`catalog-service` computes a `displayPrice` on every `ProductDto`/`VariantDto`: `round(cost * 1.15, nearest 100)`. Admins enter and edit the raw cost price (`basePrice`, `priceOverride`); every customer-facing surface (catalog, product page, cart, `ProductForm`'s live preview) reads `displayPrice`. The formula lives once in `catalog-service`'s `PriceCalculator`; the frontend admin-form preview duplicates it in `utils/priceCommission.ts` only as a same-page-load convenience before the real value comes back from the API on save.
 
 ## Auth
 
