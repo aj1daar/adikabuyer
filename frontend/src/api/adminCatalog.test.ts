@@ -28,6 +28,7 @@ const product: ProductDto = {
   description: null,
   category: null,
   basePrice: 25,
+  displayPrice: 25,
   active: true,
   imageUrl: null,
   variants: [],
