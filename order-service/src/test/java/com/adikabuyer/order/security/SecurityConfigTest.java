@@ -19,6 +19,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -66,6 +67,24 @@ class SecurityConfigTest {
         when(orderService.getAllOrders()).thenReturn(List.of());
 
         mockMvc.perform(get("/api/orders").header("Authorization", "Bearer " + token("ADMIN")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void deleteOrder_returns401_withoutToken() throws Exception {
+        mockMvc.perform(delete("/api/orders/order-1"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deleteOrder_returns403_withNonAdminRole() throws Exception {
+        mockMvc.perform(delete("/api/orders/order-1").header("Authorization", "Bearer " + token("STAFF")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deleteOrder_returns200_withAdminToken() throws Exception {
+        mockMvc.perform(delete("/api/orders/order-1").header("Authorization", "Bearer " + token("ADMIN")))
                 .andExpect(status().isOk());
     }
 }
