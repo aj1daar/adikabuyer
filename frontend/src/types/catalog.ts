@@ -6,6 +6,7 @@ export type VariantDto = {
   sku: string
   attributes: Record<string, unknown>
   priceOverride: number | null
+  displayPrice: number | null
   stockQuantity: number
   active: boolean
   imageUrls: string[]
@@ -18,6 +19,7 @@ export type ProductDto = {
   description: string | null
   category: string | null
   basePrice: number
+  displayPrice: number
   active: boolean
   imageUrl: string | null
   variants: VariantDto[]

@@ -41,7 +41,7 @@ export default function ProductPage() {
       image: product.imageUrl ?? undefined,
       offers: {
         '@type': 'Offer',
-        price: product.basePrice,
+        price: product.displayPrice,
         priceCurrency: 'KGS',
         availability: 'https://schema.org/InStock',
       },
@@ -77,7 +77,7 @@ export default function ProductPage() {
   const gallery = product ? resolveVariantGallery(product, selectedVariant) : []
   const [photoIndex, setPhotoIndex] = useState(0)
   const imageUrl = gallery[Math.min(photoIndex, gallery.length - 1)] ?? null
-  const price = selectedVariant?.priceOverride ?? product?.basePrice ?? 0
+  const price = selectedVariant?.displayPrice ?? product?.displayPrice ?? 0
 
   const selectVariant = (variantId: number) => {
     setSelectedVariantId(variantId)
@@ -101,7 +101,7 @@ export default function ProductPage() {
       productName: product.name,
       sku: selectedVariant.sku,
       attributes: selectedVariant.attributes,
-      unitPrice: selectedVariant.priceOverride ?? product.basePrice,
+      unitPrice: selectedVariant.displayPrice ?? product.displayPrice,
       quantity,
     })
     setQuantity(1)

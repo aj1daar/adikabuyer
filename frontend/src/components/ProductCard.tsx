@@ -38,7 +38,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       productName: product.name,
       sku: primaryVariant.sku,
       attributes: primaryVariant.attributes,
-      unitPrice: primaryVariant.priceOverride ?? product.basePrice,
+      unitPrice: primaryVariant.displayPrice ?? product.displayPrice,
       quantity,
     })
     setQuantity(1)
@@ -85,7 +85,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         <div className="mt-auto flex items-center justify-between pt-3">
           <span className="font-grotesk text-base font-bold text-ink">
-            {formatPrice(product.basePrice)}
+            {formatPrice(product.displayPrice)}
           </span>
           {product.variants.length > 1 && (
             <span className="rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink">

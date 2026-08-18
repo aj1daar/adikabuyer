@@ -2,6 +2,8 @@ import { useId, useState, type ChangeEvent } from 'react'
 import type { ProductDto } from '../../types/catalog'
 import type { ProductPayload, VariantPayload } from '../../types/admin'
 import uploadMedia from '../../api/media'
+import formatPrice from '../../utils/formatPrice'
+import previewDisplayPrice from '../../utils/priceCommission'
 
 type AttributeRow = {
   key: string
@@ -200,13 +202,20 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               placeholder="Категория"
               className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
             />
-            <input
-              type="number"
-              value={basePrice}
-              onChange={(event) => setBasePrice(event.target.value)}
-              placeholder="Базовая цена"
-              className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
-            />
+            <div className="flex flex-col gap-1">
+              <input
+                type="number"
+                value={basePrice}
+                onChange={(event) => setBasePrice(event.target.value)}
+                placeholder="Закупочная цена (без наценки)"
+                className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+              />
+              {basePrice.trim() !== '' && !Number.isNaN(Number(basePrice)) && (
+                <p className="px-4 text-xs text-ink/50">
+                  Клиенту: {formatPrice(previewDisplayPrice(Number(basePrice)))} (+15%, округление до сотни)
+                </p>
+              )}
+            </div>
             <label className="flex items-center gap-2 text-sm text-ink">
               <input
                 type="checkbox"
@@ -280,13 +289,20 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   placeholder="SKU"
                   className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                 />
-                <input
-                  type="number"
-                  value={variant.priceOverride}
-                  onChange={(event) => updateVariant(variantIndex, { priceOverride: event.target.value })}
-                  placeholder="Цена (переопределение)"
-                  className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
-                />
+                <div className="flex flex-col gap-1">
+                  <input
+                    type="number"
+                    value={variant.priceOverride}
+                    onChange={(event) => updateVariant(variantIndex, { priceOverride: event.target.value })}
+                    placeholder="Закупка (переопределение)"
+                    className="w-full rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+                  />
+                  {variant.priceOverride.trim() !== '' && !Number.isNaN(Number(variant.priceOverride)) && (
+                    <p className="px-3 text-xs text-ink/50">
+                      Клиенту: {formatPrice(previewDisplayPrice(Number(variant.priceOverride)))}
+                    </p>
+                  )}
+                </div>
                 <input
                   type="number"
                   value={variant.stockQuantity}

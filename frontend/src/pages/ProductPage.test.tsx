@@ -20,6 +20,7 @@ const product: ProductDto = {
   description: 'Insulated steel tumbler',
   category: 'Drinkware',
   basePrice: 25,
+  displayPrice: 25,
   active: true,
   imageUrl: 'product.jpg',
   variants: [
@@ -29,6 +30,7 @@ const product: ProductDto = {
       sku: 'TUM-BLK',
       attributes: { color: 'Black' },
       priceOverride: null,
+      displayPrice: 25,
       stockQuantity: 10,
       active: true,
       imageUrls: ['black.jpg', 'black-side.jpg'],
@@ -40,6 +42,7 @@ const product: ProductDto = {
       sku: 'TUM-WHT',
       attributes: { color: 'White' },
       priceOverride: 30,
+      displayPrice: 30,
       stockQuantity: 5,
       active: true,
       imageUrls: [],

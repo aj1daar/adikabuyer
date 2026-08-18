@@ -11,6 +11,7 @@ const product: ProductDto = {
   description: 'Insulated steel tumbler',
   category: 'Drinkware',
   basePrice: 25,
+  displayPrice: 25,
   active: true,
   imageUrl: null,
   variants: [
@@ -21,6 +22,7 @@ const product: ProductDto = {
       imageUrls: [],
       attributes: { color: 'Black', size: '500ml' },
       priceOverride: null,
+      displayPrice: 25,
       stockQuantity: 10,
       active: true,
       status: 'IN_STOCK',
