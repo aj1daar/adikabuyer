@@ -24,11 +24,6 @@ const cartItem = (overrides: Partial<CartItem> = {}): CartItem => ({
 beforeEach(() => {
   mockedSubmitCheckout.mockReset()
   useCartStore.setState({ items: [], isOpen: true })
-  Object.defineProperty(window, 'location', {
-    value: { href: '' },
-    writable: true,
-    configurable: true,
-  })
 })
 
 const fillCheckoutForm = () => {
@@ -114,14 +109,13 @@ describe('CartDrawer', () => {
     expect(screen.getByRole('button', { name: /оформить заказ/i })).toBeEnabled()
   })
 
-  it('on success calls the api, clears the cart, closes the drawer, and redirects to whatsapp', async () => {
+  it('on success clears the cart and shows the in-drawer success screen', async () => {
     useCartStore.setState({ items: [cartItem()], isOpen: true })
     mockedSubmitCheckout.mockResolvedValueOnce({
       orderId: 'order-1',
       itemsTotal: 50,
       deliveryFee: 150,
       grandTotal: 200,
-      whatsappUrl: 'https://wa.me/996707660433?text=hello',
     })
 
     render(<CartDrawer />)
@@ -130,11 +124,30 @@ describe('CartDrawer', () => {
 
     await waitFor(() => expect(useCartStore.getState().items).toEqual([]))
 
-    expect(useCartStore.getState().isOpen).toBe(false)
-    expect(window.location.href).toBe('https://wa.me/996707660433?text=hello')
+    expect(screen.getByText('Заказ принят!')).toBeInTheDocument()
+    expect(useCartStore.getState().isOpen).toBe(true)
   })
 
-  it('on failure shows an error message and does not clear the cart or redirect', async () => {
+  it('resets to the empty cart view when Готово is clicked after a successful order', async () => {
+    useCartStore.setState({ items: [cartItem()], isOpen: true })
+    mockedSubmitCheckout.mockResolvedValueOnce({
+      orderId: 'order-1',
+      itemsTotal: 50,
+      deliveryFee: 150,
+      grandTotal: 200,
+    })
+
+    render(<CartDrawer />)
+    fillCheckoutForm()
+    fireEvent.click(screen.getByRole('button', { name: /оформить заказ/i }))
+    await waitFor(() => expect(screen.getByText('Заказ принят!')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Готово' }))
+
+    expect(useCartStore.getState().isOpen).toBe(false)
+  })
+
+  it('on failure shows an error message and does not clear the cart', async () => {
     useCartStore.setState({ items: [cartItem()], isOpen: true })
     mockedSubmitCheckout.mockRejectedValueOnce(new Error('Server exploded'))
 
@@ -146,6 +159,5 @@ describe('CartDrawer', () => {
 
     expect(useCartStore.getState().items).toHaveLength(1)
     expect(useCartStore.getState().isOpen).toBe(true)
-    expect(window.location.href).toBe('')
   })
 })
