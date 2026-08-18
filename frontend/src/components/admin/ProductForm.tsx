@@ -14,7 +14,7 @@ type VariantDraft = {
   priceOverride: string
   stockQuantity: string
   active: boolean
-  imageUrl: string | null
+  imageUrls: string[]
   attributes: AttributeRow[]
 }
 
@@ -39,7 +39,7 @@ function toVariantDraft(product?: ProductDto): VariantDraft[] {
     priceOverride: variant.priceOverride?.toString() ?? '',
     stockQuantity: variant.stockQuantity.toString(),
     active: variant.active,
-    imageUrl: variant.imageUrl,
+    imageUrls: [...variant.imageUrls],
     attributes: toAttributeRows(variant.attributes),
   }))
 }
@@ -72,7 +72,9 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
 
     try {
       const response = await uploadMedia(file)
-      updateVariant(variantIndex, { imageUrl: response.url })
+      updateVariant(variantIndex, {
+        imageUrls: [...variants[variantIndex].imageUrls, response.url],
+      })
     } catch (err) {
       setVariantUploadError(err instanceof Error ? err.message : 'Не удалось загрузить изображение.')
     } finally {
@@ -102,7 +104,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   const addVariant = () => {
     setVariants([
       ...variants,
-      { sku: '', priceOverride: '', stockQuantity: '0', active: true, imageUrl: null, attributes: [] },
+      { sku: '', priceOverride: '', stockQuantity: '0', active: true, imageUrls: [], attributes: [] },
     ])
   }
 
@@ -141,7 +143,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
       priceOverride: variant.priceOverride.trim() === '' ? null : Number(variant.priceOverride),
       stockQuantity: Number(variant.stockQuantity),
       active: variant.active,
-      imageUrl: variant.imageUrl,
+      imageUrls: variant.imageUrls,
       attributes: Object.fromEntries(
         variant.attributes.filter((attribute) => attribute.key.trim() !== '').map((attribute) => [attribute.key, attribute.value])
       ),
@@ -302,19 +304,32 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                 </label>
               </div>
 
-              <div className="mt-3 flex items-center gap-3">
-                {variant.imageUrl ? (
-                  <img
-                    src={variant.imageUrl}
-                    alt={`Фото варианта ${variantIndex + 1}`}
-                    className="h-16 w-16 rounded-2xl border-2 border-black object-cover"
-                  />
-                ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-dashed border-black bg-silver font-grotesk text-xs font-bold text-ink/40">
-                    нет
-                  </div>
-                )}
-                <div className="flex flex-col gap-1">
+              <div className="mt-3">
+                <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
+                  Фото варианта ({variant.imageUrls.length})
+                </span>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {variant.imageUrls.map((url, imageIndex) => (
+                    <div key={url + imageIndex} className="relative">
+                      <img
+                        src={url}
+                        alt={`Фото ${imageIndex + 1} варианта ${variantIndex + 1}`}
+                        className="h-16 w-16 rounded-2xl border-2 border-black object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateVariant(variantIndex, {
+                            imageUrls: variant.imageUrls.filter((_, i) => i !== imageIndex),
+                          })
+                        }
+                        aria-label={`Удалить фото ${imageIndex + 1}`}
+                        className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-xs font-bold text-ink transition hover:bg-black hover:text-white"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
                   <input
                     id={`${imageUploadId}-variant-${variantIndex}`}
                     type="file"
@@ -325,20 +340,11 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   />
                   <label
                     htmlFor={`${imageUploadId}-variant-${variantIndex}`}
-                    className="flex w-fit cursor-pointer items-center gap-2 rounded-pill border-2 border-dashed border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink transition hover:bg-bubblegum hover:text-white aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                    className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-black bg-silver font-grotesk text-xs font-bold text-ink transition hover:bg-bubblegum hover:text-white aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                     aria-disabled={uploadingVariantIndex !== null}
                   >
-                    {uploadingVariantIndex === variantIndex ? 'Загружаем...' : 'Фото варианта'}
+                    {uploadingVariantIndex === variantIndex ? '...' : '+'}
                   </label>
-                  {variant.imageUrl && (
-                    <button
-                      type="button"
-                      onClick={() => updateVariant(variantIndex, { imageUrl: null })}
-                      className="w-fit font-grotesk text-xs font-bold text-ink/40 hover:text-bubblegum-dark"
-                    >
-                      Убрать фото
-                    </button>
-                  )}
                 </div>
               </div>
 

@@ -5,7 +5,7 @@ export type VariantPayload = {
   priceOverride: number | null
   stockQuantity: number
   active: boolean
-  imageUrl: string | null
+  imageUrls: string[]
 }
 
 export type ProductPayload = {

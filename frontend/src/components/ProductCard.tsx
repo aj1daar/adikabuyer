@@ -19,6 +19,10 @@ export default function ProductCard({ product }: ProductCardProps) {
     .toUpperCase()
 
   const primaryVariant = product.variants[0]
+  const cardImage =
+    product.imageUrl ??
+    product.variants.find((variant) => variant.imageUrls.length > 0)?.imageUrls[0] ??
+    null
   const attributeSummary = primaryVariant
     ? Object.values(primaryVariant.attributes).join(', ')
     : null
@@ -45,9 +49,9 @@ export default function ProductCard({ product }: ProductCardProps) {
         to={`/catalog/${product.id}`}
         className="flex aspect-[4/5] items-center justify-center overflow-hidden border-b-2 border-black bg-silver"
       >
-        {product.imageUrl ? (
+        {cardImage ? (
           <img
-            src={product.imageUrl}
+            src={cardImage}
             alt={product.name}
             loading="lazy"
             className="h-full w-full object-cover"

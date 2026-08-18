@@ -4,7 +4,7 @@ import MainLayout from '../layouts/MainLayout'
 import CartDrawer from '../components/CartDrawer'
 import catalogClient from '../api/catalogClient'
 import useCartStore from '../store/useCartStore'
-import resolveVariantImage from '../utils/variantImage'
+import { resolveVariantGallery } from '../utils/variantImage'
 import usePageTitle from '../hooks/usePageTitle'
 import type { ProductDto, VariantDto } from '../types/catalog'
 
@@ -73,8 +73,15 @@ export default function ProductPage() {
   }, [id])
 
   const selectedVariant = product?.variants.find((variant) => variant.id === selectedVariantId)
-  const imageUrl = product ? resolveVariantImage(product, selectedVariant) : null
+  const gallery = product ? resolveVariantGallery(product, selectedVariant) : []
+  const [photoIndex, setPhotoIndex] = useState(0)
+  const imageUrl = gallery[Math.min(photoIndex, gallery.length - 1)] ?? null
   const price = selectedVariant?.priceOverride ?? product?.basePrice ?? 0
+
+  const selectVariant = (variantId: number) => {
+    setSelectedVariantId(variantId)
+    setPhotoIndex(0)
+  }
 
   const initials = (product?.name ?? '')
     .split(' ')
@@ -128,6 +135,27 @@ export default function ProductPage() {
                     <span className="font-grotesk text-6xl font-semibold text-ink/20">{initials}</span>
                   )}
                 </div>
+
+                {gallery.length > 1 && (
+                  <div className="relative mt-4 flex gap-3 overflow-x-auto pb-2">
+                    {gallery.map((url, index) => (
+                      <button
+                        key={url + index}
+                        type="button"
+                        onClick={() => setPhotoIndex(index)}
+                        aria-label={`Фото ${index + 1}`}
+                        aria-pressed={index === photoIndex}
+                        className={`h-20 w-16 shrink-0 overflow-hidden rounded-2xl border-2 transition ${
+                          index === photoIndex
+                            ? 'border-black shadow-[3px_3px_0_0_#E8799F]'
+                            : 'border-black/30 opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        <img src={url} alt="" className="h-full w-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-5">
@@ -155,7 +183,7 @@ export default function ProductPage() {
                         <button
                           key={variant.id}
                           type="button"
-                          onClick={() => setSelectedVariantId(variant.id)}
+                          onClick={() => selectVariant(variant.id)}
                           aria-pressed={variant.id === selectedVariantId}
                           className={`rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
                             variant.id === selectedVariantId

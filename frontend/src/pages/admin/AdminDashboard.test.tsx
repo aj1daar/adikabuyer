@@ -30,7 +30,7 @@ const productWithVariant: ProductDto = {
       id: 10,
       productId: 1,
       sku: 'TUM-BLK-500',
-      imageUrl: null,
+      imageUrls: [],
       attributes: { color: 'black' },
       priceOverride: null,
       stockQuantity: 0,

@@ -29,7 +29,7 @@ const product: ProductDto = {
       priceOverride: null,
       stockQuantity: 10,
       active: true,
-      imageUrl: 'black.jpg',
+      imageUrls: ['black.jpg', 'black-side.jpg'],
       status: 'IN_STOCK',
     },
     {
@@ -40,7 +40,7 @@ const product: ProductDto = {
       priceOverride: 30,
       stockQuantity: 5,
       active: true,
-      imageUrl: null,
+      imageUrls: [],
       status: 'PRE_ORDER',
     },
   ],
@@ -98,6 +98,19 @@ describe('ProductPage', () => {
     expect(items).toHaveLength(1)
     expect(items[0]).toMatchObject({ variantId: 2, sku: 'TUM-WHT', unitPrice: 30, quantity: 2 })
     expect(useCartStore.getState().isOpen).toBe(true)
+  })
+
+  it('switches the main photo when a thumbnail is clicked', async () => {
+    mockedGet.mockResolvedValue({ data: product })
+
+    renderPage()
+
+    await screen.findByText('Custom Tumbler')
+    expect(screen.getByRole('button', { name: 'Фото 2' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Фото 2' }))
+
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'black-side.jpg')
   })
 
   it('shows an error message when loading fails', async () => {

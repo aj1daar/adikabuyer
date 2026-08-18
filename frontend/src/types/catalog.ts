@@ -8,7 +8,7 @@ export type VariantDto = {
   priceOverride: number | null
   stockQuantity: number
   active: boolean
-  imageUrl: string | null
+  imageUrls: string[]
   status: VariantStatus
 }
 

@@ -18,7 +18,7 @@ const product: ProductDto = {
       id: 1,
       productId: 1,
       sku: 'TUM-BLK-500',
-      imageUrl: null,
+      imageUrls: [],
       attributes: { color: 'Black', size: '500ml' },
       priceOverride: null,
       stockQuantity: 10,

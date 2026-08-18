@@ -23,7 +23,7 @@ const existingProduct: ProductDto = {
       id: 10,
       productId: 1,
       sku: 'TUM-BLK-500',
-      imageUrl: null,
+      imageUrls: [],
       attributes: { color: 'black' },
       priceOverride: 22.5,
       stockQuantity: 4,
@@ -115,7 +115,7 @@ describe('ProductForm', () => {
           priceOverride: null,
           stockQuantity: 7,
           active: true,
-          imageUrl: null,
+          imageUrls: [],
           attributes: { color: 'red' },
         },
       ],
@@ -143,7 +143,7 @@ describe('ProductForm', () => {
     })
 
     await waitFor(() =>
-      expect(screen.getByAltText('Фото варианта 1')).toHaveAttribute(
+      expect(screen.getByAltText('Фото 1 варианта 1')).toHaveAttribute(
         'src',
         'http://localhost:9000/adikabuyer-media/variant.png'
       )
@@ -154,7 +154,7 @@ describe('ProductForm', () => {
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
         variants: [
-          expect.objectContaining({ imageUrl: 'http://localhost:9000/adikabuyer-media/variant.png' }),
+          expect.objectContaining({ imageUrls: ['http://localhost:9000/adikabuyer-media/variant.png'] }),
         ],
       })
     )
