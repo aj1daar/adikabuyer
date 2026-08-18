@@ -1,10 +1,14 @@
 package com.adikabuyer.order.service;
 
 import com.adikabuyer.order.config.DeliveryFeeProperties;
+import com.adikabuyer.order.domain.Order;
 import com.adikabuyer.order.dto.CartDto;
 import com.adikabuyer.order.dto.CartItemDto;
 import com.adikabuyer.order.dto.CheckoutResponseDto;
+import com.adikabuyer.order.dto.OrderDto;
 import com.adikabuyer.order.dto.OrderPlacedEvent;
+import com.adikabuyer.order.repository.OrderRepository;
+import com.adikabuyer.order.telegram.TelegramNotifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,8 +19,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -29,17 +32,22 @@ import static org.mockito.Mockito.when;
 class OrderServiceTest {
 
     @Mock
+    private OrderRepository orderRepository;
+
+    @Mock
     private RabbitTemplate rabbitTemplate;
 
     @Mock
     private DeliveryFeeProperties deliveryFeeProperties;
 
+    @Mock
+    private TelegramNotifier telegramNotifier;
+
     private OrderService orderService;
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(rabbitTemplate, deliveryFeeProperties);
-        ReflectionTestUtils.setField(orderService, "storePhoneNumber", "996707660433");
+        orderService = new OrderService(orderRepository, rabbitTemplate, deliveryFeeProperties, telegramNotifier);
         ReflectionTestUtils.setField(orderService, "exchangeName", "order.exchange");
         ReflectionTestUtils.setField(orderService, "routingKey", "order.new");
     }
@@ -59,9 +67,10 @@ class OrderServiceTest {
         return new CartDto("John Doe", "996700123456", region, List.of(items));
     }
 
-    private String decodeWhatsappMessage(CheckoutResponseDto response) {
-        String encodedMessage = response.whatsappUrl().substring(response.whatsappUrl().indexOf("text=") + 5);
-        return URLDecoder.decode(encodedMessage, StandardCharsets.UTF_8);
+    private String captureTelegramMessage() {
+        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        verify(telegramNotifier).notifyAdmins(messageCaptor.capture());
+        return messageCaptor.getValue();
     }
 
     @Test
@@ -77,24 +86,40 @@ class OrderServiceTest {
     }
 
     @Test
-    void checkout_formatsWhatsappMessage_withCustomerDetailsAndItems() {
+    void checkout_persistsOrderWithItems() {
         when(deliveryFeeProperties.getFees()).thenReturn(Map.of("osh", BigDecimal.valueOf(200)));
         when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.valueOf(250));
 
         CheckoutResponseDto response = orderService.checkout(buildCart("osh", buildItem(BigDecimal.valueOf(25), 2)));
 
-        assertThat(response.whatsappUrl()).startsWith("https://wa.me/996707660433?text=");
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(orderCaptor.capture());
 
-        String message = decodeWhatsappMessage(response);
+        Order saved = orderCaptor.getValue();
+        assertThat(saved.getId()).isEqualTo(response.orderId());
+        assertThat(saved.getCustomerName()).isEqualTo("John Doe");
+        assertThat(saved.getRegion()).isEqualTo("osh");
+        assertThat(saved.getGrandTotal()).isEqualByComparingTo(BigDecimal.valueOf(250));
+        assertThat(saved.getItems()).hasSize(1);
+        assertThat(saved.getItems().get(0).getSku()).isEqualTo("TUM-BLK-500");
+        assertThat(saved.getItems().get(0).getOrder()).isSameAs(saved);
+    }
 
-        assertThat(message)
+    @Test
+    void checkout_formatsTelegramMessage_withCustomerDetailsAndItems() {
+        when(deliveryFeeProperties.getFees()).thenReturn(Map.of("osh", BigDecimal.valueOf(200)));
+        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.valueOf(250));
+
+        orderService.checkout(buildCart("osh", buildItem(BigDecimal.valueOf(25), 2)));
+
+        assertThat(captureTelegramMessage())
                 .contains("Имя: John Doe")
                 .contains("Телефон: 996700123456")
                 .contains("Город: osh")
-                .contains("2x Custom Tumbler (black, 500ml, TUM-BLK-500) — 50 KGS")
-                .contains("Товары: 50 KGS")
-                .contains("Доставка: 200 KGS")
-                .contains("Итого: 250 KGS");
+                .contains("2x Custom Tumbler (black, 500ml, TUM-BLK-500) — 50 KGS")
+                .contains("Товары: 50 KGS")
+                .contains("Доставка: 200 KGS")
+                .contains("Итого: 250 KGS");
     }
 
     @Test
@@ -102,17 +127,15 @@ class OrderServiceTest {
         when(deliveryFeeProperties.getFees()).thenReturn(Map.of());
         when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.valueOf(250));
 
-        CheckoutResponseDto response = orderService.checkout(
-                buildCart("bishkek", buildItem(BigDecimal.valueOf(2200.50), 5))
-        );
+        orderService.checkout(buildCart("bishkek", buildItem(BigDecimal.valueOf(2200.50), 5)));
 
-        assertThat(decodeWhatsappMessage(response))
-                .contains("Товары: 11 003 KGS")
-                .contains("Итого: 11 253 KGS");
+        assertThat(captureTelegramMessage())
+                .contains("Товары: 11 003 KGS")
+                .contains("Итого: 11 253 KGS");
     }
 
     @Test
-    void checkout_omitsAutoGeneratedSku_fromWhatsappMessage() {
+    void checkout_omitsAutoGeneratedSku_fromTelegramMessage() {
         when(deliveryFeeProperties.getFees()).thenReturn(Map.of());
         when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.valueOf(250));
 
@@ -120,8 +143,10 @@ class OrderServiceTest {
                 1L, "Предмет", "DEFAULT-8C54E689", Map.of(), BigDecimal.valueOf(2200), 1
         );
 
-        assertThat(decodeWhatsappMessage(orderService.checkout(buildCart("bishkek", item))))
-                .contains("1x Предмет — 2 200 KGS")
+        orderService.checkout(buildCart("bishkek", item));
+
+        assertThat(captureTelegramMessage())
+                .contains("1x Предмет — 2 200 KGS")
                 .doesNotContain("DEFAULT-");
     }
 
@@ -208,21 +233,30 @@ class OrderServiceTest {
     }
 
     @Test
-    void checkout_urlEncodesHostileCustomerName_soWhatsappLinkStructureCannotBeBroken() {
+    void checkout_keepsHostileCustomerNameVerbatim_inTelegramMessage() {
         when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.ZERO);
 
         CartDto cart = new CartDto(
-                "Robert'); DROP TABLE orders;-- <script>alert(1)</script>\r\nExtra: injected",
+                "Robert'); DROP TABLE orders;-- <script>alert(1)</script>",
                 "996700123456",
                 "bishkek",
                 List.of(buildItem(BigDecimal.TEN, 1))
         );
 
-        CheckoutResponseDto response = orderService.checkout(cart);
-        String rawUrl = response.whatsappUrl();
+        orderService.checkout(cart);
 
-        assertThat(rawUrl).doesNotContain("<script>").doesNotContain("\r\n").doesNotContain(" ");
-        assertThat(decodeWhatsappMessage(response)).contains("<script>alert(1)</script>");
+        assertThat(captureTelegramMessage()).contains("<script>alert(1)</script>");
+    }
+
+    @Test
+    void checkout_doesNotFail_whenTelegramNotificationThrows() {
+        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.ZERO);
+        org.mockito.Mockito.doThrow(new RuntimeException("telegram down"))
+                .when(telegramNotifier).notifyAdmins(anyString());
+
+        CheckoutResponseDto response = orderService.checkout(buildCart("bishkek", buildItem(BigDecimal.TEN, 1)));
+
+        assertThat(response.orderId()).isNotBlank();
     }
 
     @Test
@@ -240,5 +274,29 @@ class OrderServiceTest {
         assertThat(event.region()).isEqualTo("osh");
         assertThat(event.grandTotal()).isEqualByComparingTo(BigDecimal.valueOf(250));
         assertThat(event.orderId()).isNotBlank();
+    }
+
+    @Test
+    void getAllOrders_mapsPersistedOrdersToDto() {
+        Order order = Order.builder()
+                .id("order-1")
+                .customerName("Jane Doe")
+                .customerPhone("996700000000")
+                .region("bishkek")
+                .itemsTotal(BigDecimal.valueOf(50))
+                .deliveryFee(BigDecimal.valueOf(150))
+                .grandTotal(BigDecimal.valueOf(200))
+                .createdAt(Instant.parse("2026-01-01T00:00:00Z"))
+                .items(List.of())
+                .build();
+        when(orderRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of(order));
+
+        List<OrderDto> result = orderService.getAllOrders();
+
+        assertThat(result).hasSize(1);
+        OrderDto dto = result.get(0);
+        assertThat(dto.id()).isEqualTo("order-1");
+        assertThat(dto.customerName()).isEqualTo("Jane Doe");
+        assertThat(dto.grandTotal()).isEqualByComparingTo(BigDecimal.valueOf(200));
     }
 }
