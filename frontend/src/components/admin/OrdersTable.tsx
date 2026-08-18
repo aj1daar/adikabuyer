@@ -5,6 +5,7 @@ type OrdersTableProps = {
   orders: OrderDto[]
   loading: boolean
   error: string | null
+  onDelete: (order: OrderDto) => void
 }
 
 function formatDate(iso: string): string {
@@ -23,7 +24,7 @@ function summarizeItems(order: OrderDto): string {
     .join(', ')
 }
 
-export default function OrdersTable({ orders, loading, error }: OrdersTableProps) {
+export default function OrdersTable({ orders, loading, error, onDelete }: OrdersTableProps) {
   return (
     <>
       {loading && orders.length === 0 && <p className="mt-4 text-ink/60">Загрузка заказов...</p>}
@@ -39,7 +40,8 @@ export default function OrdersTable({ orders, loading, error }: OrdersTableProps
                 <th className="py-2 pr-4">Телефон</th>
                 <th className="py-2 pr-4">Город</th>
                 <th className="py-2 pr-4">Товары</th>
-                <th className="py-2">Итого</th>
+                <th className="py-2 pr-4">Итого</th>
+                <th className="py-2">Действия</th>
               </tr>
             </thead>
             <tbody>
@@ -50,7 +52,16 @@ export default function OrdersTable({ orders, loading, error }: OrdersTableProps
                   <td className="py-2 pr-4 text-ink/70">{order.customerPhone}</td>
                   <td className="py-2 pr-4 text-ink/70">{order.region}</td>
                   <td className="py-2 pr-4 text-ink/70">{summarizeItems(order)}</td>
-                  <td className="py-2 font-grotesk font-bold text-ink">{formatPrice(order.grandTotal)}</td>
+                  <td className="py-2 pr-4 font-grotesk font-bold text-ink">{formatPrice(order.grandTotal)}</td>
+                  <td className="py-2">
+                    <button
+                      type="button"
+                      onClick={() => onDelete(order)}
+                      className="text-xs text-ink/40 hover:text-bubblegum-dark"
+                    >
+                      Удалить
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
