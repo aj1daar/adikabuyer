@@ -16,6 +16,7 @@ const existingProduct: ProductDto = {
   description: 'Insulated steel tumbler',
   category: 'Drinkware',
   basePrice: 25,
+  displayPrice: 25,
   active: true,
   imageUrl: null,
   variants: [
@@ -26,6 +27,7 @@ const existingProduct: ProductDto = {
       imageUrls: [],
       attributes: { color: 'black' },
       priceOverride: 22.5,
+      displayPrice: 22.5,
       stockQuantity: 4,
       active: true,
       status: 'IN_STOCK',
@@ -62,7 +64,7 @@ describe('ProductForm', () => {
     fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
     expect(screen.getByRole('button', { name: /сохранить/i })).toBeDisabled()
 
-    fireEvent.change(screen.getByPlaceholderText('Базовая цена'), { target: { value: '15' } })
+    fireEvent.change(screen.getByPlaceholderText('Закупочная цена (без наценки)'), { target: { value: '15' } })
     expect(screen.getByRole('button', { name: /сохранить/i })).toBeEnabled()
   })
 
@@ -90,7 +92,7 @@ describe('ProductForm', () => {
     render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
 
     fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
-    fireEvent.change(screen.getByPlaceholderText('Базовая цена'), { target: { value: '15' } })
+    fireEvent.change(screen.getByPlaceholderText('Закупочная цена (без наценки)'), { target: { value: '15' } })
     fireEvent.click(screen.getByRole('button', { name: /добавить вариант/i }))
     fireEvent.change(screen.getByPlaceholderText('SKU'), { target: { value: 'NEW-SKU-1' } })
     fireEvent.change(screen.getByPlaceholderText('Остаток'), { target: { value: '7' } })
@@ -178,7 +180,7 @@ describe('ProductForm', () => {
     render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
 
     fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
-    fireEvent.change(screen.getByPlaceholderText('Базовая цена'), { target: { value: '15' } })
+    fireEvent.change(screen.getByPlaceholderText('Закупочная цена (без наценки)'), { target: { value: '15' } })
 
     const file = new File(['content'], 'photo.png', { type: 'image/png' })
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
@@ -215,7 +217,7 @@ describe('ProductForm', () => {
     render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
 
     fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
-    fireEvent.change(screen.getByPlaceholderText('Базовая цена'), { target: { value: '15' } })
+    fireEvent.change(screen.getByPlaceholderText('Закупочная цена (без наценки)'), { target: { value: '15' } })
 
     const file = new File(['content'], 'photo.png', { type: 'image/png' })
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
