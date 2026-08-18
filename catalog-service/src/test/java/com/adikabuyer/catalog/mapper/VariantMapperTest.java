@@ -23,7 +23,7 @@ class VariantMapperTest {
                 .product(product)
                 .sku("SKU-1")
                 .attributes(Map.of("color", "black", "size", "500ml"))
-                .priceOverride(BigDecimal.valueOf(19.99))
+                .priceOverride(BigDecimal.valueOf(1500))
                 .stockQuantity(5)
                 .active(true)
                 .status(VariantStatus.PRE_ORDER)
@@ -35,7 +35,8 @@ class VariantMapperTest {
         assertThat(dto.productId()).isEqualTo(42L);
         assertThat(dto.sku()).isEqualTo("SKU-1");
         assertThat(dto.attributes()).containsEntry("color", "black").containsEntry("size", "500ml");
-        assertThat(dto.priceOverride()).isEqualByComparingTo("19.99");
+        assertThat(dto.priceOverride()).isEqualByComparingTo("1500");
+        assertThat(dto.displayPrice()).isEqualByComparingTo("1700");
         assertThat(dto.stockQuantity()).isEqualTo(5);
         assertThat(dto.active()).isTrue();
         assertThat(dto.status()).isEqualTo(VariantStatus.PRE_ORDER);
@@ -54,6 +55,24 @@ class VariantMapperTest {
         VariantDto dto = variantMapper.toDto(variant);
 
         assertThat(dto.productId()).isNull();
+        assertThat(dto.displayPrice()).isNull();
+    }
+
+    @Test
+    void toDto_fallsBackToProductBasePrice_whenNoOverrideIsSet() {
+        Product product = Product.builder().id(1L).basePrice(BigDecimal.valueOf(2000)).build();
+        Variant variant = Variant.builder()
+                .id(1L)
+                .product(product)
+                .sku("SKU-1")
+                .attributes(Map.of())
+                .stockQuantity(1)
+                .active(true)
+                .build();
+
+        VariantDto dto = variantMapper.toDto(variant);
+
+        assertThat(dto.displayPrice()).isEqualByComparingTo("2300");
     }
 
     @Test

@@ -12,6 +12,7 @@ public record VariantDto(
         String sku,
         Map<String, Object> attributes,
         BigDecimal priceOverride,
+        BigDecimal displayPrice,
         Integer stockQuantity,
         boolean active,
         List<String> imageUrls,

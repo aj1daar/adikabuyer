@@ -31,7 +31,7 @@ class ProductMapperTest {
                 .name("Tumbler")
                 .description("Insulated steel tumbler")
                 .category("Drinkware")
-                .basePrice(BigDecimal.valueOf(25))
+                .basePrice(BigDecimal.valueOf(2000))
                 .active(true)
                 .imageUrl("http://localhost:9000/adikabuyer-media/photo.png")
                 .build();
@@ -53,6 +53,8 @@ class ProductMapperTest {
         assertThat(dto.variants().get(0).sku()).isEqualTo("TUM-BLK-500");
         assertThat(dto.variants().get(0).attributes()).containsEntry("color", "black");
         assertThat(dto.imageUrl()).isEqualTo("http://localhost:9000/adikabuyer-media/photo.png");
+        assertThat(dto.displayPrice()).isEqualByComparingTo("2300");
+        assertThat(dto.variants().get(0).displayPrice()).isEqualByComparingTo("2300");
     }
 
     @Test

@@ -9,6 +9,7 @@ public record ProductDto(
         String description,
         String category,
         BigDecimal basePrice,
+        BigDecimal displayPrice,
         boolean active,
         String imageUrl,
         List<VariantDto> variants
