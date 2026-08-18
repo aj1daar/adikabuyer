@@ -6,8 +6,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
 
 @Component
 @ConfigurationProperties(prefix = "app.delivery")
@@ -16,5 +14,5 @@ import java.util.Map;
 public class DeliveryFeeProperties {
 
     private BigDecimal defaultFee;
-    private Map<String, BigDecimal> fees = new HashMap<>();
+    private BigDecimal bishkekFee;
 }

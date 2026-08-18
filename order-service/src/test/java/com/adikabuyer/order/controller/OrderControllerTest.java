@@ -19,8 +19,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -217,5 +219,13 @@ class OrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("order-1"))
                 .andExpect(jsonPath("$[0].customerName").value("John Doe"));
+    }
+
+    @Test
+    void deleteOrder_returns200_andDelegatesToService() throws Exception {
+        mockMvc.perform(delete("/api/orders/order-1"))
+                .andExpect(status().isOk());
+
+        verify(orderService).deleteOrder("order-1");
     }
 }

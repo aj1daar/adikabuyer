@@ -15,8 +15,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -37,6 +39,7 @@ public class OrderService {
 
     private static final char NBSP = ' ';
     private static final String DEFAULT_SKU_PREFIX = "DEFAULT-";
+    private static final String BISHKEK = "бишкек";
 
     private final OrderRepository orderRepository;
     private final RabbitTemplate rabbitTemplate;
@@ -88,6 +91,14 @@ public class OrderService {
         return orderRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(this::toDto)
                 .toList();
+    }
+
+    @Transactional
+    public void deleteOrder(String id) {
+        if (!orderRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found: " + id);
+        }
+        orderRepository.deleteById(id);
     }
 
     private Order buildOrder(
@@ -152,10 +163,10 @@ public class OrderService {
     }
 
     private BigDecimal resolveDeliveryFee(String region) {
-        if (region == null) {
-            return deliveryFeeProperties.getDefaultFee();
+        if (region != null && region.strip().equalsIgnoreCase(BISHKEK)) {
+            return deliveryFeeProperties.getBishkekFee();
         }
-        return deliveryFeeProperties.getFees().getOrDefault(region.strip().toLowerCase(), deliveryFeeProperties.getDefaultFee());
+        return deliveryFeeProperties.getDefaultFee();
     }
 
     private String buildOrderMessage(String orderId, CartDto cart, BigDecimal itemsTotal, BigDecimal deliveryFee, BigDecimal grandTotal) {
