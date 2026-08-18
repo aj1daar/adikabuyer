@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { attachAuthHeader, handleAuthError } from './catalogClient'
 import notifyApiError from './notifyApiError'
 
 const orderClient = axios.create({
@@ -8,6 +9,8 @@ const orderClient = axios.create({
   },
 })
 
+orderClient.interceptors.request.use(attachAuthHeader)
+orderClient.interceptors.response.use((response) => response, handleAuthError)
 orderClient.interceptors.response.use((response) => response, notifyApiError)
 
 export default orderClient
