@@ -8,7 +8,7 @@ const steps = [
   },
   {
     title: 'Оформи заказ',
-    description: 'Добавь товар в корзину, укажи имя, телефон и город — заказ уйдёт прямо в WhatsApp.',
+    description: 'Добавь товар в корзину, укажи имя, телефон и город — мы получим заказ и свяжемся с тобой.',
   },
   {
     title: 'Получи заказ',
@@ -68,6 +68,15 @@ export default function AboutPage() {
               <p className="text-sm text-ink/60">{step.description}</p>
             </div>
           ))}
+        </div>
+
+        <div className="mx-auto mt-8 max-w-2xl rounded-3xl border-2 border-black bg-bubblegum-light p-6 text-center shadow-[6px_6px_0_0_#000]">
+          <p className="font-grotesk text-base font-bold text-ink">
+            Доставка занимает от 7 до 14 дней
+          </p>
+          <p className="mt-1 text-sm text-ink/70">
+            Заказы едут напрямую из США и Кореи, поэтому сроки зависят от международной доставки.
+          </p>
         </div>
       </section>
     </MainLayout>
