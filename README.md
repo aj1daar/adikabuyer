@@ -1,10 +1,12 @@
 # Adikabuyer
 
-Custom-order catalog for a small drinkware/apparel shop — customers pick a product and variant, cart checkout hands off to WhatsApp instead of a payment gateway.
+Custom-order catalog for a small drinkware/apparel shop — customers pick a product and variant; checkout persists the order and notifies the store's Telegram admins instead of going through a payment gateway.
 
 ## Stack
 
 React, TypeScript, Vite, Tailwind, Spring Boot (catalog-service, order-service, api-gateway), PostgreSQL + Flyway, RabbitMQ, MinIO, Docker Compose.
+
+catalog-service and order-service each own a separate Postgres database (`adikabuyer` and `adikabuyer_orders`) on the same instance, with independent Flyway migration histories. Both share the same `APP_JWT_SECRET`, so an admin token issued by catalog-service's `/api/auth/login` is also valid for order-service's admin-only `GET /api/orders`.
 
 Request flow, auth, and the prod-hardening details live in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -23,7 +25,13 @@ cd frontend && npm install && npm run dev
 
 Open `http://localhost:5173`. Admin login: `admin` / `admin123`.
 
+First run only: `docker compose up -d` creates `adikabuyer_orders` automatically via `postgres-init/`. If the Postgres volume already existed before that script was added, create it once by hand: `docker exec adikabuyer-postgres psql -U adikabuyer -d adikabuyer -c "CREATE DATABASE adikabuyer_orders"`.
+
 Tests: `mvn test` in each backend service, `npm run test` in `frontend`.
+
+### Telegram order notifications
+
+order-service polls the Telegram Bot API (long polling, no public webhook needed) and notifies registered admin chats whenever a checkout completes. To wire it up locally: create a bot via [@BotFather](https://t.me/BotFather), then run order-service with `TELEGRAM_BOT_TOKEN` and `TELEGRAM_REGISTRATION_PASSWORD` set. Message the bot `/start`, then send the registration password as plain text — the chat is stored in the `telegram_admin` table and starts receiving order notifications. Without a token configured, the poller and notifier silently no-op (checkout and the admin panel still work).
 
 Production-parity stack, fully containerized with TLS (Caddy serves the built frontend, proxies `/api/*` to the gateway and `/media/*` to MinIO):
 
@@ -34,16 +42,15 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 
 ## Deploy
 
-Pushing to `main` triggers `.github/workflows/deploy.yml`: it SSHes into the production server (`/opt/adikabuyer`), resets to `origin/main`, writes `.env.prod` from the `ENV_PROD` secret, and rebuilds the compose stack. Required GitHub secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `ENV_PROD`. The production domain is `adikabuyer.kg` (DNS at cctld.kg, A record to the server IP).
+Live at `https://adikabuyer.kg` (Hetzner VPS, DNS via Cloudflare, NS delegated from cctld.kg). Pushing to `main` triggers `.github/workflows/deploy.yml`: it SSHes into the production server (`/opt/adikabuyer`), resets to `origin/main`, writes `.env.prod` from the base64-encoded `ENV_PROD_B64` secret (plain env content breaks on the bcrypt hash's `$` signs when piped through a shell, hence the base64 wrapping), and rebuilds the compose stack, force-recreating `caddy` separately since its config is bind-mounted and won't otherwise pick up changes. Required GitHub secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `ENV_PROD_B64`.
 
 SEO basics are in place: meta description and Open Graph tags in `index.html`, per-page titles via `usePageTitle`, JSON-LD Product markup on product pages, `robots.txt` (blocks `/admin`), and a static `sitemap.xml`. The sitemap and robots URLs use the placeholder domain `adikabuyer.com` — replace it on deploy. Being a client-rendered SPA, link previews for individual products still need prerendering/SSR.
 
 ## Known limitations / not done yet
 
-- No cloud deploy. The prod compose file is for local production-parity testing, not a real target.
 - One hardcoded admin user. No signup, no password reset, no roles beyond admin/staff.
 - Login rate limiter is in-memory — resets on restart, and won't work once there's more than one catalog-service instance.
-- order-service doesn't persist orders anywhere. It publishes to RabbitMQ and hands back a WhatsApp link; if nothing's listening, the order's gone.
+- Telegram admin registration has no un-registration flow or admin-list UI — removing an admin means deleting their row from `telegram_admin` by hand.
 - Catalog filter pills (color/size/volume) are a hardcoded list on the frontend, not derived from real product data. Tag a product with a color that's not on the list and it's unfilterable.
 - No pagination on `/api/catalog/products`. Fine for a few dozen products, not forever.
 - No image resizing on upload — whatever the admin picks goes to MinIO/R2 at full size.
