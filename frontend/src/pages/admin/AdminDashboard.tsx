@@ -6,6 +6,7 @@ import ProductForm from '../../components/admin/ProductForm'
 import { createProduct, deleteProduct, updateProduct } from '../../api/adminCatalog'
 import type { ProductDto } from '../../types/catalog'
 import type { ProductPayload } from '../../types/admin'
+import formatPrice from '../../utils/formatPrice'
 import usePageTitle from '../../hooks/usePageTitle'
 
 export default function AdminDashboard() {
@@ -116,7 +117,7 @@ export default function AdminDashboard() {
                         <tr key={variant.id} className="border-b border-ink/5">
                           <td className="py-2 pr-4 text-ink">{product.name}</td>
                           <td className="py-2 pr-4 text-ink/70">{product.category ?? '—'}</td>
-                          <td className="py-2 pr-4 text-ink/70">{product.basePrice.toFixed(2)} ⃀</td>
+                          <td className="py-2 pr-4 text-ink/70">{formatPrice(product.basePrice)}</td>
                           <td className="py-2 pr-4 text-ink/70">{variant.sku}</td>
                           <td className="py-2 pr-4 text-ink/70">
                             {Object.entries(variant.attributes)
@@ -149,7 +150,7 @@ export default function AdminDashboard() {
                         <tr key={product.id} className="border-b border-ink/5">
                           <td className="py-2 pr-4 text-ink">{product.name}</td>
                           <td className="py-2 pr-4 text-ink/70">{product.category ?? '—'}</td>
-                          <td className="py-2 pr-4 text-ink/70">{product.basePrice.toFixed(2)} ⃀</td>
+                          <td className="py-2 pr-4 text-ink/70">{formatPrice(product.basePrice)}</td>
                           <td className="py-2 pr-4 text-ink/40" colSpan={4}>
                             Нет вариантов
                           </td>

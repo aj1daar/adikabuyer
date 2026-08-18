@@ -6,6 +6,7 @@ import catalogClient from '../api/catalogClient'
 import useCartStore from '../store/useCartStore'
 import { resolveVariantGallery } from '../utils/variantImage'
 import usePageTitle from '../hooks/usePageTitle'
+import formatPrice from '../utils/formatPrice'
 import type { ProductDto, VariantDto } from '../types/catalog'
 
 function variantLabel(variant: VariantDto): string {
@@ -171,7 +172,7 @@ export default function ProductPage() {
                   <p className="text-base leading-relaxed text-ink/70">{product.description}</p>
                 )}
 
-                <p className="font-grotesk text-3xl font-bold text-ink">{price.toFixed(2)} ⃀</p>
+                <p className="font-grotesk text-3xl font-bold text-ink">{formatPrice(price)}</p>
 
                 {product.variants.length > 1 && (
                   <div className="flex flex-col gap-2">

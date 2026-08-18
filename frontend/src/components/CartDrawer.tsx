@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import useCartStore from '../store/useCartStore'
 import submitCheckout from '../api/checkout'
+import formatPrice from '../utils/formatPrice'
 
 export default function CartDrawer() {
   const items = useCartStore((state) => state.items)
@@ -135,7 +136,7 @@ export default function CartDrawer() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-grotesk text-sm font-bold text-ink">
-                      {(item.unitPrice * item.quantity).toFixed(2)} ⃀
+                      {formatPrice(item.unitPrice * item.quantity)}
                     </span>
                     <button
                       type="button"
@@ -179,7 +180,7 @@ export default function CartDrawer() {
             <div className="border-t-2 border-black px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
               <div className="mb-4 flex items-center justify-between font-grotesk text-base font-bold text-ink">
                 <span>Итого</span>
-                <span>{totalPrice.toFixed(2)} ⃀</span>
+                <span>{formatPrice(totalPrice)}</span>
               </div>
               <button
                 type="button"

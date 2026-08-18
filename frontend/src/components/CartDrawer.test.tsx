@@ -53,7 +53,7 @@ describe('CartDrawer', () => {
     const itemRow = screen.getByText('Custom Tumbler').closest('div')!.parentElement!
     expect(within(itemRow).getByText('black')).toBeInTheDocument()
     expect(within(itemRow).getByText('2')).toBeInTheDocument()
-    expect(within(itemRow).getByText('50.00 ⃀')).toBeInTheDocument()
+    expect(within(itemRow).getByText('50.00 KGS')).toBeInTheDocument()
   })
 
   it('changes quantity with plus and minus buttons and disables minus at one', () => {

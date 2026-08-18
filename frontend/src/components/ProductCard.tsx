@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { ProductDto } from '../types/catalog'
 import useCartStore from '../store/useCartStore'
+import formatPrice from '../utils/formatPrice'
 
 type ProductCardProps = {
   product: ProductDto
@@ -84,7 +85,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         <div className="mt-auto flex items-center justify-between pt-3">
           <span className="font-grotesk text-base font-bold text-ink">
-            {product.basePrice.toFixed(2)} ⃀
+            {formatPrice(product.basePrice)}
           </span>
           {product.variants.length > 1 && (
             <span className="rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink">
