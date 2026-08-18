@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { useLocation } from 'react-router-dom'
 import NavigationBar from '../components/NavigationBar'
+import CartDrawer from '../components/CartDrawer'
 
 type MainLayoutProps = {
   children: ReactNode
@@ -28,6 +29,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       >
         © {new Date().getFullYear()} Adikabuyer
       </footer>
+      <CartDrawer />
     </div>
   )
 }

@@ -53,4 +53,12 @@ describe('MainLayout', () => {
 
     expect(useCartStore.getState().isOpen).toBe(true)
   })
+
+  it('actually renders the cart drawer on every page using this layout', () => {
+    renderLayout(<p>Content</p>)
+
+    fireEvent.click(screen.getByRole('button', { name: /корзина/i }))
+
+    expect(screen.getByText('Корзина пуста.')).toBeInTheDocument()
+  })
 })
