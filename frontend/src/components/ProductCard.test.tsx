@@ -37,7 +37,7 @@ describe('ProductCard', () => {
     render(<ProductCard product={product} />, { wrapper: MemoryRouter })
 
     expect(screen.getByText('Custom Tumbler')).toBeInTheDocument()
-    expect(screen.getByText('25.00 KGS')).toBeInTheDocument()
+    expect(screen.getByText('25 KGS')).toBeInTheDocument()
     expect(screen.getByText('Black, 500ml')).toBeInTheDocument()
   })
 

@@ -68,7 +68,7 @@ describe('ProductPage', () => {
 
     expect(await screen.findByText('Custom Tumbler')).toBeInTheDocument()
     expect(mockedGet).toHaveBeenCalledWith('/products/7', expect.anything())
-    expect(screen.getByText('25.00 KGS')).toBeInTheDocument()
+    expect(screen.getByText('25 KGS')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Black' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'White' })).toBeInTheDocument()
   })
@@ -80,7 +80,7 @@ describe('ProductPage', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'White' }))
 
-    expect(screen.getByText('30.00 KGS')).toBeInTheDocument()
+    expect(screen.getByText('30 KGS')).toBeInTheDocument()
     expect(screen.getByText(/Под заказ · SKU: TUM-WHT/)).toBeInTheDocument()
     expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'black.jpg')
   })
