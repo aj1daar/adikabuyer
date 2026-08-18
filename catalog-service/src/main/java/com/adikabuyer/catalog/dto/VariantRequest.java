@@ -7,6 +7,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 public record VariantRequest(
@@ -16,6 +17,6 @@ public record VariantRequest(
         @Positive BigDecimal priceOverride,
         @NotNull @PositiveOrZero Integer stockQuantity,
         boolean active,
-        @Size(max = 500) String imageUrl
+        @Size(max = 20) List<@Size(max = 500) String> imageUrls
 ) {
 }

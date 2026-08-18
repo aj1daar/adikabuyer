@@ -3,6 +3,7 @@ package com.adikabuyer.catalog.dto;
 import com.adikabuyer.catalog.domain.VariantStatus;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 public record VariantDto(
@@ -13,7 +14,7 @@ public record VariantDto(
         BigDecimal priceOverride,
         Integer stockQuantity,
         boolean active,
-        String imageUrl,
+        List<String> imageUrls,
         VariantStatus status
 ) {
 }

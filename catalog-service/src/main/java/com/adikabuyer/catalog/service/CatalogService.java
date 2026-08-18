@@ -158,7 +158,7 @@ public class CatalogService {
                 .priceOverride(request.priceOverride())
                 .stockQuantity(request.stockQuantity())
                 .active(request.active())
-                .imageUrl(request.imageUrl())
+                .imageUrls(request.imageUrls() != null ? new ArrayList<>(request.imageUrls()) : new ArrayList<>())
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -183,7 +183,7 @@ public class CatalogService {
         variant.setPriceOverride(request.priceOverride());
         variant.setStockQuantity(request.stockQuantity());
         variant.setActive(request.active());
-        variant.setImageUrl(request.imageUrl());
+        variant.setImageUrls(request.imageUrls() != null ? new ArrayList<>(request.imageUrls()) : new ArrayList<>());
         variant.setUpdatedAt(now);
     }
 

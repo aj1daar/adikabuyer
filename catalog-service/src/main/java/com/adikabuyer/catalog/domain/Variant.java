@@ -21,7 +21,9 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Entity
@@ -58,8 +60,10 @@ public class Variant {
     @Column(nullable = false)
     private boolean active;
 
-    @Column(name = "image_url")
-    private String imageUrl;
+    @Builder.Default
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "image_urls", nullable = false)
+    private List<String> imageUrls = new ArrayList<>();
 
     @Builder.Default
     @Enumerated(EnumType.STRING)

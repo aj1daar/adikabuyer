@@ -174,7 +174,7 @@ class CatalogServiceTest {
     }
 
     private VariantRequest buildVariantRequest(Long id, String sku, int stock) {
-        return new VariantRequest(id, sku, Map.of("color", "black"), null, stock, true, null);
+        return new VariantRequest(id, sku, Map.of("color", "black"), null, stock, true, List.of());
     }
 
     private ProductRequest buildProductRequest(List<VariantRequest> variants) {
