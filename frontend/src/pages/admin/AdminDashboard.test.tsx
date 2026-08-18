@@ -5,15 +5,31 @@ import AdminDashboard from './AdminDashboard'
 import useCatalog from '../../hooks/useCatalog'
 import useAuthStore from '../../store/useAuthStore'
 import { createProduct, deleteProduct, updateProduct } from '../../api/adminCatalog'
+import getOrders from '../../api/adminOrders'
 import type { ProductDto } from '../../types/catalog'
+import type { OrderDto } from '../../types/order'
 
 vi.mock('../../hooks/useCatalog')
 vi.mock('../../api/adminCatalog')
+vi.mock('../../api/adminOrders')
 
 const mockedUseCatalog = vi.mocked(useCatalog)
 const mockedCreateProduct = vi.mocked(createProduct)
 const mockedUpdateProduct = vi.mocked(updateProduct)
 const mockedDeleteProduct = vi.mocked(deleteProduct)
+const mockedGetOrders = vi.mocked(getOrders)
+
+const order: OrderDto = {
+  id: 'order-1',
+  customerName: 'Jane Doe',
+  customerPhone: '996700000000',
+  region: 'bishkek',
+  itemsTotal: 50,
+  deliveryFee: 150,
+  grandTotal: 200,
+  createdAt: '2026-01-01T00:00:00Z',
+  items: [{ variantId: 1, productName: 'Tumbler', sku: 'TUM-1', attributes: {}, unitPrice: 50, quantity: 1 }],
+}
 
 const refetch = vi.fn()
 
@@ -64,6 +80,7 @@ beforeEach(() => {
   mockedCreateProduct.mockReset()
   mockedUpdateProduct.mockReset()
   mockedDeleteProduct.mockReset()
+  mockedGetOrders.mockReset()
   useAuthStore.setState({ token: 'valid-token' })
   mockedUseCatalog.mockReturnValue({
     products: [productWithVariant, productWithoutVariants],
@@ -155,5 +172,31 @@ describe('AdminDashboard', () => {
     fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
 
     await waitFor(() => expect(mockedUpdateProduct).toHaveBeenCalledWith(1, expect.any(Object)))
+  })
+
+  it('does not fetch orders until the Заказы tab is opened', () => {
+    renderDashboard()
+
+    expect(mockedGetOrders).not.toHaveBeenCalled()
+  })
+
+  it('switches to the orders tab, fetches, and renders orders', async () => {
+    mockedGetOrders.mockResolvedValueOnce([order])
+    renderDashboard()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Заказы' }))
+
+    await waitFor(() => expect(screen.getByText('Jane Doe')).toBeInTheDocument())
+    expect(mockedGetOrders).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('button', { name: /добавить товар/i })).not.toBeInTheDocument()
+  })
+
+  it('shows an error when fetching orders fails', async () => {
+    mockedGetOrders.mockRejectedValueOnce(new Error('Orders down'))
+    renderDashboard()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Заказы' }))
+
+    await waitFor(() => expect(screen.getByText('Orders down')).toBeInTheDocument())
   })
 })

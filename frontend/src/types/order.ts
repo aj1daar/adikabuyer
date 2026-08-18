@@ -19,5 +19,25 @@ export type CheckoutResponse = {
   itemsTotal: number
   deliveryFee: number
   grandTotal: number
-  whatsappUrl: string
+}
+
+export type OrderItemDto = {
+  variantId: number
+  productName: string
+  sku: string
+  attributes: Record<string, unknown>
+  unitPrice: number
+  quantity: number
+}
+
+export type OrderDto = {
+  id: string
+  customerName: string
+  customerPhone: string
+  region: string
+  itemsTotal: number
+  deliveryFee: number
+  grandTotal: number
+  createdAt: string
+  items: OrderItemDto[]
 }

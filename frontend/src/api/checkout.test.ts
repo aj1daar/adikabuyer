@@ -30,7 +30,6 @@ const response: CheckoutResponse = {
   itemsTotal: 50,
   deliveryFee: 150,
   grandTotal: 200,
-  whatsappUrl: 'https://wa.me/996707660433?text=x',
 }
 
 beforeEach(() => {

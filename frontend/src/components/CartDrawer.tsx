@@ -18,6 +18,7 @@ export default function CartDrawer() {
   const [region, setRegion] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [placedOrderId, setPlacedOrderId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isOpen) {
@@ -57,12 +58,21 @@ export default function CartDrawer() {
       })
 
       clearCart()
-      closeCart()
-      window.location.href = response.whatsappUrl
+      setPlacedOrderId(response.orderId)
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Не удалось оформить заказ. Попробуйте ещё раз.')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleClose = () => {
+    closeCart()
+    if (placedOrderId) {
+      setPlacedOrderId(null)
+      setCustomerName('')
+      setCustomerPhone('')
+      setRegion('')
     }
   }
 
@@ -75,7 +85,7 @@ export default function CartDrawer() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={closeCart}
+            onClick={handleClose}
             className="fixed inset-0 z-40 bg-ink/40"
           />
           <motion.aside
@@ -90,13 +100,32 @@ export default function CartDrawer() {
               <h2 className="font-grotesk text-lg font-bold text-ink">Корзина</h2>
               <button
                 type="button"
-                onClick={closeCart}
+                onClick={handleClose}
                 className="-m-3 p-3 font-grotesk text-sm font-bold text-ink/50 transition hover:text-ink"
               >
                 Закрыть
               </button>
             </div>
 
+            {placedOrderId ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-4 text-center">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-black bg-bubblegum-light font-grotesk text-3xl font-bold text-ink">
+                  ✓
+                </span>
+                <h3 className="font-grotesk text-lg font-bold text-ink">Заказ принят!</h3>
+                <p className="text-sm text-ink/60">
+                  Мы свяжемся с вами по указанному номеру, чтобы уточнить детали заказа и доставку.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="mt-2 rounded-pill border-2 border-black bg-ink px-6 py-3 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark"
+                >
+                  Готово
+                </button>
+              </div>
+            ) : (
+              <>
             <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-4">
               {items.length === 0 && (
                 <p className="text-sm text-ink/50">Корзина пуста.</p>
@@ -191,6 +220,8 @@ export default function CartDrawer() {
                 {isSubmitting ? 'Оформляем заказ...' : 'Оформить заказ'}
               </button>
             </div>
+              </>
+            )}
           </motion.aside>
         </>
       )}

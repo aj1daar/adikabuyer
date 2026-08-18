@@ -8,6 +8,8 @@ import type { ProductDto } from '../types/catalog'
 
 vi.mock('../api/catalogClient', () => ({
   default: { get: vi.fn() },
+  attachAuthHeader: (config: unknown) => config,
+  handleAuthError: (error: unknown) => Promise.reject(error),
 }))
 
 const mockedGet = vi.mocked(catalogClient.get)

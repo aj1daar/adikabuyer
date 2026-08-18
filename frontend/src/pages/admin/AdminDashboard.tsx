@@ -1,19 +1,26 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useCatalog from '../../hooks/useCatalog'
+import useOrders from '../../hooks/useOrders'
 import useAuthStore from '../../store/useAuthStore'
 import ProductForm from '../../components/admin/ProductForm'
+import OrdersTable from '../../components/admin/OrdersTable'
 import { createProduct, deleteProduct, updateProduct } from '../../api/adminCatalog'
 import type { ProductDto } from '../../types/catalog'
 import type { ProductPayload } from '../../types/admin'
 import formatPrice from '../../utils/formatPrice'
 import usePageTitle from '../../hooks/usePageTitle'
 
+type AdminTab = 'products' | 'orders'
+
 export default function AdminDashboard() {
   usePageTitle('Админ-панель')
   const navigate = useNavigate()
   const clearToken = useAuthStore((state) => state.clearToken)
   const { products, loading, error, refetch } = useCatalog()
+
+  const [activeTab, setActiveTab] = useState<AdminTab>('products')
+  const { orders, loading: ordersLoading, error: ordersError } = useOrders(activeTab === 'orders')
 
   const [editingProduct, setEditingProduct] = useState<ProductDto | undefined>(undefined)
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -74,13 +81,15 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between border-b-2 border-black pb-4">
           <h1 className="font-grotesk text-xl font-bold text-ink">Админ-панель</h1>
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={openCreateForm}
-              className="rounded-pill border-2 border-black bg-ink px-4 py-2 font-grotesk text-sm font-bold text-white hover:bg-bubblegum-dark"
-            >
-              Добавить товар
-            </button>
+            {activeTab === 'products' && (
+              <button
+                type="button"
+                onClick={openCreateForm}
+                className="rounded-pill border-2 border-black bg-ink px-4 py-2 font-grotesk text-sm font-bold text-white hover:bg-bubblegum-dark"
+              >
+                Добавить товар
+              </button>
+            )}
             <button
               type="button"
               onClick={handleLogout}
@@ -91,11 +100,41 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {actionError && <p className="mt-4 text-sm text-red-500">{actionError}</p>}
-        {loading && products.length === 0 && <p className="mt-4 text-ink/60">Загрузка товаров...</p>}
-        {error && <p className="mt-4 text-red-500">{error}</p>}
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('products')}
+            aria-pressed={activeTab === 'products'}
+            className={`rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
+              activeTab === 'products' ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
+            }`}
+          >
+            Товары
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('orders')}
+            aria-pressed={activeTab === 'orders'}
+            className={`rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
+              activeTab === 'orders' ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
+            }`}
+          >
+            Заказы
+          </button>
+        </div>
 
-        {!error && (products.length > 0 || !loading) && (
+        {actionError && <p className="mt-4 text-sm text-red-500">{actionError}</p>}
+
+        {activeTab === 'orders' && (
+          <OrdersTable orders={orders} loading={ordersLoading} error={ordersError} />
+        )}
+
+        {activeTab === 'products' && loading && products.length === 0 && (
+          <p className="mt-4 text-ink/60">Загрузка товаров...</p>
+        )}
+        {activeTab === 'products' && error && <p className="mt-4 text-red-500">{error}</p>}
+
+        {activeTab === 'products' && !error && (products.length > 0 || !loading) && (
           <div className={`mt-6 overflow-x-auto ${loading ? 'opacity-60' : ''} transition-opacity`}>
             <table className="w-full border-collapse text-left text-sm">
               <thead>
