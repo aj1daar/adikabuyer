@@ -26,10 +26,15 @@ beforeEach(() => {
   useCartStore.setState({ items: [], isOpen: true })
 })
 
+const selectCity = (city: string) => {
+  fireEvent.click(screen.getByRole('button', { expanded: false }))
+  fireEvent.click(screen.getByRole('button', { name: city }))
+}
+
 const fillCheckoutForm = () => {
   fireEvent.change(screen.getByPlaceholderText('Имя и фамилия'), { target: { value: 'John Doe' } })
   fireEvent.change(screen.getByPlaceholderText('Номер телефона'), { target: { value: '996700123456' } })
-  fireEvent.change(screen.getByPlaceholderText('Город'), { target: { value: 'Bishkek' } })
+  selectCity('Бишкек')
 }
 
 describe('CartDrawer', () => {
@@ -89,7 +94,7 @@ describe('CartDrawer', () => {
     render(<CartDrawer />)
     fireEvent.change(screen.getByPlaceholderText('Имя и фамилия'), { target: { value: '   ' } })
     fireEvent.change(screen.getByPlaceholderText('Номер телефона'), { target: { value: '   ' } })
-    fireEvent.change(screen.getByPlaceholderText('Город'), { target: { value: '   ' } })
+    selectCity('Бишкек')
 
     expect(screen.getByRole('button', { name: /оформить заказ/i })).toBeDisabled()
   })
@@ -107,6 +112,35 @@ describe('CartDrawer', () => {
     fillCheckoutForm()
 
     expect(screen.getByRole('button', { name: /оформить заказ/i })).toBeEnabled()
+  })
+
+  it('shows the delivery-time note and a placeholder fee until a city is picked', () => {
+    useCartStore.setState({ items: [cartItem()], isOpen: true })
+
+    render(<CartDrawer />)
+
+    expect(screen.getByText(/от 7 до 14 дней/)).toBeInTheDocument()
+    expect(screen.getByText('—')).toBeInTheDocument()
+  })
+
+  it('shows 250 KGS delivery for Bishkek and updates the grand total', () => {
+    useCartStore.setState({ items: [cartItem()], isOpen: true })
+
+    render(<CartDrawer />)
+    selectCity('Бишкек')
+
+    expect(screen.getByText('250 KGS')).toBeInTheDocument()
+    expect(screen.getByText('300 KGS')).toBeInTheDocument()
+  })
+
+  it('shows 500 KGS delivery for any other listed city', () => {
+    useCartStore.setState({ items: [cartItem()], isOpen: true })
+
+    render(<CartDrawer />)
+    selectCity('Ош')
+
+    expect(screen.getByText('500 KGS')).toBeInTheDocument()
+    expect(screen.getByText('550 KGS')).toBeInTheDocument()
   })
 
   it('on success clears the cart and shows the in-drawer success screen', async () => {
