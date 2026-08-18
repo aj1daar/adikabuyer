@@ -12,6 +12,7 @@ services:
       - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
     networks:
       - adikabuyer-network
 
@@ -85,14 +86,20 @@ services:
     restart: unless-stopped
     mem_limit: 384m
     depends_on:
+      - postgres-db
       - rabbitmq
     environment:
       JAVA_OPTS: ${ORDER_SERVICE_JAVA_OPTS:--Xmx256m -Xms128m}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/${POSTGRES_DB:-adikabuyer}_orders
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-adikabuyer}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-adikabuyer}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      APP_WHATSAPP_STORE_PHONE_NUMBER: ${APP_WHATSAPP_STORE_PHONE_NUMBER:-996707660433}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:?APP_JWT_SECRET must be set}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_REGISTRATION_PASSWORD: ${TELEGRAM_REGISTRATION_PASSWORD:-}
     networks:
       - adikabuyer-network
 
