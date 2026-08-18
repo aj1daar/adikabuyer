@@ -1,9 +1,26 @@
 server:
   port: 8082
+  forward-headers-strategy: framework
 
 spring:
   application:
     name: order-service
+  datasource:
+    url: jdbc:postgresql://localhost:5433/adikabuyer_orders
+    username: adikabuyer
+    password: adikabuyer
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
   rabbitmq:
     host: localhost
     port: 5672
@@ -15,11 +32,14 @@ app:
     exchange: order.exchange
     queue: order.queue
     routing-key: order.new
-  whatsapp:
-    store-phone-number: "996707660433"
   delivery:
     default-fee: 250
     fees:
       bishkek: 150
       osh: 200
       chui: 200
+  jwt:
+    secret: "3f8a1c9d4b7e2f6a8c1d5e9f3a7b2c6d8e1f4a9c3b7d2e6f8a1c4d9e3b7f2a6c"
+  telegram:
+    bot-token: ${TELEGRAM_BOT_TOKEN:}
+    registration-password: ${TELEGRAM_REGISTRATION_PASSWORD:}

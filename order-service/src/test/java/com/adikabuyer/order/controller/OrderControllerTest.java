@@ -1,25 +1,35 @@
 package com.adikabuyer.order.controller;
 
 import com.adikabuyer.order.dto.CheckoutResponseDto;
+import com.adikabuyer.order.dto.OrderDto;
 import com.adikabuyer.order.service.OrderService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(OrderController.class)
+@WebMvcTest(
+        controllers = OrderController.class,
+        excludeAutoConfiguration = {SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class}
+)
 class OrderControllerTest {
 
     @Autowired
@@ -51,7 +61,7 @@ class OrderControllerTest {
     @Test
     void checkout_returns200_whenPayloadIsValid() throws Exception {
         CheckoutResponseDto response = new CheckoutResponseDto(
-                "order-1", BigDecimal.valueOf(50), BigDecimal.valueOf(150), BigDecimal.valueOf(200), "https://wa.me/996707660433?text=x"
+                "order-1", BigDecimal.valueOf(50), BigDecimal.valueOf(150), BigDecimal.valueOf(200)
         );
         when(orderService.checkout(any())).thenReturn(response);
 
@@ -60,7 +70,7 @@ class OrderControllerTest {
                         .content(validCartJson()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderId").value("order-1"))
-                .andExpect(jsonPath("$.whatsappUrl").value("https://wa.me/996707660433?text=x"));
+                .andExpect(jsonPath("$.grandTotal").value(200));
     }
 
     @Test
@@ -192,5 +202,20 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.fieldErrors.items").exists());
 
         verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void getAllOrders_returns200WithOrderList() throws Exception {
+        OrderDto order = new OrderDto(
+                "order-1", "John Doe", "996700123456", "bishkek",
+                BigDecimal.valueOf(50), BigDecimal.valueOf(150), BigDecimal.valueOf(200),
+                Instant.parse("2026-01-01T00:00:00Z"), List.of()
+        );
+        when(orderService.getAllOrders()).thenReturn(List.of(order));
+
+        mockMvc.perform(get("/api/orders"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("order-1"))
+                .andExpect(jsonPath("$[0].customerName").value("John Doe"));
     }
 }
