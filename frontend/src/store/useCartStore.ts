@@ -8,6 +8,7 @@ export type CartItem = {
   attributes: Record<string, unknown>
   unitPrice: number
   quantity: number
+  status: 'IN_STOCK' | 'PRE_ORDER'
 }
 
 type CartStore = {

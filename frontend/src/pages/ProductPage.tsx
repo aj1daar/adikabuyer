@@ -102,6 +102,7 @@ export default function ProductPage() {
       attributes: selectedVariant.attributes,
       unitPrice: selectedVariant.displayPrice ?? product.displayPrice,
       quantity,
+      status: selectedVariant.status,
     })
     setQuantity(1)
     openCart()

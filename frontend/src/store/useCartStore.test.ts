@@ -9,6 +9,7 @@ const item = (overrides: Partial<CartItem> = {}): CartItem => ({
   attributes: { color: 'black' },
   unitPrice: 25,
   quantity: 1,
+  status: 'IN_STOCK',
   ...overrides,
 })
 

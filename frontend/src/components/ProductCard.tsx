@@ -40,6 +40,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       attributes: primaryVariant.attributes,
       unitPrice: primaryVariant.displayPrice ?? product.displayPrice,
       quantity,
+      status: primaryVariant.status,
     })
     setQuantity(1)
   }

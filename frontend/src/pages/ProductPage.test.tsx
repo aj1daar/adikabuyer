@@ -101,7 +101,7 @@ describe('ProductPage', () => {
 
     const items = useCartStore.getState().items
     expect(items).toHaveLength(1)
-    expect(items[0]).toMatchObject({ variantId: 2, sku: 'TUM-WHT', unitPrice: 30, quantity: 2 })
+    expect(items[0]).toMatchObject({ variantId: 2, sku: 'TUM-WHT', unitPrice: 30, quantity: 2, status: 'PRE_ORDER' })
     expect(useCartStore.getState().isOpen).toBe(true)
   })
 

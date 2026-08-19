@@ -87,6 +87,7 @@ describe('ProductCard', () => {
         attributes: { color: 'Black', size: '500ml' },
         unitPrice: 25,
         quantity: 1,
+        status: 'IN_STOCK',
       },
     ])
   })
