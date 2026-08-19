@@ -3,15 +3,19 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import FilterBar from './FilterBar'
 
 function renderFilterBar(overrides: Partial<Parameters<typeof FilterBar>[0]> = {}) {
+  const onCategoryChange = vi.fn()
   const onColorChange = vi.fn()
   const onSizeChange = vi.fn()
   const onVolumeChange = vi.fn()
 
   render(
     <FilterBar
+      category=""
       color=""
       size=""
       volume=""
+      categoryOptions={[]}
+      onCategoryChange={onCategoryChange}
       onColorChange={onColorChange}
       onSizeChange={onSizeChange}
       onVolumeChange={onVolumeChange}
@@ -19,7 +23,7 @@ function renderFilterBar(overrides: Partial<Parameters<typeof FilterBar>[0]> = {
     />
   )
 
-  return { onColorChange, onSizeChange, onVolumeChange }
+  return { onCategoryChange, onColorChange, onSizeChange, onVolumeChange }
 }
 
 describe('FilterBar', () => {
@@ -49,5 +53,23 @@ describe('FilterBar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     expect(onSizeChange).toHaveBeenCalledWith('M')
+  })
+
+  it('does not render a category dropdown when there are no category options', () => {
+    renderFilterBar()
+
+    expect(screen.queryByRole('button', { name: /категория/i })).not.toBeInTheDocument()
+  })
+
+  it('renders and applies a category dropdown when options are given', () => {
+    const { onCategoryChange } = renderFilterBar({
+      categoryOptions: [{ label: 'Drinkware', value: 'Drinkware' }],
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /категория/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Drinkware' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
+
+    expect(onCategoryChange).toHaveBeenCalledWith('Drinkware')
   })
 })

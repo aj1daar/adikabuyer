@@ -96,6 +96,7 @@ describe('CatalogPage', () => {
 
       expect(mockedUseCatalog).toHaveBeenLastCalledWith({
         search: 'tumbler',
+        category: '',
         color: '',
         size: '',
         volume: '',
@@ -112,6 +113,7 @@ describe('CatalogPage', () => {
 
     expect(mockedUseCatalog).toHaveBeenLastCalledWith({
       search: '',
+      category: '',
       color: 'black',
       size: '',
       volume: '',
@@ -129,9 +131,39 @@ describe('CatalogPage', () => {
 
     expect(mockedUseCatalog).toHaveBeenLastCalledWith({
       search: '',
+      category: '',
       color: '',
       size: '',
       volume: '',
     })
+  })
+
+  it('shows a category dropdown derived from loaded products and applies the selection', () => {
+    mockedUseCatalog.mockReturnValue({
+      products: [{ ...product, category: 'Drinkware' }],
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+
+    renderCatalogPage()
+
+    fireEvent.click(screen.getByRole('button', { name: /категория/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Drinkware' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
+
+    expect(mockedUseCatalog).toHaveBeenLastCalledWith({
+      search: '',
+      category: 'Drinkware',
+      color: '',
+      size: '',
+      volume: '',
+    })
+  })
+
+  it('does not show a category dropdown when no product has a category', () => {
+    renderCatalogPage()
+
+    expect(screen.queryByRole('button', { name: /категория/i })).not.toBeInTheDocument()
   })
 })

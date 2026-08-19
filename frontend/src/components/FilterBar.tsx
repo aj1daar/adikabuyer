@@ -1,6 +1,6 @@
 import FilterDropdown from './FilterDropdown'
 
-type FilterOption = {
+export type FilterOption = {
   label: string
   value: string
 }
@@ -25,24 +25,33 @@ const VOLUME_OPTIONS: FilterOption[] = [
 ]
 
 type FilterBarProps = {
+  category: string
   color: string
   size: string
   volume: string
+  categoryOptions: FilterOption[]
+  onCategoryChange: (value: string) => void
   onColorChange: (value: string) => void
   onSizeChange: (value: string) => void
   onVolumeChange: (value: string) => void
 }
 
 export default function FilterBar({
+  category,
   color,
   size,
   volume,
+  categoryOptions,
+  onCategoryChange,
   onColorChange,
   onSizeChange,
   onVolumeChange,
 }: FilterBarProps) {
   return (
     <div className="flex flex-wrap gap-3">
+      {categoryOptions.length > 0 && (
+        <FilterDropdown label="Категория" options={categoryOptions} value={category} onApply={onCategoryChange} />
+      )}
       <FilterDropdown label="Цвет" options={COLOR_OPTIONS} value={color} onApply={onColorChange} />
       <FilterDropdown label="Размер" options={SIZE_OPTIONS} value={size} onApply={onSizeChange} />
       <FilterDropdown label="Объём" options={VOLUME_OPTIONS} value={volume} onApply={onVolumeChange} />

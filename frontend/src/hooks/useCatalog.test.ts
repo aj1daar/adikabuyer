@@ -37,20 +37,26 @@ describe('useCatalog', () => {
     expect(result.current.products).toEqual([product])
     expect(mockedGet).toHaveBeenCalledWith(
       '/products',
-      expect.objectContaining({ params: { search: undefined, color: undefined, size: undefined, volume: undefined } })
+      expect.objectContaining({
+        params: { search: undefined, category: undefined, color: undefined, size: undefined, volume: undefined },
+      })
     )
   })
 
   it('forwards the given filters as query params', async () => {
     mockedGet.mockResolvedValueOnce({ data: [] } as never)
 
-    const { result } = renderHook(() => useCatalog({ search: 'tumbler', color: 'black', size: 'M', volume: '500ml' }))
+    const { result } = renderHook(() =>
+      useCatalog({ search: 'tumbler', category: 'Drinkware', color: 'black', size: 'M', volume: '500ml' })
+    )
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(mockedGet).toHaveBeenCalledWith(
       '/products',
-      expect.objectContaining({ params: { search: 'tumbler', color: 'black', size: 'M', volume: '500ml' } })
+      expect.objectContaining({
+        params: { search: 'tumbler', category: 'Drinkware', color: 'black', size: 'M', volume: '500ml' },
+      })
     )
   })
 
