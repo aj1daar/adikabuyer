@@ -1,5 +1,6 @@
 package com.adikabuyer.catalog.dto;
 
+import com.adikabuyer.catalog.domain.VariantStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -17,6 +18,10 @@ public record VariantRequest(
         @Positive BigDecimal priceOverride,
         @NotNull @PositiveOrZero Integer stockQuantity,
         boolean active,
-        @Size(max = 20) List<@Size(max = 500) String> imageUrls
+        @Size(max = 20) List<@Size(max = 500) String> imageUrls,
+        VariantStatus status
 ) {
+    public VariantStatus statusOrDefault() {
+        return status != null ? status : VariantStatus.IN_STOCK;
+    }
 }

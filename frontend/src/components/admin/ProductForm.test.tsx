@@ -118,10 +118,30 @@ describe('ProductForm', () => {
           stockQuantity: 7,
           active: true,
           imageUrls: [],
+          status: 'IN_STOCK',
           attributes: { color: 'red' },
         },
       ],
     })
+  })
+
+  it('submits PRE_ORDER status when Под заказ is selected for a variant', () => {
+    const onSubmit = vi.fn()
+    render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
+
+    fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
+    fireEvent.change(screen.getByPlaceholderText('Закупочная цена (без наценки)'), { target: { value: '15' } })
+    fireEvent.click(screen.getByRole('button', { name: /добавить вариант/i }))
+    fireEvent.change(screen.getByPlaceholderText('SKU'), { target: { value: 'NEW-SKU-1' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Под заказ' }))
+
+    fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variants: [expect.objectContaining({ status: 'PRE_ORDER' })],
+      })
+    )
   })
 
   it('removes a variant when Remove variant is clicked', () => {

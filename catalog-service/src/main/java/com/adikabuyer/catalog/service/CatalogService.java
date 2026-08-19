@@ -159,6 +159,7 @@ public class CatalogService {
                 .stockQuantity(request.stockQuantity())
                 .active(request.active())
                 .imageUrls(request.imageUrls() != null ? new ArrayList<>(request.imageUrls()) : new ArrayList<>())
+                .status(request.statusOrDefault())
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -184,6 +185,7 @@ public class CatalogService {
         variant.setStockQuantity(request.stockQuantity());
         variant.setActive(request.active());
         variant.setImageUrls(request.imageUrls() != null ? new ArrayList<>(request.imageUrls()) : new ArrayList<>());
+        variant.setStatus(request.statusOrDefault());
         variant.setUpdatedAt(now);
     }
 

@@ -2,6 +2,7 @@ package com.adikabuyer.catalog.service;
 
 import com.adikabuyer.catalog.domain.Product;
 import com.adikabuyer.catalog.domain.Variant;
+import com.adikabuyer.catalog.domain.VariantStatus;
 import com.adikabuyer.catalog.dto.ProductDto;
 import com.adikabuyer.catalog.dto.ProductRequest;
 import com.adikabuyer.catalog.dto.VariantRequest;
@@ -174,7 +175,7 @@ class CatalogServiceTest {
     }
 
     private VariantRequest buildVariantRequest(Long id, String sku, int stock) {
-        return new VariantRequest(id, sku, Map.of("color", "black"), null, stock, true, List.of());
+        return new VariantRequest(id, sku, Map.of("color", "black"), null, stock, true, List.of(), VariantStatus.IN_STOCK);
     }
 
     private ProductRequest buildProductRequest(List<VariantRequest> variants) {

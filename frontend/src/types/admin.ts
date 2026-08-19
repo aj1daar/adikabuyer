@@ -6,6 +6,7 @@ export type VariantPayload = {
   stockQuantity: number
   active: boolean
   imageUrls: string[]
+  status: 'IN_STOCK' | 'PRE_ORDER'
 }
 
 export type ProductPayload = {

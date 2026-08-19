@@ -18,6 +18,7 @@ type VariantDraft = {
   active: boolean
   imageUrls: string[]
   attributes: AttributeRow[]
+  status: 'IN_STOCK' | 'PRE_ORDER'
 }
 
 type ProductFormProps = {
@@ -43,6 +44,7 @@ function toVariantDraft(product?: ProductDto): VariantDraft[] {
     active: variant.active,
     imageUrls: [...variant.imageUrls],
     attributes: toAttributeRows(variant.attributes),
+    status: variant.status,
   }))
 }
 
@@ -106,7 +108,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   const addVariant = () => {
     setVariants([
       ...variants,
-      { sku: '', priceOverride: '', stockQuantity: '0', active: true, imageUrls: [], attributes: [] },
+      { sku: '', priceOverride: '', stockQuantity: '0', active: true, imageUrls: [], attributes: [], status: 'IN_STOCK' },
     ])
   }
 
@@ -146,6 +148,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
       stockQuantity: Number(variant.stockQuantity),
       active: variant.active,
       imageUrls: variant.imageUrls,
+      status: variant.status,
       attributes: Object.fromEntries(
         variant.attributes.filter((attribute) => attribute.key.trim() !== '').map((attribute) => [attribute.key, attribute.value])
       ),
@@ -318,6 +321,28 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   />
                   Активен
                 </label>
+                <div className="col-span-2 flex overflow-hidden rounded-pill border-2 border-black">
+                  <button
+                    type="button"
+                    aria-pressed={variant.status === 'IN_STOCK'}
+                    onClick={() => updateVariant(variantIndex, { status: 'IN_STOCK' })}
+                    className={`flex-1 px-3 py-2 font-grotesk text-sm font-bold transition ${
+                      variant.status === 'IN_STOCK' ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'
+                    }`}
+                  >
+                    В наличии
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={variant.status === 'PRE_ORDER'}
+                    onClick={() => updateVariant(variantIndex, { status: 'PRE_ORDER' })}
+                    className={`flex-1 border-l-2 border-black px-3 py-2 font-grotesk text-sm font-bold transition ${
+                      variant.status === 'PRE_ORDER' ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'
+                    }`}
+                  >
+                    Под заказ
+                  </button>
+                </div>
               </div>
 
               <div className="mt-3">
