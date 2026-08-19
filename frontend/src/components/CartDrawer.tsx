@@ -1,10 +1,75 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import useCartStore from '../store/useCartStore'
+import useCartStore, { type CartItem } from '../store/useCartStore'
 import submitCheckout from '../api/checkout'
 import formatPrice from '../utils/formatPrice'
 import resolveDeliveryFee, { DELIVERY_CITIES } from '../utils/deliveryFee'
 import CityDropdown from './CityDropdown'
+
+type DeliveryMode = 'together' | 'separate'
+
+const toCheckoutItems = (list: CartItem[]) =>
+  list.map((item) => ({
+    variantId: item.variantId,
+    productName: item.productName,
+    sku: item.sku,
+    attributes: item.attributes,
+    unitPrice: item.unitPrice,
+    quantity: item.quantity,
+  }))
+
+type CartItemRowProps = {
+  item: CartItem
+  onChangeQuantity: (variantId: number, delta: number) => void
+  onRemove: (variantId: number) => void
+}
+
+function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-ink/10 py-3">
+      <div>
+        <p className="font-grotesk text-sm font-bold text-ink">{item.productName}</p>
+        <p className="text-xs text-ink/50">
+          {Object.values(item.attributes).join(', ')}
+        </p>
+        <div className="mt-2 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onChangeQuantity(item.variantId, -1)}
+            disabled={item.quantity <= 1}
+            aria-label="Уменьшить количество"
+            className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            −
+          </button>
+          <span className="min-w-6 text-center font-grotesk text-sm font-bold text-ink">
+            {item.quantity}
+          </span>
+          <button
+            type="button"
+            onClick={() => onChangeQuantity(item.variantId, 1)}
+            aria-label="Увеличить количество"
+            className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white"
+          >
+            +
+          </button>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="font-grotesk text-sm font-bold text-ink">
+          {formatPrice(item.unitPrice * item.quantity)}
+        </span>
+        <button
+          type="button"
+          onClick={() => onRemove(item.variantId)}
+          className="-m-3 p-3 font-grotesk text-xs font-bold text-ink/40 transition hover:text-bubblegum-dark"
+        >
+          Удалить
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export default function CartDrawer() {
   const items = useCartStore((state) => state.items)
@@ -18,9 +83,14 @@ export default function CartDrawer() {
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [region, setRegion] = useState('')
+  const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('together')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [placedOrderId, setPlacedOrderId] = useState<string | null>(null)
+  const [orderPlaced, setOrderPlaced] = useState(false)
+
+  const inStockItems = items.filter((item) => item.status !== 'PRE_ORDER')
+  const preOrderItems = items.filter((item) => item.status === 'PRE_ORDER')
+  const hasBothGroups = inStockItems.length > 0 && preOrderItems.length > 0
 
   useEffect(() => {
     if (!isOpen) {
@@ -36,7 +106,9 @@ export default function CartDrawer() {
   const canCheckout =
     items.length > 0 && customerName.trim() !== '' && customerPhone.trim() !== '' && region.trim() !== ''
 
-  const deliveryFee = region ? resolveDeliveryFee(region) : 0
+  const isSplitDelivery = hasBothGroups && deliveryMode === 'separate'
+  const singleDeliveryFee = region ? resolveDeliveryFee(region) : 0
+  const deliveryFee = isSplitDelivery ? singleDeliveryFee * 2 : singleDeliveryFee
   const grandTotal = totalPrice + deliveryFee
 
   const handleCheckout = async () => {
@@ -48,22 +120,17 @@ export default function CartDrawer() {
     setSubmitError(null)
 
     try {
-      const response = await submitCheckout({
-        customerName,
-        customerPhone,
-        region,
-        items: items.map((item) => ({
-          variantId: item.variantId,
-          productName: item.productName,
-          sku: item.sku,
-          attributes: item.attributes,
-          unitPrice: item.unitPrice,
-          quantity: item.quantity,
-        })),
-      })
+      if (isSplitDelivery) {
+        await Promise.all([
+          submitCheckout({ customerName, customerPhone, region, items: toCheckoutItems(inStockItems) }),
+          submitCheckout({ customerName, customerPhone, region, items: toCheckoutItems(preOrderItems) }),
+        ])
+      } else {
+        await submitCheckout({ customerName, customerPhone, region, items: toCheckoutItems(items) })
+      }
 
       clearCart()
-      setPlacedOrderId(response.orderId)
+      setOrderPlaced(true)
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Не удалось оформить заказ. Попробуйте ещё раз.')
     } finally {
@@ -73,11 +140,12 @@ export default function CartDrawer() {
 
   const handleClose = () => {
     closeCart()
-    if (placedOrderId) {
-      setPlacedOrderId(null)
+    if (orderPlaced) {
+      setOrderPlaced(false)
       setCustomerName('')
       setCustomerPhone('')
       setRegion('')
+      setDeliveryMode('together')
     }
   }
 
@@ -112,7 +180,7 @@ export default function CartDrawer() {
               </button>
             </div>
 
-            {placedOrderId ? (
+            {orderPlaced ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-4 text-center">
                 <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-black bg-bubblegum-light font-grotesk text-3xl font-bold text-ink">
                   ✓
@@ -120,6 +188,7 @@ export default function CartDrawer() {
                 <h3 className="font-grotesk text-lg font-bold text-ink">Заказ принят!</h3>
                 <p className="text-sm text-ink/60">
                   Мы свяжемся с вами по указанному номеру, чтобы уточнить детали заказа и доставку.
+                  {isSplitDelivery && ' Товары в наличии и товары под заказ приедут отдельными доставками.'}
                 </p>
                 <button
                   type="button"
@@ -135,53 +204,41 @@ export default function CartDrawer() {
               {items.length === 0 && (
                 <p className="text-sm text-ink/50">Корзина пуста.</p>
               )}
-              {items.map((item) => (
-                <div
-                  key={item.variantId}
-                  className="flex items-center justify-between gap-3 border-b border-ink/10 py-3"
-                >
-                  <div>
-                    <p className="font-grotesk text-sm font-bold text-ink">{item.productName}</p>
-                    <p className="text-xs text-ink/50">
-                      {Object.values(item.attributes).join(', ')}
-                    </p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => changeQuantity(item.variantId, -1)}
-                        disabled={item.quantity <= 1}
-                        aria-label="Уменьшить количество"
-                        className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
-                      >
-                        −
-                      </button>
-                      <span className="min-w-6 text-center font-grotesk text-sm font-bold text-ink">
-                        {item.quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => changeQuantity(item.variantId, 1)}
-                        aria-label="Увеличить количество"
-                        className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-grotesk text-sm font-bold text-ink">
-                      {formatPrice(item.unitPrice * item.quantity)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item.variantId)}
-                      className="-m-3 p-3 font-grotesk text-xs font-bold text-ink/40 transition hover:text-bubblegum-dark"
-                    >
-                      Удалить
-                    </button>
-                  </div>
-                </div>
-              ))}
+              {hasBothGroups ? (
+                <>
+                  <p className="mt-2 font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
+                    В наличии
+                  </p>
+                  {inStockItems.map((item) => (
+                    <CartItemRow
+                      key={item.variantId}
+                      item={item}
+                      onChangeQuantity={changeQuantity}
+                      onRemove={removeItem}
+                    />
+                  ))}
+                  <p className="mt-4 font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
+                    Под заказ
+                  </p>
+                  {preOrderItems.map((item) => (
+                    <CartItemRow
+                      key={item.variantId}
+                      item={item}
+                      onChangeQuantity={changeQuantity}
+                      onRemove={removeItem}
+                    />
+                  ))}
+                </>
+              ) : (
+                items.map((item) => (
+                  <CartItemRow
+                    key={item.variantId}
+                    item={item}
+                    onChangeQuantity={changeQuantity}
+                    onRemove={removeItem}
+                  />
+                ))
+              )}
 
               {items.length > 0 && (
                 <div className="mt-4 flex flex-col gap-3">
@@ -205,6 +262,40 @@ export default function CartDrawer() {
                     onChange={setRegion}
                     placeholder="Город доставки"
                   />
+                  {hasBothGroups && (
+                    <div className="flex flex-col gap-1">
+                      <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
+                        Доставка
+                      </span>
+                      <div className="flex overflow-hidden rounded-pill border-2 border-black">
+                        <button
+                          type="button"
+                          aria-pressed={deliveryMode === 'together'}
+                          onClick={() => setDeliveryMode('together')}
+                          className={`flex-1 px-3 py-2 font-grotesk text-sm font-bold transition ${
+                            deliveryMode === 'together' ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'
+                          }`}
+                        >
+                          Вместе
+                        </button>
+                        <button
+                          type="button"
+                          aria-pressed={deliveryMode === 'separate'}
+                          onClick={() => setDeliveryMode('separate')}
+                          className={`flex-1 border-l-2 border-black px-3 py-2 font-grotesk text-sm font-bold transition ${
+                            deliveryMode === 'separate' ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'
+                          }`}
+                        >
+                          Раздельно
+                        </button>
+                      </div>
+                      <p className="text-xs text-ink/50">
+                        {deliveryMode === 'together'
+                          ? 'Одна доставка — когда будут готовы все товары, включая под заказ.'
+                          : 'Две доставки — товары в наличии отправим сразу, под заказ отдельно, когда будут готовы.'}
+                      </p>
+                    </div>
+                  )}
                   {submitError && <p className="text-xs text-red-500">{submitError}</p>}
                 </div>
               )}
@@ -220,10 +311,23 @@ export default function CartDrawer() {
                 <span>Товары</span>
                 <span>{formatPrice(totalPrice)}</span>
               </div>
-              <div className="mb-4 flex items-center justify-between font-grotesk text-sm text-ink/60">
-                <span>Доставка{region ? '' : ' (выберите город)'}</span>
-                <span>{region ? formatPrice(deliveryFee) : '—'}</span>
-              </div>
+              {isSplitDelivery ? (
+                <>
+                  <div className="mb-1 flex items-center justify-between font-grotesk text-sm text-ink/60">
+                    <span>Доставка — в наличии{region ? '' : ' (выберите город)'}</span>
+                    <span>{region ? formatPrice(singleDeliveryFee) : '—'}</span>
+                  </div>
+                  <div className="mb-4 flex items-center justify-between font-grotesk text-sm text-ink/60">
+                    <span>Доставка — под заказ{region ? '' : ' (выберите город)'}</span>
+                    <span>{region ? formatPrice(singleDeliveryFee) : '—'}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="mb-4 flex items-center justify-between font-grotesk text-sm text-ink/60">
+                  <span>Доставка{region ? '' : ' (выберите город)'}</span>
+                  <span>{region ? formatPrice(deliveryFee) : '—'}</span>
+                </div>
+              )}
               <div className="mb-4 flex items-center justify-between border-t border-ink/10 pt-3 font-grotesk text-base font-bold text-ink">
                 <span>Итого</span>
                 <span>{formatPrice(grandTotal)}</span>

@@ -18,6 +18,7 @@ const cartItem = (overrides: Partial<CartItem> = {}): CartItem => ({
   attributes: { color: 'black' },
   unitPrice: 25,
   quantity: 2,
+  status: 'IN_STOCK',
   ...overrides,
 })
 
@@ -179,6 +180,78 @@ describe('CartDrawer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Готово' }))
 
     expect(useCartStore.getState().isOpen).toBe(false)
+  })
+
+  it('groups items into В наличии and Под заказ sections when the cart has both', () => {
+    useCartStore.setState({
+      items: [
+        cartItem({ variantId: 1, status: 'IN_STOCK' }),
+        cartItem({ variantId: 2, sku: 'MUG-PRE', productName: 'Preorder Mug', status: 'PRE_ORDER', quantity: 1 }),
+      ],
+      isOpen: true,
+    })
+
+    render(<CartDrawer />)
+
+    expect(screen.getByText('В наличии')).toBeInTheDocument()
+    expect(screen.getByText('Под заказ')).toBeInTheDocument()
+    expect(screen.getByText('Custom Tumbler')).toBeInTheDocument()
+    expect(screen.getByText('Preorder Mug')).toBeInTheDocument()
+  })
+
+  it('does not show group headers or a delivery-mode toggle for a single-status cart', () => {
+    useCartStore.setState({ items: [cartItem()], isOpen: true })
+
+    render(<CartDrawer />)
+
+    expect(screen.queryByText('В наличии')).not.toBeInTheDocument()
+    expect(screen.queryByText('Под заказ')).not.toBeInTheDocument()
+    expect(screen.queryByText('Вместе')).not.toBeInTheDocument()
+    expect(screen.queryByText('Раздельно')).not.toBeInTheDocument()
+  })
+
+  it('defaults to a single combined delivery fee for a mixed cart', () => {
+    useCartStore.setState({
+      items: [
+        cartItem({ variantId: 1, status: 'IN_STOCK' }),
+        cartItem({ variantId: 2, sku: 'MUG-PRE', productName: 'Preorder Mug', status: 'PRE_ORDER', quantity: 1 }),
+      ],
+      isOpen: true,
+    })
+
+    render(<CartDrawer />)
+    selectCity('Бишкек')
+
+    expect(screen.getByText('250 KGS')).toBeInTheDocument()
+    expect(screen.getByText('325 KGS')).toBeInTheDocument()
+  })
+
+  it('doubles the delivery fee and submits two checkouts when Раздельно is chosen', async () => {
+    useCartStore.setState({
+      items: [
+        cartItem({ variantId: 1, status: 'IN_STOCK' }),
+        cartItem({ variantId: 2, sku: 'MUG-PRE', productName: 'Preorder Mug', status: 'PRE_ORDER', quantity: 1 }),
+      ],
+      isOpen: true,
+    })
+    mockedSubmitCheckout.mockResolvedValue({ orderId: 'order-1', itemsTotal: 50, deliveryFee: 250, grandTotal: 300 })
+
+    render(<CartDrawer />)
+    fillCheckoutForm()
+    fireEvent.click(screen.getByRole('button', { name: 'Раздельно' }))
+
+    expect(screen.getAllByText('250 KGS')).toHaveLength(2)
+    expect(screen.getByText('575 KGS')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /оформить заказ/i }))
+
+    await waitFor(() => expect(mockedSubmitCheckout).toHaveBeenCalledTimes(2))
+    expect(mockedSubmitCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ items: [expect.objectContaining({ sku: 'TUM-BLK-500' })] })
+    )
+    expect(mockedSubmitCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ items: [expect.objectContaining({ sku: 'MUG-PRE' })] })
+    )
   })
 
   it('on failure shows an error message and does not clear the cart', async () => {
