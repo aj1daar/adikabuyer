@@ -24,6 +24,8 @@ Telegram admin registration: `order-service` long-polls `getUpdates` on a daemon
 
 `DELETE /api/orders/{id}` (admin-only) hard-deletes an order and its items (cascade).
 
+The cart groups items into "В наличии"/"Под заказ" sections whenever both are present, and lets the customer pick "Вместе" (one delivery, once everything's ready) or "Раздельно" (two deliveries — in-stock items ship first, pre-order items separately). "Раздельно" submits two independent `POST /api/orders/checkout` calls (one per group) rather than a single split order server-side, so it doubles the delivery fee and produces two rows in the admin orders list; there's no cross-order linkage, and a failure partway through (one call succeeds, the other doesn't) isn't rolled back.
+
 ## Delivery pricing and commission
 
 Delivery fee is a flat binary rule in `order-service`, not a per-city lookup table: `Бишкек` (case-insensitive, whitespace-trimmed) costs `app.delivery.bishkek-fee`, every other region costs `app.delivery.default-fee`. This used to be a `Map<String, BigDecimal>` keyed by city name, but a Cyrillic YAML map key (`бишкек: 250`) silently broke Spring's relaxed YAML-to-Map binding — the value flattened onto `app.delivery.fees` itself instead of a nested entry, and the app failed to boot. Plain scalar properties don't have that failure mode. The frontend's city dropdown (`DELIVERY_CITIES` in `utils/deliveryFee.ts`) mirrors this exact rule for a live cart preview only; the checkout response is what's actually charged.
