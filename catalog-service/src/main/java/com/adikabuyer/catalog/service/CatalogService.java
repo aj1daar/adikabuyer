@@ -33,9 +33,10 @@ public class CatalogService {
     private final VariantRepository variantRepository;
     private final ProductMapper productMapper;
 
-    public List<ProductDto> getAllProducts(String search, String color, String size, String volume) {
+    public List<ProductDto> getAllProducts(String search, String category, String color, String size, String volume) {
         return productRepository.search(
                         normalize(search),
+                        normalize(category),
                         normalize(color),
                         normalize(size),
                         normalize(volume)

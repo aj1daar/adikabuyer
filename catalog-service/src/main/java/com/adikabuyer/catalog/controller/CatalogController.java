@@ -29,11 +29,12 @@ public class CatalogController {
     @GetMapping("/products")
     public List<ProductDto> getAllProducts(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category,
             @RequestParam(required = false) String color,
             @RequestParam(required = false) String size,
             @RequestParam(required = false) String volume
     ) {
-        return catalogService.getAllProducts(search, color, size, volume);
+        return catalogService.getAllProducts(search, category, color, size, volume);
     }
 
     @GetMapping("/products/{id}")
