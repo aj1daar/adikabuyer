@@ -2,6 +2,7 @@ package com.adikabuyer.catalog.service;
 
 import com.adikabuyer.catalog.domain.Product;
 import com.adikabuyer.catalog.domain.Variant;
+import com.adikabuyer.catalog.domain.VariantStatus;
 import com.adikabuyer.catalog.dto.ProductDto;
 import com.adikabuyer.catalog.dto.ProductRequest;
 import com.adikabuyer.catalog.dto.VariantRequest;
@@ -16,18 +17,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class CatalogService {
-
-    private static final int DEFAULT_VARIANT_STOCK = 100;
 
     private final ProductRepository productRepository;
     private final VariantRepository variantRepository;
@@ -72,27 +72,27 @@ public class CatalogService {
 
     @Transactional
     public ProductDto createProduct(ProductRequest request) {
+        List<VariantRequest> variantRequests = nullSafeVariants(request);
+        requireVariants(variantRequests);
+
         Instant now = Instant.now();
 
         Product product = Product.builder()
                 .name(request.name())
                 .description(request.description())
                 .category(request.category())
-                .basePrice(request.basePrice())
                 .active(request.active())
-                .imageUrl(request.imageUrl())
                 .createdAt(now)
                 .updatedAt(now)
                 .variants(new ArrayList<>())
                 .build();
 
-        for (VariantRequest variantRequest : nullSafeVariants(request)) {
+        for (VariantRequest variantRequest : variantRequests) {
             product.getVariants().add(buildVariant(variantRequest, product, now));
         }
 
-        if (product.getVariants().isEmpty()) {
-            product.getVariants().add(buildDefaultVariant(product, now));
-        }
+        product.setBasePrice(deriveBasePrice(product.getVariants()));
+        product.setImageUrl(deriveImageUrl(product.getVariants()));
 
         return productMapper.toDto(saveOrConflict(product));
     }
@@ -102,19 +102,43 @@ public class CatalogService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + id));
 
+        List<VariantRequest> variantRequests = nullSafeVariants(request);
+        requireVariants(variantRequests);
+
         Instant now = Instant.now();
 
         product.setName(request.name());
         product.setDescription(request.description());
         product.setCategory(request.category());
-        product.setBasePrice(request.basePrice());
         product.setActive(request.active());
-        product.setImageUrl(request.imageUrl());
         product.setUpdatedAt(now);
 
-        reconcileVariants(product, nullSafeVariants(request), now);
+        reconcileVariants(product, variantRequests, now);
+
+        product.setBasePrice(deriveBasePrice(product.getVariants()));
+        product.setImageUrl(deriveImageUrl(product.getVariants()));
 
         return productMapper.toDto(saveOrConflict(product));
+    }
+
+    private void requireVariants(List<VariantRequest> variantRequests) {
+        if (variantRequests.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A product needs at least one variant");
+        }
+    }
+
+    private BigDecimal deriveBasePrice(List<Variant> variants) {
+        return variants.stream()
+                .map(Variant::getPriceOverride)
+                .min(Comparator.naturalOrder())
+                .orElseThrow();
+    }
+
+    private String deriveImageUrl(List<Variant> variants) {
+        return variants.stream()
+                .flatMap(variant -> variant.getImageUrls().stream())
+                .findFirst()
+                .orElse(null);
     }
 
     @Transactional
@@ -156,23 +180,10 @@ public class CatalogService {
                 .sku(request.sku())
                 .attributes(request.attributes() != null ? request.attributes() : new HashMap<>())
                 .priceOverride(request.priceOverride())
-                .stockQuantity(request.stockQuantity())
+                .stockQuantity(resolveStockQuantity(request))
                 .active(request.active())
                 .imageUrls(request.imageUrls() != null ? new ArrayList<>(request.imageUrls()) : new ArrayList<>())
                 .status(request.statusOrDefault())
-                .createdAt(now)
-                .updatedAt(now)
-                .build();
-    }
-
-    private Variant buildDefaultVariant(Product product, Instant now) {
-        return Variant.builder()
-                .product(product)
-                .sku("DEFAULT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
-                .attributes(new HashMap<>())
-                .priceOverride(null)
-                .stockQuantity(DEFAULT_VARIANT_STOCK)
-                .active(true)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -182,11 +193,15 @@ public class CatalogService {
         variant.setSku(request.sku());
         variant.setAttributes(request.attributes() != null ? request.attributes() : new HashMap<>());
         variant.setPriceOverride(request.priceOverride());
-        variant.setStockQuantity(request.stockQuantity());
+        variant.setStockQuantity(resolveStockQuantity(request));
         variant.setActive(request.active());
         variant.setImageUrls(request.imageUrls() != null ? new ArrayList<>(request.imageUrls()) : new ArrayList<>());
         variant.setStatus(request.statusOrDefault());
         variant.setUpdatedAt(now);
+    }
+
+    private Integer resolveStockQuantity(VariantRequest request) {
+        return request.statusOrDefault() == VariantStatus.PRE_ORDER ? 0 : request.stockQuantity();
     }
 
     private List<VariantRequest> nullSafeVariants(ProductRequest request) {

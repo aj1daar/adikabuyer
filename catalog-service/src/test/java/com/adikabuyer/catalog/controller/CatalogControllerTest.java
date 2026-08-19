@@ -149,14 +149,12 @@ class CatalogControllerTest {
                   "name": "Custom Tumbler",
                   "description": "desc",
                   "category": "Drinkware",
-                  "basePrice": 25,
                   "active": true,
-                  "imageUrl": "http://localhost:9000/adikabuyer-media/photo.png",
                   "variants": [
                     {
                       "sku": "TUM-BLK-500",
                       "attributes": { "color": "black" },
-                      "priceOverride": null,
+                      "priceOverride": 25,
                       "stockQuantity": 10,
                       "active": true
                     }
@@ -187,13 +185,23 @@ class CatalogControllerTest {
     }
 
     @Test
-    void createProduct_returns400_whenBasePriceIsMissing() throws Exception {
-        String payload = validProductJson().replace("\"basePrice\": 25,", "");
+    void createProduct_returns400_whenPriceOverrideIsMissing() throws Exception {
+        String payload = validProductJson().replace("\"priceOverride\": 25,", "");
 
         mockMvc.perform(post("/api/catalog/products").contentType("application/json").content(payload))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(catalogService);
+    }
+
+    @Test
+    void createProduct_returns400_whenServiceRejectsEmptyVariantList() throws Exception {
+        when(catalogService.createProduct(any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "A product needs at least one variant"));
+        String payload = validProductJson().replaceFirst("(?s)\"variants\": \\[.*\\]", "\"variants\": []");
+
+        mockMvc.perform(post("/api/catalog/products").contentType("application/json").content(payload))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

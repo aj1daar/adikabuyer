@@ -15,7 +15,7 @@ public record VariantRequest(
         Long id,
         @NotBlank @Size(max = 100) String sku,
         Map<String, Object> attributes,
-        @Positive BigDecimal priceOverride,
+        @NotNull @Positive BigDecimal priceOverride,
         @NotNull @PositiveOrZero Integer stockQuantity,
         boolean active,
         @Size(max = 20) List<@Size(max = 500) String> imageUrls,

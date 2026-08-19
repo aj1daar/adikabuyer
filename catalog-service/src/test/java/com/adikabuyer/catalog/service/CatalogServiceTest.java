@@ -175,14 +175,11 @@ class CatalogServiceTest {
     }
 
     private VariantRequest buildVariantRequest(Long id, String sku, int stock) {
-        return new VariantRequest(id, sku, Map.of("color", "black"), null, stock, true, List.of(), VariantStatus.IN_STOCK);
+        return new VariantRequest(id, sku, Map.of("color", "black"), BigDecimal.TEN, stock, true, List.of(), VariantStatus.IN_STOCK);
     }
 
     private ProductRequest buildProductRequest(List<VariantRequest> variants) {
-        return new ProductRequest(
-                "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), true,
-                "http://localhost:9000/adikabuyer-media/photo.png", variants
-        );
+        return new ProductRequest("Custom Tumbler", "desc", "Drinkware", true, variants);
     }
 
     @Test
@@ -203,7 +200,8 @@ class CatalogServiceTest {
         assertThat(saved.getVariants()).hasSize(1);
         assertThat(saved.getVariants().get(0).getSku()).isEqualTo("TUM-BLK-500");
         assertThat(saved.getVariants().get(0).getProduct()).isSameAs(saved);
-        assertThat(saved.getImageUrl()).isEqualTo("http://localhost:9000/adikabuyer-media/photo.png");
+        assertThat(saved.getBasePrice()).isEqualByComparingTo("10");
+        assertThat(saved.getImageUrl()).isNull();
         assertThat(result).isEqualTo(dto);
     }
 
@@ -219,28 +217,36 @@ class CatalogServiceTest {
     }
 
     @Test
-    void createProduct_createsDefaultVariant_whenVariantListIsEmpty() {
+    void createProduct_derivesBasePriceAndImageFromCheapestAndFirstImagedVariant() {
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(productMapper.toDto(any(Product.class))).thenReturn(
                 new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, List.of())
         );
 
-        ProductRequest request = buildProductRequest(List.of());
+        VariantRequest cheap = new VariantRequest(null, "SKU-CHEAP", Map.of(), BigDecimal.valueOf(15), 1, true,
+                List.of("http://cdn/cheap.png"), VariantStatus.IN_STOCK);
+        VariantRequest pricey = new VariantRequest(null, "SKU-PRICEY", Map.of(), BigDecimal.valueOf(30), 1, true,
+                List.of("http://cdn/pricey.png"), VariantStatus.IN_STOCK);
 
-        catalogService.createProduct(request);
+        catalogService.createProduct(buildProductRequest(List.of(pricey, cheap)));
 
         ArgumentCaptor<Product> savedCaptor = ArgumentCaptor.forClass(Product.class);
         verify(productRepository).save(savedCaptor.capture());
 
         Product saved = savedCaptor.getValue();
-        assertThat(saved.getVariants()).hasSize(1);
-        Variant defaultVariant = saved.getVariants().get(0);
-        assertThat(defaultVariant.getSku()).startsWith("DEFAULT-");
-        assertThat(defaultVariant.getAttributes()).isEmpty();
-        assertThat(defaultVariant.getPriceOverride()).isNull();
-        assertThat(defaultVariant.getStockQuantity()).isEqualTo(100);
-        assertThat(defaultVariant.isActive()).isTrue();
-        assertThat(defaultVariant.getProduct()).isSameAs(saved);
+        assertThat(saved.getBasePrice()).isEqualByComparingTo("15");
+        assertThat(saved.getImageUrl()).isEqualTo("http://cdn/pricey.png");
+    }
+
+    @Test
+    void createProduct_throwsBadRequest_whenVariantListIsEmpty() {
+        ProductRequest request = buildProductRequest(List.of());
+
+        assertThatThrownBy(() -> catalogService.createProduct(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+
+        verifyNoInteractions(productRepository);
     }
 
     @Test
@@ -255,18 +261,32 @@ class CatalogServiceTest {
     @Test
     void updateProduct_updatesScalarFieldsOnExistingProduct() {
         Product existing = Product.builder().id(1L).name("Old Name").basePrice(BigDecimal.ONE).active(false).build();
+        existing.setVariants(new java.util.ArrayList<>());
         when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(productMapper.toDto(any(Product.class))).thenReturn(
                 new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, List.of())
         );
 
-        catalogService.updateProduct(1L, buildProductRequest(List.of()));
+        catalogService.updateProduct(1L, buildProductRequest(List.of(buildVariantRequest(null, "TUM-BLK-500", 10))));
 
         assertThat(existing.getName()).isEqualTo("Custom Tumbler");
-        assertThat(existing.getBasePrice()).isEqualByComparingTo("25");
+        assertThat(existing.getBasePrice()).isEqualByComparingTo("10");
         assertThat(existing.isActive()).isTrue();
-        assertThat(existing.getImageUrl()).isEqualTo("http://localhost:9000/adikabuyer-media/photo.png");
+        assertThat(existing.getImageUrl()).isNull();
+    }
+
+    @Test
+    void updateProduct_throwsBadRequest_whenVariantListIsEmpty() {
+        Product existing = Product.builder().id(1L).name("Custom Tumbler").basePrice(BigDecimal.TEN).active(true).build();
+        existing.setVariants(new java.util.ArrayList<>());
+        when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> catalogService.updateProduct(1L, buildProductRequest(List.of())))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+
+        verify(productRepository, never()).save(any(Product.class));
     }
 
     @Test
@@ -308,10 +328,12 @@ class CatalogServiceTest {
 
     @Test
     void updateProduct_removesVariant_whenAbsentFromRequest() {
-        Variant existingVariant = Variant.builder().id(10L).sku("TO-REMOVE").stockQuantity(2).active(true).build();
+        Variant keepVariant = Variant.builder().id(10L).sku("KEEP").stockQuantity(2).active(true).build();
+        Variant removeVariant = Variant.builder().id(11L).sku("TO-REMOVE").stockQuantity(2).active(true).build();
         Product existing = Product.builder().id(1L).name("Custom Tumbler").basePrice(BigDecimal.TEN).active(true).build();
-        existing.setVariants(new java.util.ArrayList<>(List.of(existingVariant)));
-        existingVariant.setProduct(existing);
+        existing.setVariants(new java.util.ArrayList<>(List.of(keepVariant, removeVariant)));
+        keepVariant.setProduct(existing);
+        removeVariant.setProduct(existing);
 
         when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -319,9 +341,10 @@ class CatalogServiceTest {
                 new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, List.of())
         );
 
-        catalogService.updateProduct(1L, buildProductRequest(List.of()));
+        catalogService.updateProduct(1L, buildProductRequest(List.of(buildVariantRequest(10L, "KEEP", 2))));
 
-        assertThat(existing.getVariants()).isEmpty();
+        assertThat(existing.getVariants()).hasSize(1);
+        assertThat(existing.getVariants().get(0).getId()).isEqualTo(10L);
     }
 
     @Test
