@@ -35,6 +35,7 @@ describe('MainLayout', () => {
           attributes: {},
           unitPrice: 10,
           quantity: 3,
+          status: 'IN_STOCK',
         },
       ],
     })
