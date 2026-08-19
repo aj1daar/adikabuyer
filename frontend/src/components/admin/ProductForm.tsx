@@ -53,11 +53,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   const [name, setName] = useState(product?.name ?? '')
   const [description, setDescription] = useState(product?.description ?? '')
   const [category, setCategory] = useState(product?.category ?? '')
-  const [basePrice, setBasePrice] = useState(product?.basePrice.toString() ?? '')
   const [active, setActive] = useState(product?.active ?? true)
-  const [imageUrl, setImageUrl] = useState<string | null>(product?.imageUrl ?? null)
-  const [isUploadingImage, setIsUploadingImage] = useState(false)
-  const [imageUploadError, setImageUploadError] = useState<string | null>(null)
   const [variants, setVariants] = useState<VariantDraft[]>(toVariantDraft(product))
   const [uploadingVariantIndex, setUploadingVariantIndex] = useState<number | null>(null)
   const [variantUploadError, setVariantUploadError] = useState<string | null>(null)
@@ -86,25 +82,6 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
     }
   }
 
-  const handleImageSelected = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) {
-      return
-    }
-
-    setIsUploadingImage(true)
-    setImageUploadError(null)
-
-    try {
-      const response = await uploadMedia(file)
-      setImageUrl(response.url)
-    } catch (err) {
-      setImageUploadError(err instanceof Error ? err.message : 'Не удалось загрузить изображение.')
-    } finally {
-      setIsUploadingImage(false)
-    }
-  }
-
   const addVariant = () => {
     setVariants([
       ...variants,
@@ -118,6 +95,10 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
 
   const updateVariant = (index: number, patch: Partial<VariantDraft>) => {
     setVariants(variants.map((variant, i) => (i === index ? { ...variant, ...patch } : variant)))
+  }
+
+  const setVariantStatus = (index: number, status: VariantDraft['status']) => {
+    updateVariant(index, status === 'PRE_ORDER' ? { status, stockQuantity: '0' } : { status })
   }
 
   const addAttribute = (variantIndex: number) => {
@@ -144,7 +125,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
     const variantPayloads: VariantPayload[] = variants.map((variant) => ({
       id: variant.id,
       sku: variant.sku,
-      priceOverride: variant.priceOverride.trim() === '' ? null : Number(variant.priceOverride),
+      priceOverride: Number(variant.priceOverride),
       stockQuantity: Number(variant.stockQuantity),
       active: variant.active,
       imageUrls: variant.imageUrls,
@@ -159,17 +140,18 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
       name,
       description: description.trim() === '' ? null : description,
       category: category.trim() === '' ? null : category,
-      basePrice: Number(basePrice),
       active,
-      imageUrl,
       variants: variantPayloads,
     }
 
     onSubmit(payload)
   }
 
-  const canSubmit =
-    name.trim() !== '' && basePrice.trim() !== '' && !isUploadingImage && uploadingVariantIndex === null
+  const hasPricedVariant = variants.length > 0 && variants.every(
+    (variant) => variant.priceOverride.trim() !== '' && !Number.isNaN(Number(variant.priceOverride))
+  )
+
+  const canSubmit = name.trim() !== '' && hasPricedVariant && uploadingVariantIndex === null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4">
@@ -205,20 +187,6 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               placeholder="Категория"
               className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
             />
-            <div className="flex flex-col gap-1">
-              <input
-                type="number"
-                value={basePrice}
-                onChange={(event) => setBasePrice(event.target.value)}
-                placeholder="Закупочная цена (без наценки)"
-                className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
-              />
-              {basePrice.trim() !== '' && !Number.isNaN(Number(basePrice)) && (
-                <p className="px-4 text-xs text-ink/50">
-                  Клиенту: {formatPrice(previewDisplayPrice(Number(basePrice)))} (+15%, округление до сотни)
-                </p>
-              )}
-            </div>
             <label className="flex items-center gap-2 text-sm text-ink">
               <input
                 type="checkbox"
@@ -227,36 +195,6 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               />
               Активен
             </label>
-
-            <div className="flex flex-col gap-2">
-              <label className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
-                Изображение
-              </label>
-              {imageUrl && (
-                <img
-                  src={imageUrl}
-                  alt="Предпросмотр изображения товара"
-                  className="h-24 w-24 rounded-2xl border-2 border-black object-cover"
-                />
-              )}
-              <input
-                id={imageUploadId}
-                type="file"
-                accept="image/*"
-                onChange={handleImageSelected}
-                disabled={isUploadingImage}
-                className="hidden"
-              />
-              <label
-                htmlFor={imageUploadId}
-                className="flex w-fit cursor-pointer items-center gap-2 rounded-pill border-2 border-dashed border-black bg-silver px-4 py-2 font-grotesk text-sm font-bold text-ink transition hover:bg-bubblegum hover:text-white aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-                aria-disabled={isUploadingImage}
-              >
-                Выбрать фото
-              </label>
-              {isUploadingImage && <p className="text-xs text-ink/50">Загружаем изображение...</p>}
-              {imageUploadError && <p className="text-xs text-red-500">{imageUploadError}</p>}
-            </div>
           </div>
 
           <div className="mt-6 flex items-center justify-between">
@@ -269,6 +207,9 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               Добавить вариант
             </button>
           </div>
+          {variants.length === 0 && (
+            <p className="mt-2 text-xs text-red-500">Добавьте хотя бы один вариант — цена и фото задаются только на уровне варианта.</p>
+          )}
           {variantUploadError && <p className="mt-2 text-xs text-red-500">{variantUploadError}</p>}
 
           {variants.map((variant, variantIndex) => (
@@ -297,7 +238,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                     type="number"
                     value={variant.priceOverride}
                     onChange={(event) => updateVariant(variantIndex, { priceOverride: event.target.value })}
-                    placeholder="Закупка (переопределение)"
+                    placeholder="Закупочная цена"
                     className="w-full rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                   />
                   {variant.priceOverride.trim() !== '' && !Number.isNaN(Number(variant.priceOverride)) && (
@@ -311,7 +252,8 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   value={variant.stockQuantity}
                   onChange={(event) => updateVariant(variantIndex, { stockQuantity: event.target.value })}
                   placeholder="Остаток"
-                  className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+                  disabled={variant.status === 'PRE_ORDER'}
+                  className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
                 />
                 <label className="flex items-center gap-2 text-sm text-ink">
                   <input
@@ -325,7 +267,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   <button
                     type="button"
                     aria-pressed={variant.status === 'IN_STOCK'}
-                    onClick={() => updateVariant(variantIndex, { status: 'IN_STOCK' })}
+                    onClick={() => setVariantStatus(variantIndex, 'IN_STOCK')}
                     className={`flex-1 px-3 py-2 font-grotesk text-sm font-bold transition ${
                       variant.status === 'IN_STOCK' ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'
                     }`}
@@ -335,7 +277,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   <button
                     type="button"
                     aria-pressed={variant.status === 'PRE_ORDER'}
-                    onClick={() => updateVariant(variantIndex, { status: 'PRE_ORDER' })}
+                    onClick={() => setVariantStatus(variantIndex, 'PRE_ORDER')}
                     className={`flex-1 border-l-2 border-black px-3 py-2 font-grotesk text-sm font-bold transition ${
                       variant.status === 'PRE_ORDER' ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'
                     }`}

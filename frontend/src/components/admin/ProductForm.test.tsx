@@ -35,6 +35,12 @@ const existingProduct: ProductDto = {
   ],
 }
 
+const fillFirstVariant = (sku: string, price: string) => {
+  fireEvent.click(screen.getByRole('button', { name: /добавить вариант/i }))
+  fireEvent.change(screen.getByPlaceholderText('SKU'), { target: { value: sku } })
+  fireEvent.change(screen.getByPlaceholderText('Закупочная цена'), { target: { value: price } })
+}
+
 beforeEach(() => {
   mockedUploadMedia.mockReset()
 })
@@ -56,7 +62,7 @@ describe('ProductForm', () => {
     expect(screen.getByDisplayValue('black')).toBeInTheDocument()
   })
 
-  it('disables submit until name and base price are filled', () => {
+  it('disables submit until name is filled and at least one priced variant exists', () => {
     render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
 
     expect(screen.getByRole('button', { name: /сохранить/i })).toBeDisabled()
@@ -64,7 +70,7 @@ describe('ProductForm', () => {
     fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
     expect(screen.getByRole('button', { name: /сохранить/i })).toBeDisabled()
 
-    fireEvent.change(screen.getByPlaceholderText('Закупочная цена (без наценки)'), { target: { value: '15' } })
+    fillFirstVariant('NEW-SKU-1', '15')
     expect(screen.getByRole('button', { name: /сохранить/i })).toBeEnabled()
   })
 
@@ -92,9 +98,7 @@ describe('ProductForm', () => {
     render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
 
     fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
-    fireEvent.change(screen.getByPlaceholderText('Закупочная цена (без наценки)'), { target: { value: '15' } })
-    fireEvent.click(screen.getByRole('button', { name: /добавить вариант/i }))
-    fireEvent.change(screen.getByPlaceholderText('SKU'), { target: { value: 'NEW-SKU-1' } })
+    fillFirstVariant('NEW-SKU-1', '15')
     fireEvent.change(screen.getByPlaceholderText('Остаток'), { target: { value: '7' } })
     fireEvent.click(screen.getByRole('button', { name: /добавить атрибут/i }))
     fireEvent.change(screen.getByPlaceholderText('Ключ'), { target: { value: 'color' } })
@@ -107,14 +111,12 @@ describe('ProductForm', () => {
       name: 'New Product',
       description: null,
       category: null,
-      basePrice: 15,
       active: true,
-      imageUrl: null,
       variants: [
         {
           id: undefined,
           sku: 'NEW-SKU-1',
-          priceOverride: null,
+          priceOverride: 15,
           stockQuantity: 7,
           active: true,
           imageUrls: [],
@@ -130,18 +132,37 @@ describe('ProductForm', () => {
     render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
 
     fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
-    fireEvent.change(screen.getByPlaceholderText('Закупочная цена (без наценки)'), { target: { value: '15' } })
-    fireEvent.click(screen.getByRole('button', { name: /добавить вариант/i }))
-    fireEvent.change(screen.getByPlaceholderText('SKU'), { target: { value: 'NEW-SKU-1' } })
+    fillFirstVariant('NEW-SKU-1', '15')
     fireEvent.click(screen.getByRole('button', { name: 'Под заказ' }))
 
     fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
 
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
-        variants: [expect.objectContaining({ status: 'PRE_ORDER' })],
+        variants: [expect.objectContaining({ status: 'PRE_ORDER', stockQuantity: 0 })],
       })
     )
+  })
+
+  it('forces stock to zero and disables the stock input when Под заказ is selected', () => {
+    render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
+
+    fillFirstVariant('NEW-SKU-1', '15')
+    fireEvent.change(screen.getByPlaceholderText('Остаток'), { target: { value: '12' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Под заказ' }))
+
+    expect(screen.getByPlaceholderText('Остаток')).toHaveValue(0)
+    expect(screen.getByPlaceholderText('Остаток')).toBeDisabled()
+  })
+
+  it('re-enables the stock input when switching back to В наличии', () => {
+    render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
+
+    fillFirstVariant('NEW-SKU-1', '15')
+    fireEvent.click(screen.getByRole('button', { name: 'Под заказ' }))
+    fireEvent.click(screen.getByRole('button', { name: 'В наличии' }))
+
+    expect(screen.getByPlaceholderText('Остаток')).toBeEnabled()
   })
 
   it('removes a variant when Remove variant is clicked', () => {
@@ -152,6 +173,15 @@ describe('ProductForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /удалить вариант/i }))
 
     expect(screen.queryByDisplayValue('TUM-BLK-500')).not.toBeInTheDocument()
+  })
+
+  it('disables submit once the last variant is removed', () => {
+    render(<ProductForm product={existingProduct} onSubmit={vi.fn()} onClose={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /удалить вариант/i }))
+
+    expect(screen.getByRole('button', { name: /сохранить/i })).toBeDisabled()
+    expect(screen.getByText(/добавьте хотя бы один вариант/i)).toBeInTheDocument()
   })
 
   it('uploads a variant image and includes it in the submit payload', async () => {
@@ -180,72 +210,5 @@ describe('ProductForm', () => {
         ],
       })
     )
-  })
-
-  it('uploads the selected image immediately and shows a preview on success', async () => {
-    mockedUploadMedia.mockResolvedValueOnce({ url: 'http://localhost:9000/adikabuyer-media/photo.png' })
-    render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
-
-    const file = new File(['content'], 'photo.png', { type: 'image/png' })
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
-    fireEvent.change(fileInput, { target: { files: [file] } })
-
-    expect(mockedUploadMedia).toHaveBeenCalledWith(file)
-    await waitFor(() => expect(screen.getByRole('img')).toHaveAttribute('src', 'http://localhost:9000/adikabuyer-media/photo.png'))
-  })
-
-  it('includes the uploaded image url in the submitted payload', async () => {
-    mockedUploadMedia.mockResolvedValueOnce({ url: 'http://localhost:9000/adikabuyer-media/photo.png' })
-    const onSubmit = vi.fn()
-    render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
-
-    fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
-    fireEvent.change(screen.getByPlaceholderText('Закупочная цена (без наценки)'), { target: { value: '15' } })
-
-    const file = new File(['content'], 'photo.png', { type: 'image/png' })
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
-    fireEvent.change(fileInput, { target: { files: [file] } })
-
-    await waitFor(() => expect(screen.getByRole('img')).toBeInTheDocument())
-
-    fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
-
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ imageUrl: 'http://localhost:9000/adikabuyer-media/photo.png' })
-    )
-  })
-
-  it('shows an error message and does not set an image url when upload fails', async () => {
-    mockedUploadMedia.mockRejectedValueOnce(new Error('Upload failed'))
-    render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
-
-    const file = new File(['content'], 'photo.png', { type: 'image/png' })
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
-    fireEvent.change(fileInput, { target: { files: [file] } })
-
-    await waitFor(() => expect(screen.getByText('Upload failed')).toBeInTheDocument())
-    expect(screen.queryByRole('img')).not.toBeInTheDocument()
-  })
-
-  it('disables submit while the image upload is in progress', async () => {
-    let resolveUpload: (value: { url: string }) => void = () => {}
-    mockedUploadMedia.mockImplementation(
-      () => new Promise((resolve) => {
-        resolveUpload = resolve
-      })
-    )
-    render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
-
-    fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
-    fireEvent.change(screen.getByPlaceholderText('Закупочная цена (без наценки)'), { target: { value: '15' } })
-
-    const file = new File(['content'], 'photo.png', { type: 'image/png' })
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
-    fireEvent.change(fileInput, { target: { files: [file] } })
-
-    expect(screen.getByRole('button', { name: /сохранить/i })).toBeDisabled()
-
-    resolveUpload({ url: 'http://localhost:9000/adikabuyer-media/photo.png' })
-    await waitFor(() => expect(screen.getByRole('button', { name: /сохранить/i })).toBeEnabled())
   })
 })

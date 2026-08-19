@@ -161,7 +161,9 @@ describe('AdminDashboard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /добавить товар/i }))
     fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'Brand New' } })
-    fireEvent.change(screen.getByPlaceholderText('Закупочная цена (без наценки)'), { target: { value: '9' } })
+    fireEvent.click(screen.getByRole('button', { name: /добавить вариант/i }))
+    fireEvent.change(screen.getByPlaceholderText('SKU'), { target: { value: 'NEW-SKU' } })
+    fireEvent.change(screen.getByPlaceholderText('Закупочная цена'), { target: { value: '9' } })
     fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
 
     await waitFor(() => expect(mockedCreateProduct).toHaveBeenCalled())
@@ -174,6 +176,7 @@ describe('AdminDashboard', () => {
     renderDashboard()
 
     fireEvent.click(screen.getAllByRole('button', { name: /изменить/i })[0])
+    fireEvent.change(screen.getByPlaceholderText('Закупочная цена'), { target: { value: '25' } })
     fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
 
     await waitFor(() => expect(mockedUpdateProduct).toHaveBeenCalledWith(1, expect.any(Object)))
