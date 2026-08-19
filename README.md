@@ -51,7 +51,7 @@ SEO basics are in place: meta description and Open Graph tags in `index.html`, p
 - One hardcoded admin user. No signup, no password reset, no roles beyond admin/staff.
 - Login rate limiter is in-memory — resets on restart, and won't work once there's more than one catalog-service instance.
 - Telegram admin registration has no admin-list UI in the dashboard — checking who's subscribed means querying the `telegram_admin` table directly (unsubscribing is self-service via `/stop`).
-- Catalog filter pills (color/size/volume) are a hardcoded list on the frontend, not derived from real product data. Tag a product with a color that's not on the list and it's unfilterable.
+- Catalog filter pills for color/size/volume are a hardcoded list on the frontend, not derived from real product data. Tag a product with a color that's not on the list and it's unfilterable. The category filter is the exception — it's derived from real data, but only via a second unfiltered fetch on every page load; there's still no dedicated distinct-values endpoint.
 - No pagination on `/api/catalog/products`. Fine for a few dozen products, not forever.
 - No image resizing on upload — whatever the admin picks goes to MinIO/R2 at full size.
 - Base Docker images aren't digest-pinned. Deliberate — no release process yet that would benefit from it.
