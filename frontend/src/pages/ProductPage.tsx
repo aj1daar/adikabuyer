@@ -7,9 +7,10 @@ import { resolveVariantGallery } from '../utils/variantImage'
 import usePageTitle from '../hooks/usePageTitle'
 import formatPrice from '../utils/formatPrice'
 import type { ProductDto, VariantDto } from '../types/catalog'
+import { formatAttributeValue } from '../utils/attributeOptions'
 
 function variantLabel(variant: VariantDto): string {
-  const values = Object.values(variant.attributes)
+  const values = Object.entries(variant.attributes).map(([key, value]) => formatAttributeValue(key, value))
   return values.length > 0 ? values.join(' · ') : 'Стандарт'
 }
 

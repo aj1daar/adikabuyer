@@ -35,12 +35,24 @@ beforeEach(() => {
 })
 
 describe('ProductCard', () => {
-  it('renders product title, price, and dynamic variant attributes', () => {
+  it('renders product title, price, and each variant attribute as a separate tag', () => {
     render(<ProductCard product={product} />, { wrapper: MemoryRouter })
 
     expect(screen.getByText('Custom Tumbler')).toBeInTheDocument()
     expect(screen.getByText('25 KGS')).toBeInTheDocument()
-    expect(screen.getByText('Black, 500ml')).toBeInTheDocument()
+    expect(screen.getByText('Black')).toBeInTheDocument()
+    expect(screen.getByText('500ml')).toBeInTheDocument()
+  })
+
+  it('formats the volume attribute with a мл suffix', () => {
+    const productWithVolume: ProductDto = {
+      ...product,
+      variants: [{ ...product.variants[0], attributes: { volume: 500 } }],
+    }
+
+    render(<ProductCard product={productWithVolume} />, { wrapper: MemoryRouter })
+
+    expect(screen.getByText('500 мл')).toBeInTheDocument()
   })
 
   it('renders the product image when imageUrl is set and initials otherwise', () => {

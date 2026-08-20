@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import type { ProductDto } from '../types/catalog'
 import useCartStore from '../store/useCartStore'
 import formatPrice from '../utils/formatPrice'
+import { formatAttributeValue } from '../utils/attributeOptions'
 
 type ProductCardProps = {
   product: ProductDto
@@ -24,9 +25,9 @@ export default function ProductCard({ product }: ProductCardProps) {
     product.imageUrl ??
     product.variants.find((variant) => variant.imageUrls.length > 0)?.imageUrls[0] ??
     null
-  const attributeSummary = primaryVariant
-    ? Object.values(primaryVariant.attributes).join(', ')
-    : null
+  const attributeTags = primaryVariant
+    ? Object.entries(primaryVariant.attributes).map(([key, value]) => formatAttributeValue(key, value))
+    : []
 
   const handleAddToCart = () => {
     if (!primaryVariant) {
@@ -82,7 +83,18 @@ export default function ProductCard({ product }: ProductCardProps) {
           <p className="line-clamp-2 text-sm text-ink/60">{product.description}</p>
         )}
 
-        {attributeSummary && <p className="text-xs text-ink/50">{attributeSummary}</p>}
+        {attributeTags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {attributeTags.map((tag, index) => (
+              <span
+                key={index}
+                className="rounded-pill border-2 border-black bg-silver px-2 py-0.5 font-grotesk text-xs font-bold text-ink"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
 
         <div className="mt-auto flex items-center justify-between pt-3">
           <span className="font-grotesk text-base font-bold text-ink">
