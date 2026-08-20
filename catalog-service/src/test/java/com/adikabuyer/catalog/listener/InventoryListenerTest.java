@@ -4,6 +4,7 @@ import com.adikabuyer.catalog.domain.Variant;
 import com.adikabuyer.catalog.domain.VariantStatus;
 import com.adikabuyer.catalog.event.OrderItemEvent;
 import com.adikabuyer.catalog.event.OrderPlacedEvent;
+import com.adikabuyer.catalog.repository.ProcessedOrderEventRepository;
 import com.adikabuyer.catalog.repository.VariantRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -30,11 +32,14 @@ class InventoryListenerTest {
     @Mock
     private VariantRepository variantRepository;
 
+    @Mock
+    private ProcessedOrderEventRepository processedOrderEventRepository;
+
     private InventoryListener inventoryListener;
 
     @BeforeEach
     void setUp() {
-        inventoryListener = new InventoryListener(variantRepository);
+        inventoryListener = new InventoryListener(variantRepository, processedOrderEventRepository);
     }
 
     private OrderItemEvent buildItem(Long variantId, int quantity) {
@@ -112,6 +117,30 @@ class InventoryListenerTest {
 
         assertThat(knownVariant.getStockQuantity()).isEqualTo(6);
         verify(variantRepository, times(1)).save(knownVariant);
+    }
+
+    @Test
+    void handleOrderPlaced_marksOrderAsProcessed_afterDeductingStock() {
+        Variant variant = Variant.builder().id(1L).stockQuantity(10).status(VariantStatus.IN_STOCK).build();
+        when(variantRepository.findById(1L)).thenReturn(Optional.of(variant));
+
+        inventoryListener.handleOrderPlaced(buildEvent(buildItem(1L, 3)));
+
+        ArgumentCaptor<com.adikabuyer.catalog.domain.ProcessedOrderEvent> processedCaptor =
+                ArgumentCaptor.forClass(com.adikabuyer.catalog.domain.ProcessedOrderEvent.class);
+        verify(processedOrderEventRepository).save(processedCaptor.capture());
+        assertThat(processedCaptor.getValue().getOrderId()).isEqualTo("order-1");
+    }
+
+    @Test
+    void handleOrderPlaced_skipsDeduction_whenOrderWasAlreadyProcessed() {
+        when(processedOrderEventRepository.existsById("order-1")).thenReturn(true);
+
+        inventoryListener.handleOrderPlaced(buildEvent(buildItem(1L, 3)));
+
+        verify(variantRepository, never()).findById(any());
+        verify(variantRepository, never()).save(any());
+        verify(processedOrderEventRepository, never()).save(any());
     }
 
     @Test
