@@ -37,7 +37,9 @@ const existingProduct: ProductDto = {
 
 const fillFirstVariant = (sku: string, price: string) => {
   fireEvent.click(screen.getByRole('button', { name: /добавить вариант/i }))
-  fireEvent.change(screen.getByPlaceholderText('SKU'), { target: { value: sku } })
+  fireEvent.change(screen.getByPlaceholderText('Название варианта (Розовый, Леопардовый...)'), {
+    target: { value: sku },
+  })
   fireEvent.change(screen.getByPlaceholderText('Закупочная цена'), { target: { value: price } })
 }
 
@@ -58,7 +60,7 @@ describe('ProductForm', () => {
 
     expect(screen.getByPlaceholderText('Название')).toHaveValue('Custom Tumbler')
     expect(screen.getByDisplayValue('TUM-BLK-500')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('color')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Цвет' })).toBeInTheDocument()
     expect(screen.getByDisplayValue('black')).toBeInTheDocument()
   })
 
@@ -101,8 +103,10 @@ describe('ProductForm', () => {
     fillFirstVariant('NEW-SKU-1', '15')
     fireEvent.change(screen.getByPlaceholderText('Остаток'), { target: { value: '7' } })
     fireEvent.click(screen.getByRole('button', { name: /добавить атрибут/i }))
-    fireEvent.change(screen.getByPlaceholderText('Ключ'), { target: { value: 'color' } })
-    fireEvent.change(screen.getByPlaceholderText('Значение'), { target: { value: 'red' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Атрибут' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Цвет' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Своё значение' }))
+    fireEvent.change(screen.getByPlaceholderText('Своё значение'), { target: { value: 'red' } })
 
     fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
 
@@ -125,6 +129,44 @@ describe('ProductForm', () => {
         },
       ],
     })
+  })
+
+  it('submits a preset attribute value chosen from the dropdown', () => {
+    const onSubmit = vi.fn()
+    render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
+
+    fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
+    fillFirstVariant('NEW-SKU-1', '15')
+    fireEvent.click(screen.getByRole('button', { name: /добавить атрибут/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Атрибут' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Цвет' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Значение' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Розовый' }))
+
+    fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variants: [expect.objectContaining({ attributes: { color: 'Розовый' } })],
+      })
+    )
+  })
+
+  it('resets the attribute value when a different attribute key is chosen', () => {
+    render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
+
+    fillFirstVariant('NEW-SKU-1', '15')
+    fireEvent.click(screen.getByRole('button', { name: /добавить атрибут/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Атрибут' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Цвет' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Значение' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Розовый' }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Цвет' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Размер' }))
+
+    expect(screen.getByRole('button', { name: 'Значение' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Розовый' })).not.toBeInTheDocument()
   })
 
   it('submits PRE_ORDER status when Под заказ is selected for a variant', () => {

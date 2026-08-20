@@ -162,7 +162,9 @@ describe('AdminDashboard', () => {
     fireEvent.click(screen.getByRole('button', { name: /добавить товар/i }))
     fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'Brand New' } })
     fireEvent.click(screen.getByRole('button', { name: /добавить вариант/i }))
-    fireEvent.change(screen.getByPlaceholderText('SKU'), { target: { value: 'NEW-SKU' } })
+    fireEvent.change(screen.getByPlaceholderText('Название варианта (Розовый, Леопардовый...)'), {
+      target: { value: 'NEW-SKU' },
+    })
     fireEvent.change(screen.getByPlaceholderText('Закупочная цена'), { target: { value: '9' } })
     fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
 
