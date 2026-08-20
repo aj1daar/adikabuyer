@@ -10,11 +10,6 @@ import OptionDropdown from '../OptionDropdown'
 type AttributeRow = {
   key: string
   value: string
-  customValue: boolean
-}
-
-function isKnownAttributeValue(key: string, value: string): boolean {
-  return (ATTRIBUTE_VALUE_OPTIONS[key] ?? []).includes(value)
 }
 
 type VariantDraft = {
@@ -36,10 +31,7 @@ type ProductFormProps = {
 }
 
 function toAttributeRows(attributes: Record<string, unknown>): AttributeRow[] {
-  return Object.entries(attributes).map(([key, rawValue]) => {
-    const value = String(rawValue)
-    return { key, value, customValue: !isKnownAttributeValue(key, value) }
-  })
+  return Object.entries(attributes).map(([key, value]) => ({ key, value: String(value) }))
 }
 
 function toVariantDraft(product?: ProductDto): VariantDraft[] {
@@ -113,7 +105,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
 
   const addAttribute = (variantIndex: number) => {
     updateVariant(variantIndex, {
-      attributes: [...variants[variantIndex].attributes, { key: '', value: '', customValue: false }],
+      attributes: [...variants[variantIndex].attributes, { key: '', value: '' }],
     })
   }
 
@@ -364,55 +356,17 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                         <OptionDropdown
                           options={ATTRIBUTE_KEY_OPTIONS}
                           value={attribute.key}
-                          onChange={(key) =>
-                            updateAttribute(variantIndex, attributeIndex, { key, value: '', customValue: false })
-                          }
+                          onChange={(key) => updateAttribute(variantIndex, attributeIndex, { key, value: '' })}
                           placeholder="Атрибут"
                         />
                       </div>
-                      <div className="flex w-1/2 flex-col gap-1">
-                        {attribute.customValue ? (
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="text"
-                              value={attribute.value}
-                              onChange={(event) =>
-                                updateAttribute(variantIndex, attributeIndex, { value: event.target.value })
-                              }
-                              placeholder="Своё значение"
-                              className="w-full rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
-                            />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateAttribute(variantIndex, attributeIndex, { customValue: false, value: '' })
-                              }
-                              className="shrink-0 font-grotesk text-xs font-bold text-ink/40 hover:text-bubblegum-dark"
-                            >
-                              Список
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <OptionDropdown
-                              options={valueOptions}
-                              value={attribute.value}
-                              onChange={(value) => updateAttribute(variantIndex, attributeIndex, { value })}
-                              placeholder={attribute.key ? 'Значение' : 'Сначала выберите атрибут'}
-                            />
-                            {attribute.key && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  updateAttribute(variantIndex, attributeIndex, { customValue: true, value: '' })
-                                }
-                                className="w-fit font-grotesk text-xs font-bold text-bubblegum-dark hover:underline"
-                              >
-                                Своё значение
-                              </button>
-                            )}
-                          </>
-                        )}
+                      <div className="w-1/2">
+                        <OptionDropdown
+                          options={valueOptions}
+                          value={attribute.value}
+                          onChange={(value) => updateAttribute(variantIndex, attributeIndex, { value })}
+                          placeholder={attribute.key ? 'Значение' : 'Сначала выберите атрибут'}
+                        />
                       </div>
                       <button
                         type="button"

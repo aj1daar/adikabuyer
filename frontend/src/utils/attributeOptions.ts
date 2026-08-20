@@ -10,7 +10,7 @@ export const ATTRIBUTE_KEY_OPTIONS: AttributeOption[] = [
 ]
 
 export const ATTRIBUTE_VALUE_OPTIONS: Record<string, string[]> = {
-  color: ['Чёрный', 'Белый', 'Розовый', 'Серебристый'],
+  color: ['Чёрный', 'Белый', 'Розовый', 'Серебристый', 'Леопардовый'],
   size: ['S', 'M', 'L'],
   volume: ['350 мл', '500 мл', '750 мл'],
 }

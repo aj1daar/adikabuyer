@@ -61,7 +61,12 @@ describe('ProductForm', () => {
     expect(screen.getByPlaceholderText('Название')).toHaveValue('Custom Tumbler')
     expect(screen.getByDisplayValue('TUM-BLK-500')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Цвет' })).toBeInTheDocument()
-    expect(screen.getByDisplayValue('black')).toBeInTheDocument()
+  })
+
+  it('shows the value placeholder when a loaded variant has a legacy value outside the known list', () => {
+    render(<ProductForm product={existingProduct} onSubmit={vi.fn()} onClose={vi.fn()} />)
+
+    expect(screen.getByRole('button', { name: 'Значение' })).toBeInTheDocument()
   })
 
   it('disables submit until name is filled and at least one priced variant exists', () => {
@@ -105,8 +110,8 @@ describe('ProductForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /добавить атрибут/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Атрибут' }))
     fireEvent.click(screen.getByRole('button', { name: 'Цвет' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Своё значение' }))
-    fireEvent.change(screen.getByPlaceholderText('Своё значение'), { target: { value: 'red' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Значение' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Чёрный' }))
 
     fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
 
@@ -125,7 +130,7 @@ describe('ProductForm', () => {
           active: true,
           imageUrls: [],
           status: 'IN_STOCK',
-          attributes: { color: 'red' },
+          attributes: { color: 'Чёрный' },
         },
       ],
     })
@@ -141,13 +146,13 @@ describe('ProductForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Атрибут' }))
     fireEvent.click(screen.getByRole('button', { name: 'Цвет' }))
     fireEvent.click(screen.getByRole('button', { name: 'Значение' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Розовый' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Леопардовый' }))
 
     fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
 
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
-        variants: [expect.objectContaining({ attributes: { color: 'Розовый' } })],
+        variants: [expect.objectContaining({ attributes: { color: 'Леопардовый' } })],
       })
     )
   })
