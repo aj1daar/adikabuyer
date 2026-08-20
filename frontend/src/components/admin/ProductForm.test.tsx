@@ -174,6 +174,60 @@ describe('ProductForm', () => {
     expect(screen.queryByRole('button', { name: 'Розовый' })).not.toBeInTheDocument()
   })
 
+  it('shows a number input for the volume attribute and submits it as a plain number', () => {
+    const onSubmit = vi.fn()
+    render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
+
+    fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
+    fillFirstVariant('NEW-SKU-1', '15')
+    fireEvent.click(screen.getByRole('button', { name: /добавить атрибут/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Атрибут' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Объём' }))
+    fireEvent.change(screen.getByPlaceholderText('Объём, мл'), { target: { value: '500' } })
+
+    fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variants: [expect.objectContaining({ attributes: { volume: '500' } })],
+      })
+    )
+  })
+
+  it('lets the admin add a custom attribute key and value not on the preset lists', () => {
+    const onSubmit = vi.fn()
+    render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
+
+    fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
+    fillFirstVariant('NEW-SKU-1', '15')
+    fireEvent.click(screen.getByRole('button', { name: /добавить атрибут/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Атрибут' }))
+    fireEvent.click(screen.getByRole('button', { name: '+ Другой атрибут' }))
+    fireEvent.change(screen.getByPlaceholderText('Название атрибута'), { target: { value: 'материал' } })
+    fireEvent.change(screen.getByPlaceholderText('Значение'), { target: { value: 'хлопок' } })
+
+    fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variants: [expect.objectContaining({ attributes: { материал: 'хлопок' } })],
+      })
+    )
+  })
+
+  it('returns to the preset attribute list when Список is clicked from custom-attribute mode', () => {
+    render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
+
+    fillFirstVariant('NEW-SKU-1', '15')
+    fireEvent.click(screen.getByRole('button', { name: /добавить атрибут/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Атрибут' }))
+    fireEvent.click(screen.getByRole('button', { name: '+ Другой атрибут' }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Список' }))
+
+    expect(screen.getByRole('button', { name: 'Атрибут' })).toBeInTheDocument()
+  })
+
   it('submits PRE_ORDER status when Под заказ is selected for a variant', () => {
     const onSubmit = vi.fn()
     render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)

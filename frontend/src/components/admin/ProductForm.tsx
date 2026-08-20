@@ -4,12 +4,22 @@ import type { ProductPayload, VariantPayload } from '../../types/admin'
 import uploadMedia from '../../api/media'
 import formatPrice from '../../utils/formatPrice'
 import previewDisplayPrice from '../../utils/priceCommission'
-import { ATTRIBUTE_KEY_OPTIONS, ATTRIBUTE_VALUE_OPTIONS } from '../../utils/attributeOptions'
+import {
+  ATTRIBUTE_KEY_OPTIONS,
+  ATTRIBUTE_VALUE_OPTIONS,
+  CUSTOM_ATTRIBUTE_KEY,
+  VOLUME_ATTRIBUTE_KEY,
+} from '../../utils/attributeOptions'
 import OptionDropdown from '../OptionDropdown'
+
+const KNOWN_ATTRIBUTE_KEYS = ATTRIBUTE_KEY_OPTIONS.map((option) => option.value).filter(
+  (value) => value !== CUSTOM_ATTRIBUTE_KEY
+)
 
 type AttributeRow = {
   key: string
   value: string
+  customKey: boolean
 }
 
 type VariantDraft = {
@@ -31,7 +41,11 @@ type ProductFormProps = {
 }
 
 function toAttributeRows(attributes: Record<string, unknown>): AttributeRow[] {
-  return Object.entries(attributes).map(([key, value]) => ({ key, value: String(value) }))
+  return Object.entries(attributes).map(([key, value]) => ({
+    key,
+    value: String(value),
+    customKey: !KNOWN_ATTRIBUTE_KEYS.includes(key),
+  }))
 }
 
 function toVariantDraft(product?: ProductDto): VariantDraft[] {
@@ -105,7 +119,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
 
   const addAttribute = (variantIndex: number) => {
     updateVariant(variantIndex, {
-      attributes: [...variants[variantIndex].attributes, { key: '', value: '' }],
+      attributes: [...variants[variantIndex].attributes, { key: '', value: '', customKey: false }],
     })
   }
 
@@ -353,20 +367,77 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   return (
                     <div key={attributeIndex} className="mt-2 flex items-center gap-2">
                       <div className="w-1/2">
-                        <OptionDropdown
-                          options={ATTRIBUTE_KEY_OPTIONS}
-                          value={attribute.key}
-                          onChange={(key) => updateAttribute(variantIndex, attributeIndex, { key, value: '' })}
-                          placeholder="Атрибут"
-                        />
+                        {attribute.customKey ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              value={attribute.key}
+                              onChange={(event) =>
+                                updateAttribute(variantIndex, attributeIndex, { key: event.target.value })
+                              }
+                              placeholder="Название атрибута"
+                              className="w-full rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateAttribute(variantIndex, attributeIndex, {
+                                  customKey: false,
+                                  key: '',
+                                  value: '',
+                                })
+                              }
+                              className="shrink-0 font-grotesk text-xs font-bold text-ink/40 hover:text-bubblegum-dark"
+                            >
+                              Список
+                            </button>
+                          </div>
+                        ) : (
+                          <OptionDropdown
+                            options={ATTRIBUTE_KEY_OPTIONS}
+                            value={attribute.key}
+                            onChange={(key) =>
+                              key === CUSTOM_ATTRIBUTE_KEY
+                                ? updateAttribute(variantIndex, attributeIndex, {
+                                    customKey: true,
+                                    key: '',
+                                    value: '',
+                                  })
+                                : updateAttribute(variantIndex, attributeIndex, { key, value: '' })
+                            }
+                            placeholder="Атрибут"
+                          />
+                        )}
                       </div>
                       <div className="w-1/2">
-                        <OptionDropdown
-                          options={valueOptions}
-                          value={attribute.value}
-                          onChange={(value) => updateAttribute(variantIndex, attributeIndex, { value })}
-                          placeholder={attribute.key ? 'Значение' : 'Сначала выберите атрибут'}
-                        />
+                        {attribute.customKey ? (
+                          <input
+                            type="text"
+                            value={attribute.value}
+                            onChange={(event) =>
+                              updateAttribute(variantIndex, attributeIndex, { value: event.target.value })
+                            }
+                            placeholder="Значение"
+                            className="w-full rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+                          />
+                        ) : attribute.key === VOLUME_ATTRIBUTE_KEY ? (
+                          <input
+                            type="number"
+                            value={attribute.value}
+                            onChange={(event) =>
+                              updateAttribute(variantIndex, attributeIndex, { value: event.target.value })
+                            }
+                            placeholder="Объём, мл"
+                            className="w-full rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+                          />
+                        ) : (
+                          <OptionDropdown
+                            options={valueOptions}
+                            value={attribute.value}
+                            onChange={(value) => updateAttribute(variantIndex, attributeIndex, { value })}
+                            placeholder={attribute.key ? 'Значение' : 'Сначала выберите атрибут'}
+                          />
+                        )}
                       </div>
                       <button
                         type="button"
