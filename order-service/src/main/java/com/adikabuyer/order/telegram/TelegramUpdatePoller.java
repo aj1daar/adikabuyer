@@ -50,7 +50,7 @@ public class TelegramUpdatePoller {
         }
     }
 
-    private void pollLoop() {
+    void pollLoop() {
         while (running) {
             try {
                 List<TelegramUpdate> updates = telegramApiClient.getUpdates(offset, 25);
@@ -67,7 +67,7 @@ public class TelegramUpdatePoller {
         }
     }
 
-    private void handleUpdate(TelegramUpdate update) {
+    void handleUpdate(TelegramUpdate update) {
         TelegramMessage message = update.message();
         if (message == null || message.chat() == null) {
             return;
