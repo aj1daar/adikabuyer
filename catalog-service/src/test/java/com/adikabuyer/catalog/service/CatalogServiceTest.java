@@ -58,37 +58,39 @@ class CatalogServiceTest {
         Product product = Product.builder().id(1L).name("Tumbler").basePrice(BigDecimal.TEN).active(true).build();
         ProductDto dto = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, null, true, null, List.of());
 
-        when(productRepository.search(null, null, null, null, null)).thenReturn(List.of(product));
+        when(productRepository.search(null, null, null, null, null, null)).thenReturn(List.of(product));
         when(productMapper.toDto(product)).thenReturn(dto);
 
-        List<ProductDto> result = catalogService.getAllProducts(null, null, null, null, null);
+        List<ProductDto> result = catalogService.getAllProducts(null, null, null, null, null, null);
 
         assertThat(result).containsExactly(dto);
     }
 
     @Test
     void getAllProducts_returnsEmptyList_whenRepositoryIsEmpty() {
-        when(productRepository.search(null, null, null, null, null)).thenReturn(List.of());
+        when(productRepository.search(null, null, null, null, null, null)).thenReturn(List.of());
 
-        assertThat(catalogService.getAllProducts(null, null, null, null, null)).isEmpty();
+        assertThat(catalogService.getAllProducts(null, null, null, null, null, null)).isEmpty();
     }
 
     @Test
     void getAllProducts_normalizesBlankFilters_toNull() {
-        when(productRepository.search(null, null, null, null, null)).thenReturn(List.of());
+        when(productRepository.search(null, null, null, null, null, null)).thenReturn(List.of());
 
-        catalogService.getAllProducts("  ", "", null, "   ", "");
+        catalogService.getAllProducts("  ", "", null, "   ", null, null);
 
-        verify(productRepository).search(null, null, null, null, null);
+        verify(productRepository).search(null, null, null, null, null, null);
     }
 
     @Test
     void getAllProducts_trimsAndForwardsNonBlankFilters() {
-        when(productRepository.search("tumbler", "Drinkware", "black", "M", "500ml")).thenReturn(List.of());
+        BigDecimal volumeMin = BigDecimal.valueOf(300);
+        BigDecimal volumeMax = BigDecimal.valueOf(600);
+        when(productRepository.search("tumbler", "Drinkware", "black", "M", volumeMin, volumeMax)).thenReturn(List.of());
 
-        catalogService.getAllProducts(" tumbler ", " Drinkware ", " black ", " M ", " 500ml ");
+        catalogService.getAllProducts(" tumbler ", " Drinkware ", " black ", " M ", volumeMin, volumeMax);
 
-        verify(productRepository).search("tumbler", "Drinkware", "black", "M", "500ml");
+        verify(productRepository).search("tumbler", "Drinkware", "black", "M", volumeMin, volumeMax);
     }
 
     @Test

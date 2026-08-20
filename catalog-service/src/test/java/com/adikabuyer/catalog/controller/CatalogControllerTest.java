@@ -45,7 +45,7 @@ class CatalogControllerTest {
     @Test
     void getAllProducts_returns200WithProductList() throws Exception {
         ProductDto product = new ProductDto(1L, "Tumbler", "desc", "Drinkware", BigDecimal.TEN, null, true, null, List.of());
-        when(catalogService.getAllProducts(null, null, null, null, null)).thenReturn(List.of(product));
+        when(catalogService.getAllProducts(null, null, null, null, null, null)).thenReturn(List.of(product));
 
         mockMvc.perform(get("/api/catalog/products"))
                 .andExpect(status().isOk())
@@ -55,7 +55,7 @@ class CatalogControllerTest {
 
     @Test
     void getAllProducts_returns200WithEmptyArray_whenCatalogIsEmpty() throws Exception {
-        when(catalogService.getAllProducts(null, null, null, null, null)).thenReturn(List.of());
+        when(catalogService.getAllProducts(null, null, null, null, null, null)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/catalog/products"))
                 .andExpect(status().isOk())
@@ -64,17 +64,19 @@ class CatalogControllerTest {
 
     @Test
     void getAllProducts_forwardsQueryParamsToService() throws Exception {
-        when(catalogService.getAllProducts("tumbler", "Drinkware", "black", "M", "500ml")).thenReturn(List.of());
+        when(catalogService.getAllProducts("tumbler", "Drinkware", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600)))
+                .thenReturn(List.of());
 
         mockMvc.perform(get("/api/catalog/products")
                         .param("search", "tumbler")
                         .param("category", "Drinkware")
                         .param("color", "black")
                         .param("size", "M")
-                        .param("volume", "500ml"))
+                        .param("volumeMin", "300")
+                        .param("volumeMax", "600"))
                 .andExpect(status().isOk());
 
-        verify(catalogService).getAllProducts("tumbler", "Drinkware", "black", "M", "500ml");
+        verify(catalogService).getAllProducts("tumbler", "Drinkware", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600));
     }
 
     @Test
