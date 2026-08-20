@@ -26,6 +26,15 @@ spring:
     port: 5672
     username: adikabuyer
     password: adikabuyer
+    listener:
+      simple:
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: 5
+          initial-interval: 1000
+          multiplier: 2.0
+          max-interval: 30000
   servlet:
     multipart:
       max-file-size: 5MB
@@ -43,6 +52,9 @@ app:
     exchange: order.exchange
     queue: order.queue
     routing-key: order.new
+    dead-letter-exchange: order.dlx
+    dead-letter-queue: order.queue.dlq
+    dead-letter-routing-key: order.new.dlq
   jwt:
     secret: "3f8a1c9d4b7e2f6a8c1d5e9f3a7b2c6d8e1f4a9c3b7d2e6f8a1c4d9e3b7f2a6c"
     expiration-ms: 3600000
