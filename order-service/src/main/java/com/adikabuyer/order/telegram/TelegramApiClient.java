@@ -2,11 +2,9 @@ package com.adikabuyer.order.telegram;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -16,15 +14,8 @@ public class TelegramApiClient {
 
     private final RestClient restClient;
 
-    public TelegramApiClient(TelegramProperties telegramProperties) {
-        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(Duration.ofSeconds(10));
-        requestFactory.setReadTimeout(Duration.ofSeconds(40));
-
-        this.restClient = RestClient.builder()
-                .baseUrl("https://api.telegram.org/bot" + telegramProperties.getBotToken())
-                .requestFactory(requestFactory)
-                .build();
+    public TelegramApiClient(RestClient telegramRestClient) {
+        this.restClient = telegramRestClient;
     }
 
     public void sendMessage(long chatId, String text) {
