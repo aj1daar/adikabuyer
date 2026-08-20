@@ -42,7 +42,7 @@ describe('FilterBar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Розовый' }))
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
-    expect(onColorChange).toHaveBeenCalledWith('pink')
+    expect(onColorChange).toHaveBeenCalledWith('Розовый')
   })
 
   it('applies the selected size once Save is clicked inside the size dropdown', () => {

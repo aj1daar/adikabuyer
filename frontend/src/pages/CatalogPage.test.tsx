@@ -114,7 +114,7 @@ describe('CatalogPage', () => {
     expect(mockedUseCatalog).toHaveBeenLastCalledWith({
       search: '',
       category: '',
-      color: 'black',
+      color: 'Чёрный',
       size: '',
       volume: '',
     })

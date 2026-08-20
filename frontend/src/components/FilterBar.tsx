@@ -1,28 +1,16 @@
 import FilterDropdown from './FilterDropdown'
+import { ATTRIBUTE_VALUE_OPTIONS } from '../utils/attributeOptions'
 
 export type FilterOption = {
   label: string
   value: string
 }
 
-const COLOR_OPTIONS: FilterOption[] = [
-  { label: 'Чёрный', value: 'black' },
-  { label: 'Белый', value: 'white' },
-  { label: 'Розовый', value: 'pink' },
-  { label: 'Серебристый', value: 'silver' },
-]
+const toFilterOptions = (values: string[]): FilterOption[] => values.map((value) => ({ label: value, value }))
 
-const SIZE_OPTIONS: FilterOption[] = [
-  { label: 'S', value: 'S' },
-  { label: 'M', value: 'M' },
-  { label: 'L', value: 'L' },
-]
-
-const VOLUME_OPTIONS: FilterOption[] = [
-  { label: '350 мл', value: '350ml' },
-  { label: '500 мл', value: '500ml' },
-  { label: '750 мл', value: '750ml' },
-]
+const COLOR_OPTIONS: FilterOption[] = toFilterOptions(ATTRIBUTE_VALUE_OPTIONS.color)
+const SIZE_OPTIONS: FilterOption[] = toFilterOptions(ATTRIBUTE_VALUE_OPTIONS.size)
+const VOLUME_OPTIONS: FilterOption[] = toFilterOptions(ATTRIBUTE_VALUE_OPTIONS.volume)
 
 type FilterBarProps = {
   category: string
