@@ -13,14 +13,15 @@ export default function CatalogPage() {
   const [category, setCategory] = useState('')
   const [color, setColor] = useState('')
   const [size, setSize] = useState('')
-  const [volume, setVolume] = useState('')
+  const [volumeMin, setVolumeMin] = useState('')
+  const [volumeMax, setVolumeMax] = useState('')
 
   useEffect(() => {
     const timeout = setTimeout(() => setSearch(searchInput), 300)
     return () => clearTimeout(timeout)
   }, [searchInput])
 
-  const { products: categoryScopedProducts } = useCatalog({ search, color, size, volume })
+  const { products: categoryScopedProducts } = useCatalog({ search, color, size, volumeMin, volumeMax })
   const categoryOptions = useMemo<FilterOption[]>(() => {
     const uniqueCategories = new Set(
       categoryScopedProducts
@@ -30,7 +31,12 @@ export default function CatalogPage() {
     return [...uniqueCategories].sort().map((value) => ({ label: value, value }))
   }, [categoryScopedProducts])
 
-  const { products, loading, error } = useCatalog({ search, category, color, size, volume })
+  const { products, loading, error } = useCatalog({ search, category, color, size, volumeMin, volumeMax })
+
+  const handleVolumeChange = (min: string, max: string) => {
+    setVolumeMin(min)
+    setVolumeMax(max)
+  }
 
   return (
     <MainLayout>
@@ -41,12 +47,13 @@ export default function CatalogPage() {
           category={category}
           color={color}
           size={size}
-          volume={volume}
+          volumeMin={volumeMin}
+          volumeMax={volumeMax}
           categoryOptions={categoryOptions}
           onCategoryChange={setCategory}
           onColorChange={setColor}
           onSizeChange={setSize}
-          onVolumeChange={setVolume}
+          onVolumeChange={handleVolumeChange}
         />
 
         {loading && products.length === 0 && <p className="text-ink/60">Загрузка товаров...</p>}

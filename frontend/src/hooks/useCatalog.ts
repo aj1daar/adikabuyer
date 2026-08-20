@@ -7,7 +7,8 @@ export type CatalogFilters = {
   category?: string
   color?: string
   size?: string
-  volume?: string
+  volumeMin?: string
+  volumeMax?: string
 }
 
 type UseCatalogResult = {
@@ -22,7 +23,7 @@ export default function useCatalog(filters: CatalogFilters = {}): UseCatalogResu
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const { search, category, color, size, volume } = filters
+  const { search, category, color, size, volumeMin, volumeMax } = filters
 
   const fetchProducts = useCallback(
     async (signal?: AbortSignal) => {
@@ -31,7 +32,7 @@ export default function useCatalog(filters: CatalogFilters = {}): UseCatalogResu
       try {
         const response = await catalogClient.get<ProductDto[]>('/products', {
           signal,
-          params: { search, category, color, size, volume },
+          params: { search, category, color, size, volumeMin, volumeMax },
         })
         setProducts(response.data)
       } catch (err) {
@@ -44,7 +45,7 @@ export default function useCatalog(filters: CatalogFilters = {}): UseCatalogResu
         }
       }
     },
-    [search, category, color, size, volume]
+    [search, category, color, size, volumeMin, volumeMax]
   )
 
   useEffect(() => {

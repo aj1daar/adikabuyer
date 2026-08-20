@@ -69,7 +69,7 @@ describe('CatalogPage', () => {
   it('fetches with no filters on initial render', () => {
     renderCatalogPage()
 
-    expect(mockedUseCatalog).toHaveBeenCalledWith({ search: '', color: '', size: '', volume: '' })
+    expect(mockedUseCatalog).toHaveBeenCalledWith({ search: '', color: '', size: '', volumeMin: '', volumeMax: '' })
   })
 
   describe('search debounce', () => {
@@ -99,7 +99,8 @@ describe('CatalogPage', () => {
         category: '',
         color: '',
         size: '',
-        volume: '',
+        volumeMin: '',
+        volumeMax: '',
       })
     })
   })
@@ -116,7 +117,8 @@ describe('CatalogPage', () => {
       category: '',
       color: 'Чёрный',
       size: '',
-      volume: '',
+      volumeMin: '',
+      volumeMax: '',
     })
   })
 
@@ -134,7 +136,26 @@ describe('CatalogPage', () => {
       category: '',
       color: '',
       size: '',
-      volume: '',
+      volumeMin: '',
+      volumeMax: '',
+    })
+  })
+
+  it('applies the entered volume range once Save is clicked', () => {
+    renderCatalogPage()
+
+    fireEvent.click(screen.getByRole('button', { name: /объём/i }))
+    fireEvent.change(screen.getByPlaceholderText('От'), { target: { value: '300' } })
+    fireEvent.change(screen.getByPlaceholderText('До'), { target: { value: '600' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
+
+    expect(mockedUseCatalog).toHaveBeenLastCalledWith({
+      search: '',
+      category: '',
+      color: '',
+      size: '',
+      volumeMin: '300',
+      volumeMax: '600',
     })
   })
 
@@ -157,7 +178,8 @@ describe('CatalogPage', () => {
       category: 'Drinkware',
       color: '',
       size: '',
-      volume: '',
+      volumeMin: '',
+      volumeMax: '',
     })
   })
 

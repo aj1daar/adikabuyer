@@ -1,4 +1,5 @@
 import FilterDropdown from './FilterDropdown'
+import VolumeRangeFilter from './VolumeRangeFilter'
 import { ATTRIBUTE_VALUE_OPTIONS } from '../utils/attributeOptions'
 
 export type FilterOption = {
@@ -10,25 +11,26 @@ const toFilterOptions = (values: string[]): FilterOption[] => values.map((value)
 
 const COLOR_OPTIONS: FilterOption[] = toFilterOptions(ATTRIBUTE_VALUE_OPTIONS.color)
 const SIZE_OPTIONS: FilterOption[] = toFilterOptions(ATTRIBUTE_VALUE_OPTIONS.size)
-const VOLUME_OPTIONS: FilterOption[] = toFilterOptions(ATTRIBUTE_VALUE_OPTIONS.volume)
 
 type FilterBarProps = {
   category: string
   color: string
   size: string
-  volume: string
+  volumeMin: string
+  volumeMax: string
   categoryOptions: FilterOption[]
   onCategoryChange: (value: string) => void
   onColorChange: (value: string) => void
   onSizeChange: (value: string) => void
-  onVolumeChange: (value: string) => void
+  onVolumeChange: (min: string, max: string) => void
 }
 
 export default function FilterBar({
   category,
   color,
   size,
-  volume,
+  volumeMin,
+  volumeMax,
   categoryOptions,
   onCategoryChange,
   onColorChange,
@@ -42,7 +44,7 @@ export default function FilterBar({
       )}
       <FilterDropdown label="Цвет" options={COLOR_OPTIONS} value={color} onApply={onColorChange} />
       <FilterDropdown label="Размер" options={SIZE_OPTIONS} value={size} onApply={onSizeChange} />
-      <FilterDropdown label="Объём" options={VOLUME_OPTIONS} value={volume} onApply={onVolumeChange} />
+      <VolumeRangeFilter min={volumeMin} max={volumeMax} onApply={onVolumeChange} />
     </div>
   )
 }

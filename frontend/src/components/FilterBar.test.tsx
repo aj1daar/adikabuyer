@@ -13,7 +13,8 @@ function renderFilterBar(overrides: Partial<Parameters<typeof FilterBar>[0]> = {
       category=""
       color=""
       size=""
-      volume=""
+      volumeMin=""
+      volumeMax=""
       categoryOptions={[]}
       onCategoryChange={onCategoryChange}
       onColorChange={onColorChange}
@@ -53,6 +54,17 @@ describe('FilterBar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     expect(onSizeChange).toHaveBeenCalledWith('M')
+  })
+
+  it('applies the entered volume range once Save is clicked', () => {
+    const { onVolumeChange } = renderFilterBar()
+
+    fireEvent.click(screen.getByRole('button', { name: /объём/i }))
+    fireEvent.change(screen.getByPlaceholderText('От'), { target: { value: '300' } })
+    fireEvent.change(screen.getByPlaceholderText('До'), { target: { value: '600' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
+
+    expect(onVolumeChange).toHaveBeenCalledWith('300', '600')
   })
 
   it('does not render a category dropdown when there are no category options', () => {

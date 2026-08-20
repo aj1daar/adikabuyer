@@ -38,7 +38,14 @@ describe('useCatalog', () => {
     expect(mockedGet).toHaveBeenCalledWith(
       '/products',
       expect.objectContaining({
-        params: { search: undefined, category: undefined, color: undefined, size: undefined, volume: undefined },
+        params: {
+          search: undefined,
+          category: undefined,
+          color: undefined,
+          size: undefined,
+          volumeMin: undefined,
+          volumeMax: undefined,
+        },
       })
     )
   })
@@ -47,7 +54,14 @@ describe('useCatalog', () => {
     mockedGet.mockResolvedValueOnce({ data: [] } as never)
 
     const { result } = renderHook(() =>
-      useCatalog({ search: 'tumbler', category: 'Drinkware', color: 'black', size: 'M', volume: '500ml' })
+      useCatalog({
+        search: 'tumbler',
+        category: 'Drinkware',
+        color: 'black',
+        size: 'M',
+        volumeMin: '300',
+        volumeMax: '600',
+      })
     )
 
     await waitFor(() => expect(result.current.loading).toBe(false))
@@ -55,7 +69,7 @@ describe('useCatalog', () => {
     expect(mockedGet).toHaveBeenCalledWith(
       '/products',
       expect.objectContaining({
-        params: { search: 'tumbler', category: 'Drinkware', color: 'black', size: 'M', volume: '500ml' },
+        params: { search: 'tumbler', category: 'Drinkware', color: 'black', size: 'M', volumeMin: '300', volumeMax: '600' },
       })
     )
   })
