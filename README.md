@@ -46,6 +46,8 @@ Live at `https://adikabuyer.kg` (Hetzner VPS, DNS via Cloudflare, NS delegated f
 
 SEO basics are in place: meta description and Open Graph tags in `index.html`, per-page titles via `usePageTitle`, JSON-LD Product markup on product pages, `robots.txt` (blocks `/admin`), and a static `sitemap.xml`. The sitemap and robots URLs use the placeholder domain `adikabuyer.com` — replace it on deploy. Being a client-rendered SPA, link previews for individual products still need prerendering/SSR.
 
+**One-time manual step for this deploy**: `catalog-service`'s `order.queue` now declares dead-letter routing args. RabbitMQ won't let an existing durable queue's arguments change, so before this lands, delete `order.queue` on the prod broker by hand (management UI or `rabbitmqctl`) — otherwise `catalog-service` fails to start with a `PRECONDITION_FAILED` error. Safe to do; anything in flight just gets redelivered and reprocessed once the service reconnects.
+
 ## Known limitations / not done yet
 
 - One hardcoded admin user. No signup, no password reset, no roles beyond admin/staff.
