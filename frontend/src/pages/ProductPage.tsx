@@ -9,9 +9,16 @@ import formatPrice from '../utils/formatPrice'
 import type { ProductDto, VariantDto } from '../types/catalog'
 import { formatAttributeValue } from '../utils/attributeOptions'
 
-function variantLabel(variant: VariantDto): string {
+function variantLabel(variant: VariantDto, index: number): string {
+  if (!variant.sku.startsWith('DEFAULT-')) {
+    return variant.sku
+  }
   const values = Object.entries(variant.attributes).map(([key, value]) => formatAttributeValue(key, value))
-  return values.length > 0 ? values.join(' · ') : 'Стандарт'
+  return values.length > 0 ? values.join(' · ') : `Вариант ${index + 1}`
+}
+
+function variantAttributeTags(variant: VariantDto): string[] {
+  return Object.entries(variant.attributes).map(([key, value]) => formatAttributeValue(key, value))
 }
 
 export default function ProductPage() {
@@ -180,7 +187,7 @@ export default function ProductPage() {
                       Вариант
                     </span>
                     <div className="flex flex-wrap gap-2">
-                      {product.variants.map((variant) => (
+                      {product.variants.map((variant, index) => (
                         <button
                           key={variant.id}
                           type="button"
@@ -192,17 +199,29 @@ export default function ProductPage() {
                               : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
                           }`}
                         >
-                          {variantLabel(variant)}
+                          {variantLabel(variant, index)}
                         </button>
                       ))}
                     </div>
                   </div>
                 )}
 
+                {selectedVariant && variantAttributeTags(selectedVariant).length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {variantAttributeTags(selectedVariant).map((tag, index) => (
+                      <span
+                        key={index}
+                        className="rounded-pill border-2 border-black bg-silver px-2 py-0.5 font-grotesk text-xs font-bold text-ink"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 {selectedVariant && (
                   <p className="text-sm text-ink/50">
                     {selectedVariant.status === 'PRE_ORDER' ? 'Под заказ' : 'В наличии'}
-                    {!selectedVariant.sku.startsWith('DEFAULT-') && ` · SKU: ${selectedVariant.sku}`}
                   </p>
                 )}
 

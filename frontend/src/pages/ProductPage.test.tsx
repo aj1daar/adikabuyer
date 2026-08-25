@@ -74,8 +74,8 @@ describe('ProductPage', () => {
     expect(await screen.findByText('Custom Tumbler')).toBeInTheDocument()
     expect(mockedGet).toHaveBeenCalledWith('/products/7', expect.anything())
     expect(screen.getByText('25 KGS')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Black' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'White' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'TUM-BLK' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'TUM-WHT' })).toBeInTheDocument()
   })
 
   it('switches image, price, and status when another variant is selected', async () => {
@@ -83,10 +83,11 @@ describe('ProductPage', () => {
 
     renderPage()
 
-    fireEvent.click(await screen.findByRole('button', { name: 'White' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'TUM-WHT' }))
 
     expect(screen.getByText('30 KGS')).toBeInTheDocument()
-    expect(screen.getByText(/Под заказ · SKU: TUM-WHT/)).toBeInTheDocument()
+    expect(screen.getByText('Под заказ')).toBeInTheDocument()
+    expect(screen.getByText('White')).toBeInTheDocument()
     expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'black.jpg')
   })
 
@@ -95,7 +96,7 @@ describe('ProductPage', () => {
 
     renderPage()
 
-    fireEvent.click(await screen.findByRole('button', { name: 'White' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'TUM-WHT' }))
     fireEvent.click(screen.getByRole('button', { name: 'Увеличить количество' }))
     fireEvent.click(screen.getByRole('button', { name: 'В корзину' }))
 
@@ -124,5 +125,21 @@ describe('ProductPage', () => {
     renderPage()
 
     await waitFor(() => expect(screen.getByText('boom')).toBeInTheDocument())
+  })
+
+  it('falls back to attribute values for legacy auto-generated variant names', async () => {
+    const legacyProduct: ProductDto = {
+      ...product,
+      variants: [
+        { ...product.variants[0], sku: 'DEFAULT-ABC123' },
+        { ...product.variants[1], sku: 'DEFAULT-XYZ789' },
+      ],
+    }
+    mockedGet.mockResolvedValue({ data: legacyProduct })
+
+    renderPage()
+
+    expect(await screen.findByRole('button', { name: 'Black' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'White' })).toBeInTheDocument()
   })
 })
