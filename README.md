@@ -10,7 +10,7 @@ catalog-service and order-service each own a separate Postgres database (`adikab
 
 Request flow, auth, and the prod-hardening details live in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-The frontend follows a Neo-Y2K / Editorial Futurism design system: Space Grotesk typography, pill-shaped interactive elements, thick black borders (`border-2 border-black`), hard offset shadows instead of soft blurs, and a stark white / black / silver / bubblegum-pink palette. It is tuned for mobile Safari/Chrome: safe-area insets (`viewport-fit=cover`), 16px inputs to prevent iOS focus zoom, 44px touch targets, `dvh`-based drawer sizing, and scroll locking behind overlays.
+The frontend follows a Neo-Y2K / Editorial Futurism design system: Space Grotesk typography, pill-shaped interactive elements, thick black borders (`border-2 border-black`), hard offset shadows instead of soft blurs, and a stark white / black / silver / bubblegum-pink palette. It is tuned for mobile Safari/Chrome: safe-area insets (`viewport-fit=cover`), 16px inputs to prevent iOS focus zoom, 44px touch targets, `dvh`-based drawer sizing, and scroll locking behind overlays. The catalog grid's mobile column count (1/2/3) is a customer-facing toggle, remembered in `localStorage`.
 
 ## Run it
 
