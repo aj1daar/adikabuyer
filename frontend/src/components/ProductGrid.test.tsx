@@ -39,4 +39,16 @@ describe('ProductGrid', () => {
 
     expect(container.querySelector('.grid')?.children).toHaveLength(0)
   })
+
+  it('defaults to a single mobile column', () => {
+    const { container } = render(<ProductGrid products={[]} />, { wrapper: MemoryRouter })
+
+    expect(container.querySelector('.grid')).toHaveClass('grid-cols-1')
+  })
+
+  it('applies the requested mobile column count', () => {
+    const { container } = render(<ProductGrid products={[]} mobileColumns={3} />, { wrapper: MemoryRouter })
+
+    expect(container.querySelector('.grid')).toHaveClass('grid-cols-3')
+  })
 })
