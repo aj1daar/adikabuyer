@@ -78,6 +78,45 @@ describe('ProductCard', () => {
     expect(screen.getByText('Custom Tumbler')).toBeInTheDocument()
   })
 
+  it('shrinks the title on mobile once a compact density is selected', () => {
+    const { rerender } = render(<ProductCard product={product} />, { wrapper: MemoryRouter })
+    expect(screen.getByText('Custom Tumbler')).not.toHaveClass('max-sm:text-sm')
+
+    rerender(<ProductCard product={product} mobileColumns={2} />)
+    expect(screen.getByText('Custom Tumbler')).toHaveClass('max-sm:text-sm')
+  })
+
+  it('hides the quantity stepper and full-width cart button on mobile once compact', () => {
+    render(<ProductCard product={product} mobileColumns={2} />, { wrapper: MemoryRouter })
+
+    expect(screen.getByRole('button', { name: /^в корзину$/i }).parentElement).toHaveClass('max-sm:hidden')
+  })
+
+  it('shows a compact icon-only add-to-cart button once compact, that adds a single item', () => {
+    render(<ProductCard product={product} mobileColumns={2} />, { wrapper: MemoryRouter })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить в корзину' }))
+
+    expect(useCartStore.getState().items[0].quantity).toBe(1)
+  })
+
+  it('does not show the compact icon-only add-to-cart button at the default density', () => {
+    render(<ProductCard product={product} />, { wrapper: MemoryRouter })
+
+    expect(screen.queryByRole('button', { name: 'Добавить в корзину' })).not.toBeInTheDocument()
+  })
+
+  it('hides the variant-count badge on mobile once 3 columns are selected', () => {
+    const productWithVariants: ProductDto = {
+      ...product,
+      variants: [...product.variants, { ...product.variants[0], id: 2, sku: 'TUM-BLK-750' }],
+    }
+
+    render(<ProductCard product={productWithVariants} mobileColumns={3} />, { wrapper: MemoryRouter })
+
+    expect(screen.getByText('Вариантов: 2')).toHaveClass('max-sm:hidden')
+  })
+
   it('renders the product image when imageUrl is set and initials otherwise', () => {
     const { rerender } = render(<ProductCard product={product} />, { wrapper: MemoryRouter })
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
