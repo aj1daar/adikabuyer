@@ -20,9 +20,9 @@ export default function MobileColumnsToggle({ value, onChange }: MobileColumnsTo
           type="button"
           aria-pressed={value === option}
           onClick={() => onChange(option)}
-          className={`flex h-10 w-10 items-center justify-center font-grotesk text-sm font-bold transition ${
+          className={`flex h-11 w-11 items-center justify-center font-grotesk text-sm font-bold transition active:scale-100 active:brightness-75 active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.55)] ${
             index > 0 ? 'border-l-2 border-black' : ''
-          } ${value === option ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'}`}
+          } ${value === option ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50 hover:bg-silver'}`}
         >
           {option}
         </button>
