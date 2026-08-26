@@ -4,14 +4,18 @@ import type { ProductDto } from '../types/catalog'
 import useCartStore from '../store/useCartStore'
 import formatPrice from '../utils/formatPrice'
 import { formatAttributeValue } from '../utils/attributeOptions'
+import type { MobileColumns } from './MobileColumnsToggle'
 
 type ProductCardProps = {
   product: ProductDto
+  mobileColumns?: MobileColumns
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, mobileColumns = 1 }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem)
   const [quantity, setQuantity] = useState(1)
+  const hideDescriptionOnMobile = mobileColumns >= 2
+  const hideExtrasOnMobile = mobileColumns >= 3
 
   const initials = product.name
     .split(' ')
@@ -66,9 +70,13 @@ export default function ProductCard({ product }: ProductCardProps) {
         )}
       </Link>
 
-      <div className="flex flex-1 flex-col gap-2 p-5">
+      <div className={`flex flex-1 flex-col gap-2 p-5 ${mobileColumns >= 2 ? 'max-sm:p-3' : ''}`}>
         {product.category && (
-          <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-bubblegum-dark">
+          <span
+            className={`font-grotesk text-xs font-bold uppercase tracking-wide text-bubblegum-dark ${
+              hideExtrasOnMobile ? 'max-sm:hidden' : ''
+            }`}
+          >
             {product.category}
           </span>
         )}
@@ -80,11 +88,15 @@ export default function ProductCard({ product }: ProductCardProps) {
         </Link>
 
         {product.description && (
-          <p className="line-clamp-2 text-sm text-ink/60">{product.description}</p>
+          <p
+            className={`line-clamp-2 text-sm text-ink/60 ${hideDescriptionOnMobile ? 'max-sm:hidden' : ''}`}
+          >
+            {product.description}
+          </p>
         )}
 
         {attributeTags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
+          <div className={`flex flex-wrap gap-1 ${hideExtrasOnMobile ? 'max-sm:hidden' : ''}`}>
             {attributeTags.map((tag, index) => (
               <span
                 key={index}

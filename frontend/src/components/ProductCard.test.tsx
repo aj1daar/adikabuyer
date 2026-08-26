@@ -55,6 +55,29 @@ describe('ProductCard', () => {
     expect(screen.getByText('500 мл')).toBeInTheDocument()
   })
 
+  it('keeps description and tags visible on mobile at the default density', () => {
+    render(<ProductCard product={product} />, { wrapper: MemoryRouter })
+
+    expect(screen.getByText('Insulated steel tumbler')).not.toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Black').closest('div')).not.toHaveClass('max-sm:hidden')
+  })
+
+  it('hides the description on mobile once 2 columns are selected, but keeps tags', () => {
+    render(<ProductCard product={product} mobileColumns={2} />, { wrapper: MemoryRouter })
+
+    expect(screen.getByText('Insulated steel tumbler')).toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Black').closest('div')).not.toHaveClass('max-sm:hidden')
+  })
+
+  it('hides description, category, and tags on mobile once 3 columns are selected', () => {
+    render(<ProductCard product={product} mobileColumns={3} />, { wrapper: MemoryRouter })
+
+    expect(screen.getByText('Insulated steel tumbler')).toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Drinkware')).toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Black').closest('div')).toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Custom Tumbler')).toBeInTheDocument()
+  })
+
   it('renders the product image when imageUrl is set and initials otherwise', () => {
     const { rerender } = render(<ProductCard product={product} />, { wrapper: MemoryRouter })
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
