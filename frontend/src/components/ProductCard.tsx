@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import type { ProductDto } from '../types/catalog'
 import useCartStore from '../store/useCartStore'
+import useCardTransitionStore from '../store/useCardTransitionStore'
 import formatPrice from '../utils/formatPrice'
 import { formatAttributeValue } from '../utils/attributeOptions'
 import type { MobileColumns } from './MobileColumnsToggle'
@@ -13,6 +14,8 @@ type ProductCardProps = {
 
 export default function ProductCard({ product, mobileColumns = 1 }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem)
+  const playTransition = useCardTransitionStore((state) => state.play)
+  const cardRef = useRef<HTMLDivElement>(null)
   const [quantity, setQuantity] = useState(1)
   const hideDescriptionOnMobile = mobileColumns >= 2
   const hideTagsAndVariantsOnMobile = mobileColumns >= 2
@@ -52,8 +55,26 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     setQuantity(1)
   }
 
+  const handleCardClick = (event: MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement
+    if (!cardRef.current || !target.closest('a')) {
+      return
+    }
+    const rect = cardRef.current.getBoundingClientRect()
+    playTransition('expand', {
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    })
+  }
+
   return (
-    <div className="flex flex-col overflow-hidden rounded-3xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000] transition select-none hover:-translate-y-1 hover:shadow-[8px_8px_0_0_#E8799F] active:scale-[0.98]">
+    <div
+      ref={cardRef}
+      onClickCapture={handleCardClick}
+      className="flex flex-col overflow-hidden rounded-3xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000] transition select-none hover:-translate-y-1 hover:shadow-[8px_8px_0_0_#E8799F] active:scale-[0.98]"
+    >
       <Link
         to={`/catalog/${product.id}`}
         className="flex aspect-[4/5] items-center justify-center overflow-hidden border-b-2 border-black bg-silver"

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import MainLayout from '../layouts/MainLayout'
 import catalogClient from '../api/catalogClient'
 import useCartStore from '../store/useCartStore'
+import useCardTransitionStore from '../store/useCardTransitionStore'
 import { resolveVariantGallery } from '../utils/variantImage'
 import usePageTitle from '../hooks/usePageTitle'
 import formatPrice from '../utils/formatPrice'
@@ -25,6 +26,7 @@ export default function ProductPage() {
   const { id } = useParams()
   const addItem = useCartStore((state) => state.addItem)
   const openCart = useCartStore((state) => state.openCart)
+  const playTransition = useCardTransitionStore((state) => state.play)
 
   const [product, setProduct] = useState<ProductDto | null>(null)
   const [loading, setLoading] = useState(true)
@@ -121,6 +123,7 @@ export default function ProductPage() {
         <div className="mx-auto max-w-5xl py-8">
           <Link
             to="/catalog"
+            onClick={() => playTransition('collapse')}
             className="inline-flex items-center gap-2 rounded-pill border-2 border-black bg-white px-4 py-2 font-grotesk text-sm font-bold text-ink transition hover:bg-bubblegum hover:text-white"
           >
             ← Каталог
