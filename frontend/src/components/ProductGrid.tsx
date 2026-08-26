@@ -16,7 +16,8 @@ const MOBILE_COLUMN_CLASSES: Record<MobileColumns, string> = {
 export default function ProductGrid({ products, mobileColumns = 1 }: ProductGridProps) {
   return (
     <div
-      className={`grid ${MOBILE_COLUMN_CLASSES[mobileColumns]} sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4`}
+      key={mobileColumns}
+      className={`animate-grid-density-pop grid ${MOBILE_COLUMN_CLASSES[mobileColumns]} sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4`}
     >
       {products.map((product) => (
         <ProductCard key={product.id} product={product} mobileColumns={mobileColumns} />
