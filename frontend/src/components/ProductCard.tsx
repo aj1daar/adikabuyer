@@ -170,7 +170,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
             onClick={() => setQuantity((current) => Math.max(1, current - 1))}
             disabled={!primaryVariant || quantity <= 1}
             aria-label="Уменьшить количество"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white active:scale-90 active:bg-bubblegum-dark active:text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
             −
           </button>
@@ -182,7 +182,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
             onClick={() => setQuantity((current) => current + 1)}
             disabled={!primaryVariant}
             aria-label="Увеличить количество"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white active:scale-90 active:bg-bubblegum-dark active:text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
             +
           </button>
