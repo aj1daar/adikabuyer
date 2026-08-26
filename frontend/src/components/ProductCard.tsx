@@ -123,7 +123,9 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
           }`}
         >
           <span
-            className={`min-w-0 font-grotesk text-base font-bold text-ink ${hideDescriptionOnMobile ? 'max-sm:text-sm' : ''}`}
+            className={`min-w-0 font-grotesk text-base font-bold text-ink ${
+              hideNameOnMobile ? 'max-sm:text-xs' : hideDescriptionOnMobile ? 'max-sm:text-sm' : ''
+            }`}
           >
             {formatPrice(product.displayPrice)}
           </span>
