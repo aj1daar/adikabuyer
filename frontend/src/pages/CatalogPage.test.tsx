@@ -33,6 +33,7 @@ function renderCatalogPage() {
 beforeEach(() => {
   useCartStore.setState({ items: [], isOpen: false })
   mockedUseCatalog.mockReturnValue({ products: [], loading: false, error: null, refetch: vi.fn() })
+  localStorage.clear()
 })
 
 describe('CatalogPage', () => {
@@ -187,5 +188,23 @@ describe('CatalogPage', () => {
     renderCatalogPage()
 
     expect(screen.queryByRole('button', { name: /категория/i })).not.toBeInTheDocument()
+  })
+
+  it('defaults the mobile column count to 2 and persists a change to localStorage', () => {
+    renderCatalogPage()
+
+    expect(screen.getByRole('button', { name: '2', pressed: true })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '3' }))
+
+    expect(localStorage.getItem('catalog-mobile-columns')).toBe('3')
+  })
+
+  it('restores the mobile column count from localStorage on mount', () => {
+    localStorage.setItem('catalog-mobile-columns', '1')
+
+    renderCatalogPage()
+
+    expect(screen.getByRole('button', { name: '1', pressed: true })).toBeInTheDocument()
   })
 })

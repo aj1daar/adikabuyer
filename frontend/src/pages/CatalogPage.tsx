@@ -3,8 +3,16 @@ import MainLayout from '../layouts/MainLayout'
 import ProductGrid from '../components/ProductGrid'
 import SearchBar from '../components/SearchBar'
 import FilterBar, { type FilterOption } from '../components/FilterBar'
+import MobileColumnsToggle, { type MobileColumns } from '../components/MobileColumnsToggle'
 import useCatalog from '../hooks/useCatalog'
 import usePageTitle from '../hooks/usePageTitle'
+
+const MOBILE_COLUMNS_STORAGE_KEY = 'catalog-mobile-columns'
+
+function readStoredMobileColumns(): MobileColumns {
+  const stored = localStorage.getItem(MOBILE_COLUMNS_STORAGE_KEY)
+  return stored === '1' || stored === '2' || stored === '3' ? (Number(stored) as MobileColumns) : 2
+}
 
 export default function CatalogPage() {
   usePageTitle('Каталог')
@@ -15,6 +23,11 @@ export default function CatalogPage() {
   const [size, setSize] = useState('')
   const [volumeMin, setVolumeMin] = useState('')
   const [volumeMax, setVolumeMax] = useState('')
+  const [mobileColumns, setMobileColumns] = useState<MobileColumns>(readStoredMobileColumns)
+
+  useEffect(() => {
+    localStorage.setItem(MOBILE_COLUMNS_STORAGE_KEY, String(mobileColumns))
+  }, [mobileColumns])
 
   useEffect(() => {
     const timeout = setTimeout(() => setSearch(searchInput), 300)
@@ -56,6 +69,10 @@ export default function CatalogPage() {
           onVolumeChange={handleVolumeChange}
         />
 
+        <div className="flex justify-end">
+          <MobileColumnsToggle value={mobileColumns} onChange={setMobileColumns} />
+        </div>
+
         {loading && products.length === 0 && <p className="text-ink/60">Загрузка товаров...</p>}
         {error && <p className="text-red-500">{error}</p>}
         {!loading && !error && products.length === 0 && (
@@ -63,7 +80,7 @@ export default function CatalogPage() {
         )}
         {!error && products.length > 0 && (
           <div className={loading ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
-            <ProductGrid products={products} />
+            <ProductGrid products={products} mobileColumns={mobileColumns} />
           </div>
         )}
       </div>
