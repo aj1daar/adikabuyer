@@ -62,28 +62,30 @@ describe('ProductCard', () => {
     expect(screen.getByText('Black').closest('div')).not.toHaveClass('max-sm:hidden')
   })
 
-  it('hides the description on mobile once 2 columns are selected, but keeps tags', () => {
+  it('hides the description, tags, and category on mobile once 2 columns are selected', () => {
     render(<ProductCard product={product} mobileColumns={2} />, { wrapper: MemoryRouter })
 
     expect(screen.getByText('Insulated steel tumbler')).toHaveClass('max-sm:hidden')
-    expect(screen.getByText('Black').closest('div')).not.toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Black').closest('div')).toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Drinkware')).toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Custom Tumbler').closest('a')).not.toHaveClass('max-sm:hidden')
   })
 
-  it('hides description, category, and tags on mobile once 3 columns are selected', () => {
+  it('additionally hides the name on mobile once 3 columns are selected', () => {
     render(<ProductCard product={product} mobileColumns={3} />, { wrapper: MemoryRouter })
 
     expect(screen.getByText('Insulated steel tumbler')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Drinkware')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Black').closest('div')).toHaveClass('max-sm:hidden')
-    expect(screen.getByText('Custom Tumbler')).toBeInTheDocument()
+    expect(screen.getByText('Custom Tumbler').closest('a')).toHaveClass('max-sm:hidden')
   })
 
-  it('shrinks the title on mobile once a compact density is selected', () => {
+  it('shrinks and truncates the title to one line on mobile once a compact density is selected', () => {
     const { rerender } = render(<ProductCard product={product} />, { wrapper: MemoryRouter })
-    expect(screen.getByText('Custom Tumbler')).not.toHaveClass('max-sm:text-sm')
+    expect(screen.getByText('Custom Tumbler')).not.toHaveClass('max-sm:truncate')
 
     rerender(<ProductCard product={product} mobileColumns={2} />)
-    expect(screen.getByText('Custom Tumbler')).toHaveClass('max-sm:text-sm')
+    expect(screen.getByText('Custom Tumbler')).toHaveClass('max-sm:truncate', 'max-sm:text-xs')
   })
 
   it('hides the quantity stepper and full-width cart button on mobile once compact', () => {
@@ -106,15 +108,22 @@ describe('ProductCard', () => {
     expect(screen.queryByRole('button', { name: 'Добавить в корзину' })).not.toBeInTheDocument()
   })
 
-  it('hides the variant-count badge on mobile once 3 columns are selected', () => {
+  it('hides the variant-count badge on mobile once 2 columns are selected', () => {
     const productWithVariants: ProductDto = {
       ...product,
       variants: [...product.variants, { ...product.variants[0], id: 2, sku: 'TUM-BLK-750' }],
     }
 
-    render(<ProductCard product={productWithVariants} mobileColumns={3} />, { wrapper: MemoryRouter })
+    render(<ProductCard product={productWithVariants} mobileColumns={2} />, { wrapper: MemoryRouter })
 
     expect(screen.getByText('Вариантов: 2')).toHaveClass('max-sm:hidden')
+  })
+
+  it('puts the price and compact add-to-cart button in separate rows once compact', () => {
+    render(<ProductCard product={product} mobileColumns={2} />, { wrapper: MemoryRouter })
+
+    const priceRow = screen.getByText('25 KGS').parentElement
+    expect(priceRow).not.toContainElement(screen.getByRole('button', { name: 'Добавить в корзину' }))
   })
 
   it('renders the product image when imageUrl is set and initials otherwise', () => {
