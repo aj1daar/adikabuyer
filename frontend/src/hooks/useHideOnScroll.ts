@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-export default function useHideOnScroll(threshold = 12, revealBelow = 64) {
+export default function useHideOnScroll(threshold = 4, revealBelow = 64) {
   const [hidden, setHidden] = useState(false)
 
   useEffect(() => {
