@@ -17,6 +17,9 @@ import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.PutBucketPolicyRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -85,11 +88,57 @@ class S3StorageServiceTest {
     @Test
     void uploadFile_throwsStorageException_whenReadingUploadedFileFails() throws IOException {
         MultipartFile file = mock(MultipartFile.class);
-        when(file.getOriginalFilename()).thenReturn("photo.png");
-        when(file.getInputStream()).thenThrow(new IOException("disk error"));
+        when(file.getBytes()).thenThrow(new IOException("disk error"));
 
         assertThatThrownBy(() -> s3StorageService.uploadFile(file))
                 .isInstanceOf(StorageException.class);
+    }
+
+    @Test
+    void uploadFile_resizesLargeImages_andReencodesToJpeg() throws IOException {
+        byte[] largeImageBytes = pngBytes(2000, 1500);
+        MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", largeImageBytes);
+
+        s3StorageService.uploadFile(file);
+
+        ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        ArgumentCaptor<RequestBody> bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+        verify(s3Client).putObject(requestCaptor.capture(), bodyCaptor.capture());
+
+        PutObjectRequest request = requestCaptor.getValue();
+        assertThat(request.contentType()).isEqualTo("image/jpeg");
+        assertThat(request.key()).endsWith("-photo.jpg");
+
+        BufferedImage uploaded = ImageIO.read(bodyCaptor.getValue().contentStreamProvider().newStream());
+        assertThat(uploaded.getWidth()).isLessThanOrEqualTo(1600);
+        assertThat(uploaded.getHeight()).isLessThanOrEqualTo(1600);
+    }
+
+    @Test
+    void uploadFile_leavesSmallImages_unresized() {
+        byte[] smallImageBytes = pngBytes(800, 600);
+        MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", smallImageBytes);
+
+        s3StorageService.uploadFile(file);
+
+        ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        ArgumentCaptor<RequestBody> bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+        verify(s3Client).putObject(requestCaptor.capture(), bodyCaptor.capture());
+
+        assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/png");
+        assertThat(requestCaptor.getValue().key()).endsWith("-photo.png");
+        assertThat(bodyCaptor.getValue().contentLength()).isEqualTo(smallImageBytes.length);
+    }
+
+    private byte[] pngBytes(int width, int height) {
+        try {
+            BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ImageIO.write(image, "png", out);
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test

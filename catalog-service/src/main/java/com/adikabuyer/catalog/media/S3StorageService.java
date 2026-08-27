@@ -1,6 +1,7 @@
 package com.adikabuyer.catalog.media;
 
 import jakarta.annotation.PostConstruct;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,11 +13,18 @@ import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.PutBucketPolicyRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.UUID;
 
 @Service
 public class S3StorageService {
+
+    private static final int MAX_DIMENSION = 1600;
+    private static final double JPEG_QUALITY = 0.82;
 
     private final S3Client s3Client;
     private final String bucket;
@@ -62,22 +70,68 @@ public class S3StorageService {
     }
 
     public String uploadFile(MultipartFile file) {
-        String key = UUID.randomUUID() + "-" + sanitizeFilename(file.getOriginalFilename());
-
+        byte[] originalBytes;
         try {
-            s3Client.putObject(
-                    PutObjectRequest.builder()
-                            .bucket(bucket)
-                            .key(key)
-                            .contentType(file.getContentType())
-                            .build(),
-                    RequestBody.fromInputStream(file.getInputStream(), file.getSize())
-            );
+            originalBytes = file.getBytes();
         } catch (IOException e) {
             throw new StorageException("Failed to read uploaded file", e);
         }
 
-        return publicUrlBase + "/" + key;
+        String sanitizedName = sanitizeFilename(file.getOriginalFilename());
+        UploadPayload payload = prepareUpload(originalBytes, file.getContentType(), sanitizedName);
+
+        s3Client.putObject(
+                PutObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(payload.key())
+                        .contentType(payload.contentType())
+                        .build(),
+                RequestBody.fromBytes(payload.bytes())
+        );
+
+        return publicUrlBase + "/" + payload.key();
+    }
+
+    private record UploadPayload(String key, String contentType, byte[] bytes) {
+    }
+
+    private UploadPayload prepareUpload(byte[] originalBytes, String contentType, String sanitizedName) {
+        BufferedImage image = readImage(originalBytes);
+
+        if (image == null || (image.getWidth() <= MAX_DIMENSION && image.getHeight() <= MAX_DIMENSION)) {
+            return new UploadPayload(UUID.randomUUID() + "-" + sanitizedName, contentType, originalBytes);
+        }
+
+        byte[] resizedBytes = resize(image);
+        String key = UUID.randomUUID() + "-" + stripExtension(sanitizedName) + ".jpg";
+        return new UploadPayload(key, "image/jpeg", resizedBytes);
+    }
+
+    private BufferedImage readImage(byte[] bytes) {
+        try {
+            return ImageIO.read(new ByteArrayInputStream(bytes));
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private byte[] resize(BufferedImage image) {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            Thumbnails.of(image)
+                    .size(MAX_DIMENSION, MAX_DIMENSION)
+                    .outputFormat("jpg")
+                    .outputQuality(JPEG_QUALITY)
+                    .toOutputStream(out);
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new StorageException("Failed to resize uploaded image", e);
+        }
+    }
+
+    private String stripExtension(String filename) {
+        int dot = filename.lastIndexOf('.');
+        return dot > 0 ? filename.substring(0, dot) : filename;
     }
 
     private String sanitizeFilename(String filename) {
