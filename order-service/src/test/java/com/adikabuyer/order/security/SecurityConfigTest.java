@@ -2,6 +2,7 @@ package com.adikabuyer.order.security;
 
 import com.adikabuyer.order.controller.OrderController;
 import com.adikabuyer.order.service.OrderService;
+import com.adikabuyer.order.telegram.TelegramAdminService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,9 @@ class SecurityConfigTest {
     @MockBean
     private OrderService orderService;
 
+    @MockBean
+    private TelegramAdminService telegramAdminService;
+
     private String token(String role) {
         SecretKey key = Keys.hmacShaKeyFor(JWT_SECRET.getBytes(StandardCharsets.UTF_8));
         Instant now = Instant.now();
@@ -67,6 +71,20 @@ class SecurityConfigTest {
         when(orderService.getAllOrders()).thenReturn(List.of());
 
         mockMvc.perform(get("/api/orders").header("Authorization", "Bearer " + token("ADMIN")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void getTelegramAdmins_returns401_withoutToken() throws Exception {
+        mockMvc.perform(get("/api/orders/telegram-admins"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getTelegramAdmins_returns200_withAdminToken() throws Exception {
+        when(telegramAdminService.listAdmins()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/orders/telegram-admins").header("Authorization", "Bearer " + token("ADMIN")))
                 .andExpect(status().isOk());
     }
 

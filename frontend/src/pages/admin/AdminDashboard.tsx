@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useCatalog from '../../hooks/useCatalog'
 import useOrders from '../../hooks/useOrders'
+import useTelegramAdmins from '../../hooks/useTelegramAdmins'
 import useAuthStore from '../../store/useAuthStore'
 import ProductForm from '../../components/admin/ProductForm'
 import OrdersTable from '../../components/admin/OrdersTable'
+import TelegramAdminsTable from '../../components/admin/TelegramAdminsTable'
 import { createProduct, deleteProduct, updateProduct } from '../../api/adminCatalog'
 import { deleteOrder } from '../../api/adminOrders'
 import type { ProductDto } from '../../types/catalog'
@@ -13,7 +15,7 @@ import type { ProductPayload } from '../../types/admin'
 import formatPrice from '../../utils/formatPrice'
 import usePageTitle from '../../hooks/usePageTitle'
 
-type AdminTab = 'products' | 'orders'
+type AdminTab = 'products' | 'orders' | 'telegram'
 
 export default function AdminDashboard() {
   usePageTitle('Админ-панель')
@@ -28,6 +30,11 @@ export default function AdminDashboard() {
     error: ordersError,
     refetch: refetchOrders,
   } = useOrders(activeTab === 'orders')
+  const {
+    admins: telegramAdmins,
+    loading: telegramAdminsLoading,
+    error: telegramAdminsError,
+  } = useTelegramAdmins(activeTab === 'telegram')
 
   const [editingProduct, setEditingProduct] = useState<ProductDto | undefined>(undefined)
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -138,12 +145,26 @@ export default function AdminDashboard() {
           >
             Заказы
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('telegram')}
+            aria-pressed={activeTab === 'telegram'}
+            className={`rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
+              activeTab === 'telegram' ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
+            }`}
+          >
+            Telegram
+          </button>
         </div>
 
         {actionError && <p className="mt-4 text-sm text-red-500">{actionError}</p>}
 
         {activeTab === 'orders' && (
           <OrdersTable orders={orders} loading={ordersLoading} error={ordersError} onDelete={handleDeleteOrder} />
+        )}
+
+        {activeTab === 'telegram' && (
+          <TelegramAdminsTable admins={telegramAdmins} loading={telegramAdminsLoading} error={telegramAdminsError} />
         )}
 
         {activeTab === 'products' && loading && products.length === 0 && (

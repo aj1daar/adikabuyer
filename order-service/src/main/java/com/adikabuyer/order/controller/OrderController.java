@@ -3,7 +3,9 @@ package com.adikabuyer.order.controller;
 import com.adikabuyer.order.dto.CartDto;
 import com.adikabuyer.order.dto.CheckoutResponseDto;
 import com.adikabuyer.order.dto.OrderDto;
+import com.adikabuyer.order.dto.TelegramAdminDto;
 import com.adikabuyer.order.service.OrderService;
+import com.adikabuyer.order.telegram.TelegramAdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,6 +24,7 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final TelegramAdminService telegramAdminService;
 
     @PostMapping("/checkout")
     public CheckoutResponseDto checkout(@Valid @RequestBody CartDto cart) {
@@ -31,6 +34,11 @@ public class OrderController {
     @GetMapping
     public List<OrderDto> getAllOrders() {
         return orderService.getAllOrders();
+    }
+
+    @GetMapping("/telegram-admins")
+    public List<TelegramAdminDto> getTelegramAdmins() {
+        return telegramAdminService.listAdmins();
     }
 
     @DeleteMapping("/{id}")

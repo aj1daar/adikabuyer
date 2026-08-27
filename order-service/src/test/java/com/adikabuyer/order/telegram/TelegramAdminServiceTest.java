@@ -1,6 +1,7 @@
 package com.adikabuyer.order.telegram;
 
 import com.adikabuyer.order.domain.TelegramAdmin;
+import com.adikabuyer.order.dto.TelegramAdminDto;
 import com.adikabuyer.order.repository.TelegramAdminRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,6 +10,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -106,5 +108,16 @@ class TelegramAdminServiceTest {
         ));
 
         assertThat(telegramAdminService.getAdminChatIds()).containsExactly(1L, 2L);
+    }
+
+    @Test
+    void listAdmins_returnsDtosOrderedByRepository() {
+        Instant registeredAt = Instant.parse("2026-01-01T00:00:00Z");
+        when(telegramAdminRepository.findAllByOrderByRegisteredAtDesc()).thenReturn(List.of(
+                TelegramAdmin.builder().chatId(42L).username("john").registeredAt(registeredAt).build()
+        ));
+
+        assertThat(telegramAdminService.listAdmins())
+                .containsExactly(new TelegramAdminDto(42L, "john", registeredAt));
     }
 }

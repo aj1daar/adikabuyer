@@ -6,12 +6,14 @@ import useCatalog from '../../hooks/useCatalog'
 import useAuthStore from '../../store/useAuthStore'
 import { createProduct, deleteProduct, updateProduct } from '../../api/adminCatalog'
 import getOrders, { deleteOrder } from '../../api/adminOrders'
+import getTelegramAdmins from '../../api/telegramAdmins'
 import type { ProductDto } from '../../types/catalog'
 import type { OrderDto } from '../../types/order'
 
 vi.mock('../../hooks/useCatalog')
 vi.mock('../../api/adminCatalog')
 vi.mock('../../api/adminOrders')
+vi.mock('../../api/telegramAdmins')
 
 const mockedUseCatalog = vi.mocked(useCatalog)
 const mockedCreateProduct = vi.mocked(createProduct)
@@ -19,6 +21,7 @@ const mockedUpdateProduct = vi.mocked(updateProduct)
 const mockedDeleteProduct = vi.mocked(deleteProduct)
 const mockedGetOrders = vi.mocked(getOrders)
 const mockedDeleteOrder = vi.mocked(deleteOrder)
+const mockedGetTelegramAdmins = vi.mocked(getTelegramAdmins)
 
 const order: OrderDto = {
   id: 'order-1',
@@ -86,6 +89,7 @@ beforeEach(() => {
   mockedDeleteProduct.mockReset()
   mockedGetOrders.mockReset()
   mockedDeleteOrder.mockReset()
+  mockedGetTelegramAdmins.mockReset()
   useAuthStore.setState({ token: 'valid-token' })
   mockedUseCatalog.mockReturnValue({
     products: [productWithVariant, productWithoutVariants],
@@ -236,5 +240,23 @@ describe('AdminDashboard', () => {
     fireEvent.click(screen.getByRole('button', { name: /удалить/i }))
 
     await waitFor(() => expect(screen.getByText('Cannot delete order')).toBeInTheDocument())
+  })
+
+  it('does not fetch telegram admins until the Telegram tab is opened', () => {
+    renderDashboard()
+
+    expect(mockedGetTelegramAdmins).not.toHaveBeenCalled()
+  })
+
+  it('switches to the Telegram tab, fetches, and renders subscribers', async () => {
+    mockedGetTelegramAdmins.mockResolvedValueOnce([
+      { chatId: 42, username: 'shop_owner', registeredAt: '2026-01-01T00:00:00Z' },
+    ])
+    renderDashboard()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Telegram' }))
+
+    await waitFor(() => expect(screen.getByText('shop_owner')).toBeInTheDocument())
+    expect(mockedGetTelegramAdmins).toHaveBeenCalledTimes(1)
   })
 })

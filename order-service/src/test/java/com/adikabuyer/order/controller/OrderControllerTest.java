@@ -2,7 +2,9 @@ package com.adikabuyer.order.controller;
 
 import com.adikabuyer.order.dto.CheckoutResponseDto;
 import com.adikabuyer.order.dto.OrderDto;
+import com.adikabuyer.order.dto.TelegramAdminDto;
 import com.adikabuyer.order.service.OrderService;
+import com.adikabuyer.order.telegram.TelegramAdminService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
@@ -39,6 +41,9 @@ class OrderControllerTest {
 
     @MockBean
     private OrderService orderService;
+
+    @MockBean
+    private TelegramAdminService telegramAdminService;
 
     private String validCartJson() {
         return """
@@ -219,6 +224,17 @@ class OrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("order-1"))
                 .andExpect(jsonPath("$[0].customerName").value("John Doe"));
+    }
+
+    @Test
+    void getTelegramAdmins_returns200WithAdminList() throws Exception {
+        TelegramAdminDto admin = new TelegramAdminDto(123L, "shop_owner", Instant.parse("2026-01-01T00:00:00Z"));
+        when(telegramAdminService.listAdmins()).thenReturn(List.of(admin));
+
+        mockMvc.perform(get("/api/orders/telegram-admins"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].chatId").value(123))
+                .andExpect(jsonPath("$[0].username").value("shop_owner"));
     }
 
     @Test

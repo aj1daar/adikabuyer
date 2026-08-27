@@ -1,6 +1,7 @@
 package com.adikabuyer.order.telegram;
 
 import com.adikabuyer.order.domain.TelegramAdmin;
+import com.adikabuyer.order.dto.TelegramAdminDto;
 import com.adikabuyer.order.repository.TelegramAdminRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -47,5 +48,11 @@ public class TelegramAdminService {
 
     public List<Long> getAdminChatIds() {
         return telegramAdminRepository.findAll().stream().map(TelegramAdmin::getChatId).toList();
+    }
+
+    public List<TelegramAdminDto> listAdmins() {
+        return telegramAdminRepository.findAllByOrderByRegisteredAtDesc().stream()
+                .map(admin -> new TelegramAdminDto(admin.getChatId(), admin.getUsername(), admin.getRegisteredAt()))
+                .toList();
     }
 }
