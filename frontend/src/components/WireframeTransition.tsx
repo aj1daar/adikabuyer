@@ -26,6 +26,8 @@ function getContentBounds() {
   }
 }
 
+const TRANSITION_DURATION_MS = 220
+
 export default function WireframeTransition() {
   const phase = useCardTransitionStore((state) => state.phase)
   const originRect = useCardTransitionStore((state) => state.originRect)
@@ -48,13 +50,18 @@ export default function WireframeTransition() {
       requestAnimationFrame(() => {
         setStyle({
           ...toPx(to),
-          transition: 'top 160ms linear, left 160ms linear, width 160ms linear, height 160ms linear',
+          transition: `top ${TRANSITION_DURATION_MS}ms linear, left ${TRANSITION_DURATION_MS}ms linear, width ${TRANSITION_DURATION_MS}ms linear, height ${TRANSITION_DURATION_MS}ms linear`,
         })
       })
     })
 
-    return () => cancelAnimationFrame(frame)
-  }, [phase, originRect])
+    const timeout = setTimeout(clear, TRANSITION_DURATION_MS + 30)
+
+    return () => {
+      cancelAnimationFrame(frame)
+      clearTimeout(timeout)
+    }
+  }, [phase, originRect, clear])
 
   if (!phase || !style) {
     return null
@@ -63,11 +70,6 @@ export default function WireframeTransition() {
   return (
     <div
       aria-hidden="true"
-      onTransitionEnd={(event) => {
-        if (event.propertyName === 'width') {
-          clear()
-        }
-      }}
       className="pointer-events-none fixed z-[9999] border-2 border-bubblegum shadow-[0_0_0_1px_#000]"
       style={style}
     />
