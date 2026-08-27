@@ -3,6 +3,7 @@ import MainLayout from '../layouts/MainLayout'
 import ProductGrid from '../components/ProductGrid'
 import SearchBar from '../components/SearchBar'
 import FilterBar, { type FilterOption } from '../components/FilterBar'
+import FilterSheet from '../components/FilterSheet'
 import MobileColumnsToggle, { type MobileColumns } from '../components/MobileColumnsToggle'
 import useCatalog from '../hooks/useCatalog'
 import usePageTitle from '../hooks/usePageTitle'
@@ -56,20 +57,31 @@ export default function CatalogPage() {
       <div className="flex flex-col gap-6 py-8">
         <SearchBar value={searchInput} onChange={setSearchInput} />
 
-        <FilterBar
-          category={category}
-          color={color}
-          size={size}
-          volumeMin={volumeMin}
-          volumeMax={volumeMax}
-          categoryOptions={categoryOptions}
-          onCategoryChange={setCategory}
-          onColorChange={setColor}
-          onSizeChange={setSize}
-          onVolumeChange={handleVolumeChange}
-        />
-
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between gap-3">
+          <FilterBar
+            category={category}
+            color={color}
+            size={size}
+            volumeMin={volumeMin}
+            volumeMax={volumeMax}
+            categoryOptions={categoryOptions}
+            onCategoryChange={setCategory}
+            onColorChange={setColor}
+            onSizeChange={setSize}
+            onVolumeChange={handleVolumeChange}
+          />
+          <FilterSheet
+            category={category}
+            color={color}
+            size={size}
+            volumeMin={volumeMin}
+            volumeMax={volumeMax}
+            categoryOptions={categoryOptions}
+            onCategoryChange={setCategory}
+            onColorChange={setColor}
+            onSizeChange={setSize}
+            onVolumeChange={handleVolumeChange}
+          />
           <MobileColumnsToggle value={mobileColumns} onChange={setMobileColumns} />
         </div>
 

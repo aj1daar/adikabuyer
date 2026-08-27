@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom'
 import Logo from './Logo'
 import useCartStore from '../store/useCartStore'
+import useFilterSheetStore from '../store/useFilterSheetStore'
 import useHideOnScroll from '../hooks/useHideOnScroll'
 
 const navItems = [
@@ -11,7 +12,9 @@ const navItems = [
 export default function NavigationBar() {
   const toggleCart = useCartStore((state) => state.toggleCart)
   const totalCount = useCartStore((state) => state.totalCount())
-  const hidden = useHideOnScroll()
+  const scrolledHidden = useHideOnScroll()
+  const filterSheetOpen = useFilterSheetStore((state) => state.isOpen)
+  const hidden = scrolledHidden || filterSheetOpen
 
   const desktopLinkClass = ({ isActive }: { isActive: boolean }) =>
     `font-grotesk text-sm font-bold transition ${isActive ? 'text-bubblegum-dark' : 'text-ink/60 hover:text-ink'}`

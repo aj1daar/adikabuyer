@@ -38,7 +38,7 @@ export default function FilterBar({
   onVolumeChange,
 }: FilterBarProps) {
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="hidden flex-wrap gap-3 sm:flex">
       {categoryOptions.length > 0 && (
         <FilterDropdown label="Категория" options={categoryOptions} value={category} onApply={onCategoryChange} />
       )}
