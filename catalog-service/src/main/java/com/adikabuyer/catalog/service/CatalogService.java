@@ -53,6 +53,12 @@ public class CatalogService {
         return new ProductPageResponse(items, result.getTotalElements(), page, pageSize);
     }
 
+    public List<String> getCategories(String search, String color, String size, BigDecimal volumeMin, BigDecimal volumeMax) {
+        return productRepository.findDistinctCategories(
+                normalize(search), normalize(color), normalize(size), volumeMin, volumeMax
+        );
+    }
+
     private String normalize(String value) {
         if (value == null || value.isBlank()) {
             return null;

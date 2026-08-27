@@ -3,14 +3,17 @@ import { render, screen, fireEvent, act, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import CatalogPage from './CatalogPage'
 import useCatalog from '../hooks/useCatalog'
+import useCategories from '../hooks/useCategories'
 import useIsMobileViewport from '../hooks/useIsMobileViewport'
 import useCartStore from '../store/useCartStore'
 import type { ProductDto } from '../types/catalog'
 
 vi.mock('../hooks/useCatalog')
+vi.mock('../hooks/useCategories')
 vi.mock('../hooks/useIsMobileViewport')
 
 const mockedUseCatalog = vi.mocked(useCatalog)
+const mockedUseCategories = vi.mocked(useCategories)
 const mockedUseIsMobileViewport = vi.mocked(useIsMobileViewport)
 
 const product: ProductDto = {
@@ -36,6 +39,7 @@ function renderCatalogPage() {
 beforeEach(() => {
   useCartStore.setState({ items: [], isOpen: false })
   mockedUseCatalog.mockReturnValue({ products: [], totalCount: 0, loading: false, error: null, refetch: vi.fn() })
+  mockedUseCategories.mockReturnValue([])
   mockedUseIsMobileViewport.mockReturnValue(true)
   localStorage.clear()
 })
@@ -74,7 +78,16 @@ describe('CatalogPage', () => {
   it('fetches with no filters on initial render', () => {
     renderCatalogPage()
 
-    expect(mockedUseCatalog).toHaveBeenCalledWith({ search: '', color: '', size: '', volumeMin: '', volumeMax: '' })
+    expect(mockedUseCatalog).toHaveBeenCalledWith(
+      { search: '', category: '', color: '', size: '', volumeMin: '', volumeMax: '' },
+      { page: 0, pageSize: 12 }
+    )
+  })
+
+  it('requests category options with the current non-category filters', () => {
+    renderCatalogPage()
+
+    expect(mockedUseCategories).toHaveBeenCalledWith({ search: '', color: '', size: '', volumeMin: '', volumeMax: '' })
   })
 
   describe('search debounce', () => {
@@ -177,13 +190,7 @@ describe('CatalogPage', () => {
   })
 
   it('shows a category dropdown derived from loaded products and applies the selection', () => {
-    mockedUseCatalog.mockReturnValue({
-      products: [{ ...product, category: 'Drinkware' }],
-      totalCount: 1,
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    })
+    mockedUseCategories.mockReturnValue([{ label: 'Drinkware', value: 'Drinkware' }])
 
     renderCatalogPage()
 

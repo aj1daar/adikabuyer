@@ -90,6 +90,33 @@ class CatalogControllerTest {
     }
 
     @Test
+    void getCategories_returns200WithDistinctCategories() throws Exception {
+        when(catalogService.getCategories(null, null, null, null, null))
+                .thenReturn(List.of("Drinkware", "Одежда"));
+
+        mockMvc.perform(get("/api/catalog/categories"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0]").value("Drinkware"))
+                .andExpect(jsonPath("$[1]").value("Одежда"));
+    }
+
+    @Test
+    void getCategories_forwardsQueryParamsToService() throws Exception {
+        when(catalogService.getCategories("tumbler", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600)))
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/api/catalog/categories")
+                        .param("search", "tumbler")
+                        .param("color", "black")
+                        .param("size", "M")
+                        .param("volumeMin", "300")
+                        .param("volumeMax", "600"))
+                .andExpect(status().isOk());
+
+        verify(catalogService).getCategories("tumbler", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600));
+    }
+
+    @Test
     void getProductById_returns200_whenProductExists() throws Exception {
         ProductDto product = new ProductDto(1L, "Tumbler", "desc", "Drinkware", BigDecimal.TEN, null, true, null, List.of());
         when(catalogService.getProductById(1L)).thenReturn(product);

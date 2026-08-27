@@ -104,6 +104,35 @@ class CatalogServiceTest {
     }
 
     @Test
+    void getCategories_returnsDistinctCategoriesFromRepository() {
+        when(productRepository.findDistinctCategories(null, null, null, null, null))
+                .thenReturn(List.of("Drinkware", "Одежда"));
+
+        assertThat(catalogService.getCategories(null, null, null, null, null)).containsExactly("Drinkware", "Одежда");
+    }
+
+    @Test
+    void getCategories_normalizesBlankFilters_toNull() {
+        when(productRepository.findDistinctCategories(null, null, null, null, null)).thenReturn(List.of());
+
+        catalogService.getCategories("  ", "", "   ", null, null);
+
+        verify(productRepository).findDistinctCategories(null, null, null, null, null);
+    }
+
+    @Test
+    void getCategories_trimsAndForwardsNonBlankFilters() {
+        BigDecimal volumeMin = BigDecimal.valueOf(300);
+        BigDecimal volumeMax = BigDecimal.valueOf(600);
+        when(productRepository.findDistinctCategories("tumbler", "black", "M", volumeMin, volumeMax))
+                .thenReturn(List.of());
+
+        catalogService.getCategories(" tumbler ", " black ", " M ", volumeMin, volumeMax);
+
+        verify(productRepository).findDistinctCategories("tumbler", "black", "M", volumeMin, volumeMax);
+    }
+
+    @Test
     void getProductById_returnsDto_whenProductExists() {
         Product product = Product.builder().id(1L).name("Tumbler").basePrice(BigDecimal.TEN).active(true).build();
         ProductDto dto = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, null, true, null, List.of());

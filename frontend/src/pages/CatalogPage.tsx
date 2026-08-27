@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import MainLayout from '../layouts/MainLayout'
 import ProductGrid from '../components/ProductGrid'
 import SearchBar from '../components/SearchBar'
-import FilterBar, { type FilterOption } from '../components/FilterBar'
+import FilterBar from '../components/FilterBar'
 import FilterSheet from '../components/FilterSheet'
 import MobileColumnsToggle, { type MobileColumns } from '../components/MobileColumnsToggle'
 import Pagination from '../components/Pagination'
 import useCatalog from '../hooks/useCatalog'
+import useCategories from '../hooks/useCategories'
 import useIsMobileViewport from '../hooks/useIsMobileViewport'
 import usePageTitle from '../hooks/usePageTitle'
 
@@ -45,15 +46,7 @@ export default function CatalogPage() {
     setPage(0)
   }, [search, category, color, size, volumeMin, volumeMax])
 
-  const { products: categoryScopedProducts } = useCatalog({ search, color, size, volumeMin, volumeMax })
-  const categoryOptions = useMemo<FilterOption[]>(() => {
-    const uniqueCategories = new Set(
-      categoryScopedProducts
-        .map((product) => product.category)
-        .filter((value): value is string => !!value)
-    )
-    return [...uniqueCategories].sort().map((value) => ({ label: value, value }))
-  }, [categoryScopedProducts])
+  const categoryOptions = useCategories({ search, color, size, volumeMin, volumeMax })
 
   const { products, totalCount, loading, error } = useCatalog(
     { search, category, color, size, volumeMin, volumeMax },
