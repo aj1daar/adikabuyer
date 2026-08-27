@@ -1,16 +1,8 @@
 import FilterDropdown from './FilterDropdown'
 import VolumeRangeFilter from './VolumeRangeFilter'
-import { ATTRIBUTE_VALUE_OPTIONS } from '../utils/attributeOptions'
+import { SINGLE_SELECT_FILTERS, type FilterOption } from '../utils/attributeOptions'
 
-export type FilterOption = {
-  label: string
-  value: string
-}
-
-const toFilterOptions = (values: string[]): FilterOption[] => values.map((value) => ({ label: value, value }))
-
-const COLOR_OPTIONS: FilterOption[] = toFilterOptions(ATTRIBUTE_VALUE_OPTIONS.color)
-const SIZE_OPTIONS: FilterOption[] = toFilterOptions(ATTRIBUTE_VALUE_OPTIONS.size)
+export type { FilterOption }
 
 type FilterBarProps = {
   category: string
@@ -37,13 +29,26 @@ export default function FilterBar({
   onSizeChange,
   onVolumeChange,
 }: FilterBarProps) {
+  const singleSelectValues: Record<string, string> = { color, size }
+  const singleSelectHandlers: Record<string, (value: string) => void> = {
+    color: onColorChange,
+    size: onSizeChange,
+  }
+
   return (
     <div className="hidden flex-wrap gap-3 sm:flex">
       {categoryOptions.length > 0 && (
         <FilterDropdown label="Категория" options={categoryOptions} value={category} onApply={onCategoryChange} />
       )}
-      <FilterDropdown label="Цвет" options={COLOR_OPTIONS} value={color} onApply={onColorChange} />
-      <FilterDropdown label="Размер" options={SIZE_OPTIONS} value={size} onApply={onSizeChange} />
+      {SINGLE_SELECT_FILTERS.map(({ key, label, options }) => (
+        <FilterDropdown
+          key={key}
+          label={label}
+          options={options}
+          value={singleSelectValues[key]}
+          onApply={singleSelectHandlers[key]}
+        />
+      ))}
       <VolumeRangeFilter min={volumeMin} max={volumeMax} onApply={onVolumeChange} />
     </div>
   )

@@ -1,12 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import useFilterSheetStore from '../store/useFilterSheetStore'
-import { ATTRIBUTE_VALUE_OPTIONS } from '../utils/attributeOptions'
-import type { FilterOption } from './FilterBar'
-
-const toFilterOptions = (values: string[]): FilterOption[] => values.map((value) => ({ label: value, value }))
-const COLOR_OPTIONS: FilterOption[] = toFilterOptions(ATTRIBUTE_VALUE_OPTIONS.color)
-const SIZE_OPTIONS: FilterOption[] = toFilterOptions(ATTRIBUTE_VALUE_OPTIONS.size)
+import { SINGLE_SELECT_FILTERS, type FilterOption } from '../utils/attributeOptions'
 
 type AccordionSectionProps = {
   title: string
@@ -229,30 +224,25 @@ export default function FilterSheet({
                     />
                   </AccordionSection>
                 )}
-                <AccordionSection
-                  title="Цвет"
-                  summary={draftColor || null}
-                  isOpen={openSection === 'color'}
-                  onToggleOpen={() => toggleSection('color')}
-                >
-                  <OptionList
-                    options={COLOR_OPTIONS}
-                    value={draftColor}
-                    onToggle={(value) => toggleValue(draftColor, setDraftColor, value)}
-                  />
-                </AccordionSection>
-                <AccordionSection
-                  title="Размер"
-                  summary={draftSize || null}
-                  isOpen={openSection === 'size'}
-                  onToggleOpen={() => toggleSection('size')}
-                >
-                  <OptionList
-                    options={SIZE_OPTIONS}
-                    value={draftSize}
-                    onToggle={(value) => toggleValue(draftSize, setDraftSize, value)}
-                  />
-                </AccordionSection>
+                {SINGLE_SELECT_FILTERS.map(({ key, label, options }) => {
+                  const draftValue = key === 'color' ? draftColor : draftSize
+                  const setDraftValue = key === 'color' ? setDraftColor : setDraftSize
+                  return (
+                    <AccordionSection
+                      key={key}
+                      title={label}
+                      summary={draftValue || null}
+                      isOpen={openSection === key}
+                      onToggleOpen={() => toggleSection(key)}
+                    >
+                      <OptionList
+                        options={options}
+                        value={draftValue}
+                        onToggle={(value) => toggleValue(draftValue, setDraftValue, value)}
+                      />
+                    </AccordionSection>
+                  )
+                })}
                 <AccordionSection
                   title="Объём"
                   summary={volumeSummary}
