@@ -2,12 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import App from './App'
 import useCatalog from './hooks/useCatalog'
+import useIsMobileViewport from './hooks/useIsMobileViewport'
 import useAuthStore from './store/useAuthStore'
 import useCartStore from './store/useCartStore'
 
 vi.mock('./hooks/useCatalog')
+vi.mock('./hooks/useIsMobileViewport')
 
 const mockedUseCatalog = vi.mocked(useCatalog)
+const mockedUseIsMobileViewport = vi.mocked(useIsMobileViewport)
 
 function renderAt(path: string) {
   window.history.pushState({}, '', path)
@@ -16,6 +19,7 @@ function renderAt(path: string) {
 
 beforeEach(() => {
   mockedUseCatalog.mockReturnValue({ products: [], totalCount: 0, loading: false, error: null, refetch: vi.fn() })
+  mockedUseIsMobileViewport.mockReturnValue(true)
   useCartStore.setState({ items: [], isOpen: false })
   useAuthStore.setState({ token: null })
 })

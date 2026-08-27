@@ -3,12 +3,15 @@ import { render, screen, fireEvent, act, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import CatalogPage from './CatalogPage'
 import useCatalog from '../hooks/useCatalog'
+import useIsMobileViewport from '../hooks/useIsMobileViewport'
 import useCartStore from '../store/useCartStore'
 import type { ProductDto } from '../types/catalog'
 
 vi.mock('../hooks/useCatalog')
+vi.mock('../hooks/useIsMobileViewport')
 
 const mockedUseCatalog = vi.mocked(useCatalog)
+const mockedUseIsMobileViewport = vi.mocked(useIsMobileViewport)
 
 const product: ProductDto = {
   id: 1,
@@ -33,6 +36,7 @@ function renderCatalogPage() {
 beforeEach(() => {
   useCartStore.setState({ items: [], isOpen: false })
   mockedUseCatalog.mockReturnValue({ products: [], totalCount: 0, loading: false, error: null, refetch: vi.fn() })
+  mockedUseIsMobileViewport.mockReturnValue(true)
   localStorage.clear()
 })
 
@@ -251,5 +255,18 @@ describe('CatalogPage', () => {
       { search: '', category: '', color: 'Чёрный', size: '', volumeMin: '', volumeMax: '' },
       { page: 0, pageSize: 12 }
     )
+  })
+
+  it('does not paginate on a desktop viewport, fetching everything in one page', () => {
+    mockedUseIsMobileViewport.mockReturnValue(false)
+    mockedUseCatalog.mockReturnValue({ products: [product], totalCount: 36, loading: false, error: null, refetch: vi.fn() })
+
+    renderCatalogPage()
+
+    expect(mockedUseCatalog).toHaveBeenLastCalledWith(
+      { search: '', category: '', color: '', size: '', volumeMin: '', volumeMax: '' },
+      { page: 0, pageSize: 1000 }
+    )
+    expect(screen.queryByRole('navigation', { name: 'Страницы' })).not.toBeInTheDocument()
   })
 })

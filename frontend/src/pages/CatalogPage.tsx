@@ -7,10 +7,12 @@ import FilterSheet from '../components/FilterSheet'
 import MobileColumnsToggle, { type MobileColumns } from '../components/MobileColumnsToggle'
 import Pagination from '../components/Pagination'
 import useCatalog from '../hooks/useCatalog'
+import useIsMobileViewport from '../hooks/useIsMobileViewport'
 import usePageTitle from '../hooks/usePageTitle'
 
 const MOBILE_COLUMNS_STORAGE_KEY = 'catalog-mobile-columns'
 const PAGE_SIZE = 12
+const UNPAGINATED_SIZE = 1000
 
 function readStoredMobileColumns(): MobileColumns {
   const stored = localStorage.getItem(MOBILE_COLUMNS_STORAGE_KEY)
@@ -28,6 +30,7 @@ export default function CatalogPage() {
   const [volumeMax, setVolumeMax] = useState('')
   const [mobileColumns, setMobileColumns] = useState<MobileColumns>(readStoredMobileColumns)
   const [page, setPage] = useState(0)
+  const isMobile = useIsMobileViewport()
 
   useEffect(() => {
     localStorage.setItem(MOBILE_COLUMNS_STORAGE_KEY, String(mobileColumns))
@@ -54,7 +57,7 @@ export default function CatalogPage() {
 
   const { products, totalCount, loading, error } = useCatalog(
     { search, category, color, size, volumeMin, volumeMax },
-    { page, pageSize: PAGE_SIZE }
+    isMobile ? { page, pageSize: PAGE_SIZE } : { page: 0, pageSize: UNPAGINATED_SIZE }
   )
 
   const handleVolumeChange = (min: string, max: string) => {
@@ -111,7 +114,7 @@ export default function CatalogPage() {
           </div>
         )}
 
-        {!error && (
+        {isMobile && !error && (
           <Pagination page={page} pageSize={PAGE_SIZE} totalCount={totalCount} onPageChange={handlePageChange} />
         )}
       </div>
