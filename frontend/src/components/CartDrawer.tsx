@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import useCartStore, { type CartItem } from '../store/useCartStore'
 import submitCheckout from '../api/checkout'
@@ -85,6 +85,7 @@ export default function CartDrawer() {
   const [region, setRegion] = useState('')
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('together')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const isSubmittingRef = useRef(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [orderPlaced, setOrderPlaced] = useState(false)
 
@@ -112,10 +113,11 @@ export default function CartDrawer() {
   const grandTotal = totalPrice + deliveryFee
 
   const handleCheckout = async () => {
-    if (!canCheckout) {
+    if (!canCheckout || isSubmittingRef.current) {
       return
     }
 
+    isSubmittingRef.current = true
     setIsSubmitting(true)
     setSubmitError(null)
 
@@ -134,6 +136,7 @@ export default function CartDrawer() {
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Не удалось оформить заказ. Попробуйте ещё раз.')
     } finally {
+      isSubmittingRef.current = false
       setIsSubmitting(false)
     }
   }

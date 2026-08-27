@@ -254,6 +254,28 @@ describe('CartDrawer', () => {
     )
   })
 
+  it('ignores a second click fired before the first checkout request resolves', async () => {
+    useCartStore.setState({ items: [cartItem()], isOpen: true })
+    let resolveCheckout: (value: Awaited<ReturnType<typeof submitCheckout>>) => void = () => {}
+    mockedSubmitCheckout.mockReturnValue(
+      new Promise((resolve) => {
+        resolveCheckout = resolve
+      })
+    )
+
+    render(<CartDrawer />)
+    fillCheckoutForm()
+
+    const button = screen.getByRole('button', { name: /оформить заказ/i })
+    fireEvent.click(button)
+    fireEvent.click(button)
+
+    expect(mockedSubmitCheckout).toHaveBeenCalledTimes(1)
+
+    resolveCheckout({ orderId: 'order-1', itemsTotal: 50, deliveryFee: 250, grandTotal: 300 })
+    await waitFor(() => expect(useCartStore.getState().items).toHaveLength(0))
+  })
+
   it('on failure shows an error message and does not clear the cart', async () => {
     useCartStore.setState({ items: [cartItem()], isOpen: true })
     mockedSubmitCheckout.mockRejectedValueOnce(new Error('Server exploded'))
