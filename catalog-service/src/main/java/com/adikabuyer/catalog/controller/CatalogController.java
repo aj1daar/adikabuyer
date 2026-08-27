@@ -1,6 +1,7 @@
 package com.adikabuyer.catalog.controller;
 
 import com.adikabuyer.catalog.dto.ProductDto;
+import com.adikabuyer.catalog.dto.ProductPageResponse;
 import com.adikabuyer.catalog.dto.ProductRequest;
 import com.adikabuyer.catalog.service.CatalogService;
 import jakarta.validation.Valid;
@@ -18,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/catalog")
@@ -28,15 +28,17 @@ public class CatalogController {
     private final CatalogService catalogService;
 
     @GetMapping("/products")
-    public List<ProductDto> getAllProducts(
+    public ProductPageResponse getAllProducts(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String color,
             @RequestParam(required = false) String size,
             @RequestParam(required = false) BigDecimal volumeMin,
-            @RequestParam(required = false) BigDecimal volumeMax
+            @RequestParam(required = false) BigDecimal volumeMax,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1000") int pageSize
     ) {
-        return catalogService.getAllProducts(search, category, color, size, volumeMin, volumeMax);
+        return catalogService.getAllProducts(search, category, color, size, volumeMin, volumeMax, page, pageSize);
     }
 
     @GetMapping("/products/{id}")

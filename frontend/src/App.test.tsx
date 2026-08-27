@@ -15,7 +15,7 @@ function renderAt(path: string) {
 }
 
 beforeEach(() => {
-  mockedUseCatalog.mockReturnValue({ products: [], loading: false, error: null, refetch: vi.fn() })
+  mockedUseCatalog.mockReturnValue({ products: [], totalCount: 0, loading: false, error: null, refetch: vi.fn() })
   useCartStore.setState({ items: [], isOpen: false })
   useAuthStore.setState({ token: null })
 })

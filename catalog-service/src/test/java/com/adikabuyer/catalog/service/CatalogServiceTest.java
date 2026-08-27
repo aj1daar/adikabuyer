@@ -4,6 +4,7 @@ import com.adikabuyer.catalog.domain.Product;
 import com.adikabuyer.catalog.domain.Variant;
 import com.adikabuyer.catalog.domain.VariantStatus;
 import com.adikabuyer.catalog.dto.ProductDto;
+import com.adikabuyer.catalog.dto.ProductPageResponse;
 import com.adikabuyer.catalog.dto.ProductRequest;
 import com.adikabuyer.catalog.dto.VariantRequest;
 import com.adikabuyer.catalog.exception.OutOfStockException;
@@ -19,6 +20,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -58,39 +61,46 @@ class CatalogServiceTest {
         Product product = Product.builder().id(1L).name("Tumbler").basePrice(BigDecimal.TEN).active(true).build();
         ProductDto dto = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, null, true, null, List.of());
 
-        when(productRepository.search(null, null, null, null, null, null)).thenReturn(List.of(product));
+        when(productRepository.search(null, null, null, null, null, null, PageRequest.of(0, 12)))
+                .thenReturn(new PageImpl<>(List.of(product)));
         when(productMapper.toDto(product)).thenReturn(dto);
 
-        List<ProductDto> result = catalogService.getAllProducts(null, null, null, null, null, null);
+        ProductPageResponse result = catalogService.getAllProducts(null, null, null, null, null, null, 0, 12);
 
-        assertThat(result).containsExactly(dto);
+        assertThat(result.items()).containsExactly(dto);
+        assertThat(result.totalCount()).isEqualTo(1);
+        assertThat(result.page()).isEqualTo(0);
+        assertThat(result.pageSize()).isEqualTo(12);
     }
 
     @Test
     void getAllProducts_returnsEmptyList_whenRepositoryIsEmpty() {
-        when(productRepository.search(null, null, null, null, null, null)).thenReturn(List.of());
+        when(productRepository.search(null, null, null, null, null, null, PageRequest.of(0, 12)))
+                .thenReturn(new PageImpl<>(List.of()));
 
-        assertThat(catalogService.getAllProducts(null, null, null, null, null, null)).isEmpty();
+        assertThat(catalogService.getAllProducts(null, null, null, null, null, null, 0, 12).items()).isEmpty();
     }
 
     @Test
     void getAllProducts_normalizesBlankFilters_toNull() {
-        when(productRepository.search(null, null, null, null, null, null)).thenReturn(List.of());
+        when(productRepository.search(null, null, null, null, null, null, PageRequest.of(0, 12)))
+                .thenReturn(new PageImpl<>(List.of()));
 
-        catalogService.getAllProducts("  ", "", null, "   ", null, null);
+        catalogService.getAllProducts("  ", "", null, "   ", null, null, 0, 12);
 
-        verify(productRepository).search(null, null, null, null, null, null);
+        verify(productRepository).search(null, null, null, null, null, null, PageRequest.of(0, 12));
     }
 
     @Test
     void getAllProducts_trimsAndForwardsNonBlankFilters() {
         BigDecimal volumeMin = BigDecimal.valueOf(300);
         BigDecimal volumeMax = BigDecimal.valueOf(600);
-        when(productRepository.search("tumbler", "Drinkware", "black", "M", volumeMin, volumeMax)).thenReturn(List.of());
+        when(productRepository.search("tumbler", "Drinkware", "black", "M", volumeMin, volumeMax, PageRequest.of(0, 12)))
+                .thenReturn(new PageImpl<>(List.of()));
 
-        catalogService.getAllProducts(" tumbler ", " Drinkware ", " black ", " M ", volumeMin, volumeMax);
+        catalogService.getAllProducts(" tumbler ", " Drinkware ", " black ", " M ", volumeMin, volumeMax, 0, 12);
 
-        verify(productRepository).search("tumbler", "Drinkware", "black", "M", volumeMin, volumeMax);
+        verify(productRepository).search("tumbler", "Drinkware", "black", "M", volumeMin, volumeMax, PageRequest.of(0, 12));
     }
 
     @Test

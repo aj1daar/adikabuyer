@@ -5,10 +5,12 @@ import SearchBar from '../components/SearchBar'
 import FilterBar, { type FilterOption } from '../components/FilterBar'
 import FilterSheet from '../components/FilterSheet'
 import MobileColumnsToggle, { type MobileColumns } from '../components/MobileColumnsToggle'
+import Pagination from '../components/Pagination'
 import useCatalog from '../hooks/useCatalog'
 import usePageTitle from '../hooks/usePageTitle'
 
 const MOBILE_COLUMNS_STORAGE_KEY = 'catalog-mobile-columns'
+const PAGE_SIZE = 12
 
 function readStoredMobileColumns(): MobileColumns {
   const stored = localStorage.getItem(MOBILE_COLUMNS_STORAGE_KEY)
@@ -25,6 +27,7 @@ export default function CatalogPage() {
   const [volumeMin, setVolumeMin] = useState('')
   const [volumeMax, setVolumeMax] = useState('')
   const [mobileColumns, setMobileColumns] = useState<MobileColumns>(readStoredMobileColumns)
+  const [page, setPage] = useState(0)
 
   useEffect(() => {
     localStorage.setItem(MOBILE_COLUMNS_STORAGE_KEY, String(mobileColumns))
@@ -34,6 +37,10 @@ export default function CatalogPage() {
     const timeout = setTimeout(() => setSearch(searchInput), 300)
     return () => clearTimeout(timeout)
   }, [searchInput])
+
+  useEffect(() => {
+    setPage(0)
+  }, [search, category, color, size, volumeMin, volumeMax])
 
   const { products: categoryScopedProducts } = useCatalog({ search, color, size, volumeMin, volumeMax })
   const categoryOptions = useMemo<FilterOption[]>(() => {
@@ -45,11 +52,19 @@ export default function CatalogPage() {
     return [...uniqueCategories].sort().map((value) => ({ label: value, value }))
   }, [categoryScopedProducts])
 
-  const { products, loading, error } = useCatalog({ search, category, color, size, volumeMin, volumeMax })
+  const { products, totalCount, loading, error } = useCatalog(
+    { search, category, color, size, volumeMin, volumeMax },
+    { page, pageSize: PAGE_SIZE }
+  )
 
   const handleVolumeChange = (min: string, max: string) => {
     setVolumeMin(min)
     setVolumeMax(max)
+  }
+
+  const handlePageChange = (nextPage: number) => {
+    setPage(nextPage)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   return (
@@ -94,6 +109,10 @@ export default function CatalogPage() {
           <div className={loading ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
             <ProductGrid products={products} mobileColumns={mobileColumns} />
           </div>
+        )}
+
+        {!error && (
+          <Pagination page={page} pageSize={PAGE_SIZE} totalCount={totalCount} onPageChange={handlePageChange} />
         )}
       </div>
     </MainLayout>

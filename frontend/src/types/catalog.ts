@@ -24,3 +24,10 @@ export type ProductDto = {
   imageUrl: string | null
   variants: VariantDto[]
 }
+
+export type ProductPageResponse = {
+  items: ProductDto[]
+  totalCount: number
+  page: number
+  pageSize: number
+}

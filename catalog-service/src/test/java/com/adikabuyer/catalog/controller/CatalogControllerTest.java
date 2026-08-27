@@ -1,6 +1,7 @@
 package com.adikabuyer.catalog.controller;
 
 import com.adikabuyer.catalog.dto.ProductDto;
+import com.adikabuyer.catalog.dto.ProductPageResponse;
 import com.adikabuyer.catalog.exception.OutOfStockException;
 import com.adikabuyer.catalog.service.CatalogService;
 import org.junit.jupiter.api.Test;
@@ -45,27 +46,32 @@ class CatalogControllerTest {
     @Test
     void getAllProducts_returns200WithProductList() throws Exception {
         ProductDto product = new ProductDto(1L, "Tumbler", "desc", "Drinkware", BigDecimal.TEN, null, true, null, List.of());
-        when(catalogService.getAllProducts(null, null, null, null, null, null)).thenReturn(List.of(product));
+        when(catalogService.getAllProducts(null, null, null, null, null, null, 0, 1000))
+                .thenReturn(new ProductPageResponse(List.of(product), 1, 0, 1000));
 
         mockMvc.perform(get("/api/catalog/products"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].name").value("Tumbler"));
+                .andExpect(jsonPath("$.items[0].id").value(1))
+                .andExpect(jsonPath("$.items[0].name").value("Tumbler"))
+                .andExpect(jsonPath("$.totalCount").value(1));
     }
 
     @Test
     void getAllProducts_returns200WithEmptyArray_whenCatalogIsEmpty() throws Exception {
-        when(catalogService.getAllProducts(null, null, null, null, null, null)).thenReturn(List.of());
+        when(catalogService.getAllProducts(null, null, null, null, null, null, 0, 1000))
+                .thenReturn(new ProductPageResponse(List.of(), 0, 0, 1000));
 
         mockMvc.perform(get("/api/catalog/products"))
                 .andExpect(status().isOk())
-                .andExpect(content().json("[]"));
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.items").isEmpty());
     }
 
     @Test
     void getAllProducts_forwardsQueryParamsToService() throws Exception {
-        when(catalogService.getAllProducts("tumbler", "Drinkware", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600)))
-                .thenReturn(List.of());
+        when(catalogService.getAllProducts(
+                "tumbler", "Drinkware", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600), 1, 12
+        )).thenReturn(new ProductPageResponse(List.of(), 0, 1, 12));
 
         mockMvc.perform(get("/api/catalog/products")
                         .param("search", "tumbler")
@@ -73,10 +79,14 @@ class CatalogControllerTest {
                         .param("color", "black")
                         .param("size", "M")
                         .param("volumeMin", "300")
-                        .param("volumeMax", "600"))
+                        .param("volumeMax", "600")
+                        .param("page", "1")
+                        .param("pageSize", "12"))
                 .andExpect(status().isOk());
 
-        verify(catalogService).getAllProducts("tumbler", "Drinkware", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600));
+        verify(catalogService).getAllProducts(
+                "tumbler", "Drinkware", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600), 1, 12
+        );
     }
 
     @Test

@@ -89,6 +89,7 @@ beforeEach(() => {
   useAuthStore.setState({ token: 'valid-token' })
   mockedUseCatalog.mockReturnValue({
     products: [productWithVariant, productWithoutVariants],
+    totalCount: 2,
     loading: false,
     error: null,
     refetch,

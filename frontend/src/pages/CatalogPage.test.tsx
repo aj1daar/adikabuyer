@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import CatalogPage from './CatalogPage'
 import useCatalog from '../hooks/useCatalog'
@@ -32,13 +32,13 @@ function renderCatalogPage() {
 
 beforeEach(() => {
   useCartStore.setState({ items: [], isOpen: false })
-  mockedUseCatalog.mockReturnValue({ products: [], loading: false, error: null, refetch: vi.fn() })
+  mockedUseCatalog.mockReturnValue({ products: [], totalCount: 0, loading: false, error: null, refetch: vi.fn() })
   localStorage.clear()
 })
 
 describe('CatalogPage', () => {
   it('shows a loading message while the catalog is loading', () => {
-    mockedUseCatalog.mockReturnValue({ products: [], loading: true, error: null, refetch: vi.fn() })
+    mockedUseCatalog.mockReturnValue({ products: [], totalCount: 0, loading: true, error: null, refetch: vi.fn() })
 
     renderCatalogPage()
 
@@ -46,7 +46,7 @@ describe('CatalogPage', () => {
   })
 
   it('shows an error message when the catalog fails to load', () => {
-    mockedUseCatalog.mockReturnValue({ products: [], loading: false, error: 'Network Error', refetch: vi.fn() })
+    mockedUseCatalog.mockReturnValue({ products: [], totalCount: 0, loading: false, error: 'Network Error', refetch: vi.fn() })
 
     renderCatalogPage()
 
@@ -60,7 +60,7 @@ describe('CatalogPage', () => {
   })
 
   it('renders the product grid once products load', () => {
-    mockedUseCatalog.mockReturnValue({ products: [product], loading: false, error: null, refetch: vi.fn() })
+    mockedUseCatalog.mockReturnValue({ products: [product], totalCount: 1, loading: false, error: null, refetch: vi.fn() })
 
     renderCatalogPage()
 
@@ -95,14 +95,17 @@ describe('CatalogPage', () => {
         vi.advanceTimersByTime(300)
       })
 
-      expect(mockedUseCatalog).toHaveBeenLastCalledWith({
-        search: 'tumbler',
-        category: '',
-        color: '',
-        size: '',
-        volumeMin: '',
-        volumeMax: '',
-      })
+      expect(mockedUseCatalog).toHaveBeenLastCalledWith(
+        {
+          search: 'tumbler',
+          category: '',
+          color: '',
+          size: '',
+          volumeMin: '',
+          volumeMax: '',
+        },
+        { page: 0, pageSize: 12 }
+      )
     })
   })
 
@@ -113,14 +116,17 @@ describe('CatalogPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Чёрный' }))
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
-    expect(mockedUseCatalog).toHaveBeenLastCalledWith({
-      search: '',
-      category: '',
-      color: 'Чёрный',
-      size: '',
-      volumeMin: '',
-      volumeMax: '',
-    })
+    expect(mockedUseCatalog).toHaveBeenLastCalledWith(
+      {
+        search: '',
+        category: '',
+        color: 'Чёрный',
+        size: '',
+        volumeMin: '',
+        volumeMax: '',
+      },
+      { page: 0, pageSize: 12 }
+    )
   })
 
   it('deselects the color filter when the same option is clicked again before saving', () => {
@@ -132,14 +138,17 @@ describe('CatalogPage', () => {
     fireEvent.click(option)
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
-    expect(mockedUseCatalog).toHaveBeenLastCalledWith({
-      search: '',
-      category: '',
-      color: '',
-      size: '',
-      volumeMin: '',
-      volumeMax: '',
-    })
+    expect(mockedUseCatalog).toHaveBeenLastCalledWith(
+      {
+        search: '',
+        category: '',
+        color: '',
+        size: '',
+        volumeMin: '',
+        volumeMax: '',
+      },
+      { page: 0, pageSize: 12 }
+    )
   })
 
   it('applies the entered volume range once Save is clicked', () => {
@@ -150,19 +159,23 @@ describe('CatalogPage', () => {
     fireEvent.change(screen.getByPlaceholderText('До'), { target: { value: '600' } })
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
-    expect(mockedUseCatalog).toHaveBeenLastCalledWith({
-      search: '',
-      category: '',
-      color: '',
-      size: '',
-      volumeMin: '300',
-      volumeMax: '600',
-    })
+    expect(mockedUseCatalog).toHaveBeenLastCalledWith(
+      {
+        search: '',
+        category: '',
+        color: '',
+        size: '',
+        volumeMin: '300',
+        volumeMax: '600',
+      },
+      { page: 0, pageSize: 12 }
+    )
   })
 
   it('shows a category dropdown derived from loaded products and applies the selection', () => {
     mockedUseCatalog.mockReturnValue({
       products: [{ ...product, category: 'Drinkware' }],
+      totalCount: 1,
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -174,14 +187,17 @@ describe('CatalogPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Drinkware' }))
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
-    expect(mockedUseCatalog).toHaveBeenLastCalledWith({
-      search: '',
-      category: 'Drinkware',
-      color: '',
-      size: '',
-      volumeMin: '',
-      volumeMax: '',
-    })
+    expect(mockedUseCatalog).toHaveBeenLastCalledWith(
+      {
+        search: '',
+        category: 'Drinkware',
+        color: '',
+        size: '',
+        volumeMin: '',
+        volumeMax: '',
+      },
+      { page: 0, pageSize: 12 }
+    )
   })
 
   it('does not show a category dropdown when no product has a category', () => {
@@ -206,5 +222,34 @@ describe('CatalogPage', () => {
     renderCatalogPage()
 
     expect(screen.getByRole('button', { name: '1', pressed: true })).toBeInTheDocument()
+  })
+
+  it('requests the next page from useCatalog when a pagination button is clicked', () => {
+    mockedUseCatalog.mockReturnValue({ products: [product], totalCount: 36, loading: false, error: null, refetch: vi.fn() })
+
+    renderCatalogPage()
+
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Страницы' })).getByRole('button', { name: '2' }))
+
+    expect(mockedUseCatalog).toHaveBeenLastCalledWith(
+      { search: '', category: '', color: '', size: '', volumeMin: '', volumeMax: '' },
+      { page: 1, pageSize: 12 }
+    )
+  })
+
+  it('resets back to page 0 once a filter changes after paging forward', () => {
+    mockedUseCatalog.mockReturnValue({ products: [product], totalCount: 36, loading: false, error: null, refetch: vi.fn() })
+
+    renderCatalogPage()
+
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Страницы' })).getByRole('button', { name: '2' }))
+    fireEvent.click(screen.getByRole('button', { name: /цвет/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Чёрный' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
+
+    expect(mockedUseCatalog).toHaveBeenLastCalledWith(
+      { search: '', category: '', color: 'Чёрный', size: '', volumeMin: '', volumeMax: '' },
+      { page: 0, pageSize: 12 }
+    )
   })
 })

@@ -4,6 +4,7 @@ import com.adikabuyer.catalog.domain.Product;
 import com.adikabuyer.catalog.domain.Variant;
 import com.adikabuyer.catalog.domain.VariantStatus;
 import com.adikabuyer.catalog.dto.ProductDto;
+import com.adikabuyer.catalog.dto.ProductPageResponse;
 import com.adikabuyer.catalog.dto.ProductRequest;
 import com.adikabuyer.catalog.dto.VariantRequest;
 import com.adikabuyer.catalog.exception.OutOfStockException;
@@ -12,6 +13,9 @@ import com.adikabuyer.catalog.repository.ProductRepository;
 import com.adikabuyer.catalog.repository.VariantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,20 +37,22 @@ public class CatalogService {
     private final VariantRepository variantRepository;
     private final ProductMapper productMapper;
 
-    public List<ProductDto> getAllProducts(
-            String search, String category, String color, String size, BigDecimal volumeMin, BigDecimal volumeMax
+    public ProductPageResponse getAllProducts(
+            String search, String category, String color, String size, BigDecimal volumeMin, BigDecimal volumeMax,
+            int page, int pageSize
     ) {
-        return productRepository.search(
-                        normalize(search),
-                        normalize(category),
-                        normalize(color),
-                        normalize(size),
-                        volumeMin,
-                        volumeMax
-                )
-                .stream()
-                .map(productMapper::toDto)
-                .toList();
+        Pageable pageable = PageRequest.of(page, pageSize);
+        Page<Product> result = productRepository.search(
+                normalize(search),
+                normalize(category),
+                normalize(color),
+                normalize(size),
+                volumeMin,
+                volumeMax,
+                pageable
+        );
+        List<ProductDto> items = result.getContent().stream().map(productMapper::toDto).toList();
+        return new ProductPageResponse(items, result.getTotalElements(), page, pageSize);
     }
 
     private String normalize(String value) {

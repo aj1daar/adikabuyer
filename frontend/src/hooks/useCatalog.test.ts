@@ -27,14 +27,15 @@ beforeEach(() => {
 })
 
 describe('useCatalog', () => {
-  it('fetches products with no filter params by default', async () => {
-    mockedGet.mockResolvedValueOnce({ data: [product] } as never)
+  it('fetches products with no filter params and the default page by default', async () => {
+    mockedGet.mockResolvedValueOnce({ data: { items: [product], totalCount: 1, page: 0, pageSize: 1000 } } as never)
 
     const { result } = renderHook(() => useCatalog())
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(result.current.products).toEqual([product])
+    expect(result.current.totalCount).toBe(1)
     expect(mockedGet).toHaveBeenCalledWith(
       '/products',
       expect.objectContaining({
@@ -45,23 +46,28 @@ describe('useCatalog', () => {
           size: undefined,
           volumeMin: undefined,
           volumeMax: undefined,
+          page: 0,
+          pageSize: 1000,
         },
       })
     )
   })
 
-  it('forwards the given filters as query params', async () => {
-    mockedGet.mockResolvedValueOnce({ data: [] } as never)
+  it('forwards the given filters and pagination as query params', async () => {
+    mockedGet.mockResolvedValueOnce({ data: { items: [], totalCount: 0, page: 1, pageSize: 12 } } as never)
 
     const { result } = renderHook(() =>
-      useCatalog({
-        search: 'tumbler',
-        category: 'Drinkware',
-        color: 'black',
-        size: 'M',
-        volumeMin: '300',
-        volumeMax: '600',
-      })
+      useCatalog(
+        {
+          search: 'tumbler',
+          category: 'Drinkware',
+          color: 'black',
+          size: 'M',
+          volumeMin: '300',
+          volumeMax: '600',
+        },
+        { page: 1, pageSize: 12 }
+      )
     )
 
     await waitFor(() => expect(result.current.loading).toBe(false))
@@ -69,13 +75,22 @@ describe('useCatalog', () => {
     expect(mockedGet).toHaveBeenCalledWith(
       '/products',
       expect.objectContaining({
-        params: { search: 'tumbler', category: 'Drinkware', color: 'black', size: 'M', volumeMin: '300', volumeMax: '600' },
+        params: {
+          search: 'tumbler',
+          category: 'Drinkware',
+          color: 'black',
+          size: 'M',
+          volumeMin: '300',
+          volumeMax: '600',
+          page: 1,
+          pageSize: 12,
+        },
       })
     )
   })
 
   it('refetches when the filters change', async () => {
-    mockedGet.mockResolvedValue({ data: [] } as never)
+    mockedGet.mockResolvedValue({ data: { items: [], totalCount: 0, page: 0, pageSize: 1000 } } as never)
 
     const { result, rerender } = renderHook(({ color }) => useCatalog({ color }), {
       initialProps: { color: '' },
@@ -90,6 +105,25 @@ describe('useCatalog', () => {
     expect(mockedGet).toHaveBeenLastCalledWith(
       '/products',
       expect.objectContaining({ params: expect.objectContaining({ color: 'black' }) })
+    )
+  })
+
+  it('refetches when the page changes', async () => {
+    mockedGet.mockResolvedValue({ data: { items: [], totalCount: 0, page: 0, pageSize: 12 } } as never)
+
+    const { result, rerender } = renderHook(({ page }) => useCatalog({}, { page, pageSize: 12 }), {
+      initialProps: { page: 0 },
+    })
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(mockedGet).toHaveBeenCalledTimes(1)
+
+    rerender({ page: 1 })
+
+    await waitFor(() => expect(mockedGet).toHaveBeenCalledTimes(2))
+    expect(mockedGet).toHaveBeenLastCalledWith(
+      '/products',
+      expect.objectContaining({ params: expect.objectContaining({ page: 1, pageSize: 12 }) })
     )
   })
 
