@@ -28,7 +28,7 @@ export default function NavigationBar() {
     <>
       <header
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
-        className={`sticky top-0 z-40 border-b-2 border-black bg-white/90 backdrop-blur transition-transform duration-150 ${
+        className={`sticky top-0 z-40 border-b-2 border-black bg-white/90 backdrop-blur transition-transform duration-150 will-change-transform ${
           hidden ? '-translate-y-full sm:translate-y-0' : 'translate-y-0'
         }`}
       >
@@ -58,7 +58,7 @@ export default function NavigationBar() {
       <nav
         data-mobile-tabbar
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-        className={`fixed inset-x-0 bottom-0 z-40 flex border-t-2 border-black bg-white/95 backdrop-blur transition-transform duration-150 sm:hidden ${
+        className={`fixed inset-x-0 bottom-0 z-40 flex border-t-2 border-black bg-white/95 backdrop-blur transition-transform duration-150 will-change-transform sm:hidden ${
           hidden ? 'translate-y-full' : 'translate-y-0'
         }`}
       >
