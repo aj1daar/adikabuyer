@@ -22,7 +22,7 @@ export default function HeroSection() {
 
         <p className="max-w-xl text-lg text-ink/70">
           Термостаканы, одежда, обувь и многое другое. Выбери вариант, мы соберём заказ
-          и отправим его прямо в WhatsApp.
+          и свяжемся с вами как можно скорее.
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-4">
