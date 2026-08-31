@@ -52,6 +52,7 @@ public class InventoryListener {
         variant.setStockQuantity(remainingStock);
         if (remainingStock == 0 && variant.getStatus() == VariantStatus.IN_STOCK) {
             variant.setStatus(VariantStatus.SOLD_OUT);
+            variant.setActive(false);
         }
         variantRepository.save(variant);
     }

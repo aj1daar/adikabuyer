@@ -43,11 +43,13 @@ type VariantDraft = {
   sku: string
   priceOverride: string
   stockQuantity: string
-  active: boolean
   imageUrls: string[]
   attributes: AttributeRow[]
   status: VariantStatus
 }
+
+/** A sold-out variant carries no stock and is never orderable. */
+const isStockless = (status: VariantStatus) => status === 'PRE_ORDER' || status === 'SOLD_OUT'
 
 const STATUS_TOGGLE: { value: VariantStatus; label: string }[] = [
   { value: 'IN_STOCK', label: 'В наличии' },
@@ -79,7 +81,6 @@ function toVariantDraft(product?: ProductDto): VariantDraft[] {
     sku: variant.sku,
     priceOverride: variant.priceOverride?.toString() ?? '',
     stockQuantity: variant.stockQuantity.toString(),
-    active: variant.active,
     imageUrls: [...variant.imageUrls],
     attributes: toAttributeRows(variant.attributes),
     status: variant.status,
@@ -173,7 +174,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   const addVariant = () => {
     setVariants([
       ...variants,
-      { sku: '', priceOverride: '', stockQuantity: '0', active: true, imageUrls: [], attributes: [], status: 'IN_STOCK' },
+      { sku: '', priceOverride: '', stockQuantity: '0', imageUrls: [], attributes: [], status: 'IN_STOCK' },
     ])
   }
 
@@ -186,7 +187,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   }
 
   const setVariantStatus = (index: number, status: VariantDraft['status']) => {
-    updateVariant(index, status === 'PRE_ORDER' ? { status, stockQuantity: '0' } : { status })
+    updateVariant(index, isStockless(status) ? { status, stockQuantity: '0' } : { status })
   }
 
   const addAttribute = (variantIndex: number) => {
@@ -227,7 +228,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
       sku: variant.sku,
       priceOverride: Number(variant.priceOverride),
       stockQuantity: Number(variant.stockQuantity),
-      active: variant.active,
+      active: variant.status !== 'SOLD_OUT',
       imageUrls: variant.imageUrls,
       status: variant.status,
       attributes: Object.fromEntries(
@@ -349,6 +350,57 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
             </label>
           </div>
 
+          {colorValues.length > 0 && (
+            <div className="mt-6">
+              <h3 className="font-grotesk text-base font-bold text-ink">Кружки цвета</h3>
+              <p className="mt-1 text-xs text-ink/50">
+                Отдельное круглое фото для каждого цвета — показывается в каталоге и на странице товара.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-4">
+                {colorValues.map((color) => (
+                  <div key={color} className="flex w-20 flex-col items-center gap-1">
+                    <label
+                      className="relative flex h-16 w-16 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-black bg-silver transition hover:border-bubblegum-dark aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                      aria-disabled={swatchUploading}
+                    >
+                      {colorSwatches[color] ? (
+                        <img src={colorSwatches[color]} alt={color} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="font-grotesk text-xl font-bold text-ink/30">+</span>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        aria-label={`Фото цвета ${color}`}
+                        disabled={swatchUploading}
+                        onChange={(event) => handleSwatchFileSelected(color, event)}
+                        className="hidden"
+                      />
+                    </label>
+                    <span className="truncate text-center font-grotesk text-xs font-bold text-ink" title={color}>
+                      {color}
+                    </span>
+                    {colorSwatches[color] && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setColorSwatches((current) => {
+                            const next = { ...current }
+                            delete next[color]
+                            return next
+                          })
+                        }
+                        className="font-grotesk text-xs font-bold text-ink/40 hover:text-bubblegum-dark"
+                      >
+                        Убрать
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="mt-6 flex items-center justify-between">
             <h3 className="font-grotesk text-base font-bold text-ink">Варианты</h3>
             <button
@@ -398,17 +450,9 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   value={variant.stockQuantity}
                   onChange={(event) => updateVariant(variantIndex, { stockQuantity: event.target.value })}
                   placeholder="Остаток"
-                  disabled={variant.status === 'PRE_ORDER'}
+                  disabled={isStockless(variant.status)}
                   className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
                 />
-                <label className="flex items-center gap-2 text-sm text-ink">
-                  <input
-                    type="checkbox"
-                    checked={variant.active}
-                    onChange={(event) => updateVariant(variantIndex, { active: event.target.checked })}
-                  />
-                  Активен
-                </label>
                 <div className="col-span-2 flex overflow-hidden rounded-pill border-2 border-black">
                   {STATUS_TOGGLE.map((option, optionIndex) => (
                     <button
@@ -426,7 +470,8 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                 </div>
                 {variant.status === 'SOLD_OUT' && (
                   <p className="col-span-2 text-xs text-ink/50">
-                    Солдаут скрывает вариант из каталога. Если все варианты в солдауте — товар уходит в архив.
+                    Солдаут обнуляет остаток и снимает вариант с продажи, скрывает его из каталога.
+                    Если все варианты в солдауте — товар уходит в архив.
                   </p>
                 )}
               </div>
@@ -598,57 +643,6 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               </div>
             </div>
           ))}
-
-          {colorValues.length > 0 && (
-            <div className="mt-6">
-              <h3 className="font-grotesk text-base font-bold text-ink">Кружки цвета</h3>
-              <p className="mt-1 text-xs text-ink/50">
-                Отдельное круглое фото для каждого цвета — показывается в каталоге и на странице товара.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-4">
-                {colorValues.map((color) => (
-                  <div key={color} className="flex w-20 flex-col items-center gap-1">
-                    <label
-                      className="relative flex h-16 w-16 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-black bg-silver transition hover:border-bubblegum-dark aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-                      aria-disabled={swatchUploading}
-                    >
-                      {colorSwatches[color] ? (
-                        <img src={colorSwatches[color]} alt={color} className="h-full w-full object-cover" />
-                      ) : (
-                        <span className="font-grotesk text-xl font-bold text-ink/30">+</span>
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        aria-label={`Фото цвета ${color}`}
-                        disabled={swatchUploading}
-                        onChange={(event) => handleSwatchFileSelected(color, event)}
-                        className="hidden"
-                      />
-                    </label>
-                    <span className="truncate text-center font-grotesk text-xs font-bold text-ink" title={color}>
-                      {color}
-                    </span>
-                    {colorSwatches[color] && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setColorSwatches((current) => {
-                            const next = { ...current }
-                            delete next[color]
-                            return next
-                          })
-                        }
-                        className="font-grotesk text-xs font-bold text-ink/40 hover:text-bubblegum-dark"
-                      >
-                        Убрать
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {cropper && (

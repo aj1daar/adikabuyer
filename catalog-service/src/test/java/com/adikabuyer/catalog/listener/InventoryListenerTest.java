@@ -67,13 +67,14 @@ class InventoryListenerTest {
 
     @Test
     void handleOrderPlaced_setsSoldOutStatus_whenStockReachesExactlyZero() {
-        Variant variant = Variant.builder().id(1L).stockQuantity(5).status(VariantStatus.IN_STOCK).build();
+        Variant variant = Variant.builder().id(1L).stockQuantity(5).active(true).status(VariantStatus.IN_STOCK).build();
         when(variantRepository.findById(1L)).thenReturn(Optional.of(variant));
 
         inventoryListener.handleOrderPlaced(buildEvent(buildItem(1L, 5)));
 
         assertThat(variant.getStockQuantity()).isZero();
         assertThat(variant.getStatus()).isEqualTo(VariantStatus.SOLD_OUT);
+        assertThat(variant.isActive()).isFalse();
     }
 
     @Test

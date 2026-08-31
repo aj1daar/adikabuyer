@@ -288,21 +288,31 @@ describe('ProductForm', () => {
     )
   })
 
-  it('submits SOLD_OUT status when Солдаут is selected for a variant', () => {
+  it('submits a sold-out variant with no stock and inactive', () => {
     const onSubmit = vi.fn()
     render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
 
     fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
     fillFirstVariant('NEW-SKU-1', '15')
+    fireEvent.change(screen.getByPlaceholderText('Остаток'), { target: { value: '9' } })
     fireEvent.click(screen.getByRole('button', { name: 'Солдаут' }))
+
+    expect(screen.getByPlaceholderText('Остаток')).toHaveValue(0)
+    expect(screen.getByPlaceholderText('Остаток')).toBeDisabled()
 
     fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
 
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
-        variants: [expect.objectContaining({ status: 'SOLD_OUT' })],
+        variants: [expect.objectContaining({ status: 'SOLD_OUT', stockQuantity: 0, active: false })],
       })
     )
+  })
+
+  it('has no per-variant "Активен" checkbox (only the product-level one)', () => {
+    render(<ProductForm product={existingProduct} onSubmit={vi.fn()} onClose={vi.fn()} />)
+
+    expect(screen.getAllByText('Активен')).toHaveLength(1)
   })
 
   it('forces stock to zero and disables the stock input when Под заказ is selected', () => {

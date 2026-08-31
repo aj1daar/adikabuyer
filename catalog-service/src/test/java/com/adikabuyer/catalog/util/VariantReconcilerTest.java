@@ -50,6 +50,17 @@ class VariantReconcilerTest {
     }
 
     @Test
+    void buildVariant_soldOutVariantHasNoStockAndIsNotActive_evenWhenRequestedOtherwise() {
+        Product product = Product.builder().id(1L).build();
+        VariantRequest request = buildRequest(null, "SKU-1", 42, VariantStatus.SOLD_OUT);
+
+        Variant variant = VariantReconciler.buildVariant(request, product, NOW);
+
+        assertThat(variant.getStockQuantity()).isZero();
+        assertThat(variant.isActive()).isFalse();
+    }
+
+    @Test
     void buildVariant_generatesSkuFromAttributes_whenRequestSkuIsBlank() {
         Product product = Product.builder().id(1L).build();
         Map<String, Object> attributes = new java.util.LinkedHashMap<>();

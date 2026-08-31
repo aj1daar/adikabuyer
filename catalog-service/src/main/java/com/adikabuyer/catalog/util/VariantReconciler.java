@@ -74,7 +74,7 @@ public final class VariantReconciler {
                 .attributes(attributes)
                 .priceOverride(request.priceOverride())
                 .stockQuantity(resolveStockQuantity(request))
-                .active(request.active())
+                .active(resolveActive(request))
                 .imageUrls(request.imageUrls() != null ? new ArrayList<>(request.imageUrls()) : new ArrayList<>())
                 .status(request.statusOrDefault())
                 .createdAt(now)
@@ -90,7 +90,7 @@ public final class VariantReconciler {
         variant.setAttributes(attributes);
         variant.setPriceOverride(request.priceOverride());
         variant.setStockQuantity(resolveStockQuantity(request));
-        variant.setActive(request.active());
+        variant.setActive(resolveActive(request));
         variant.setImageUrls(request.imageUrls() != null ? new ArrayList<>(request.imageUrls()) : new ArrayList<>());
         variant.setStatus(request.statusOrDefault());
         variant.setUpdatedAt(now);
@@ -148,6 +148,12 @@ public final class VariantReconciler {
     }
 
     private static Integer resolveStockQuantity(VariantRequest request) {
-        return request.statusOrDefault() == VariantStatus.PRE_ORDER ? 0 : request.stockQuantity();
+        VariantStatus status = request.statusOrDefault();
+        return status == VariantStatus.PRE_ORDER || status == VariantStatus.SOLD_OUT ? 0 : request.stockQuantity();
+    }
+
+    /** A sold-out variant is never orderable, whatever the request says. */
+    private static boolean resolveActive(VariantRequest request) {
+        return request.statusOrDefault() != VariantStatus.SOLD_OUT && request.active();
     }
 }
