@@ -47,7 +47,7 @@ export default function HeroSection() {
             />
             <ScribbleNote
               text="а тут инфа 👀"
-              className="left-full top-1/2 ml-2 -translate-y-1/2"
+              className="left-full top-1/2 ml-2 mt-3 -translate-y-1/2"
               rotate={5}
               direction="left"
               gap="gap-2.5"
