@@ -156,23 +156,42 @@ describe('ProductCard', () => {
     expect(minus).toBeDisabled()
   })
 
-  it('shows a round swatch per colour and swaps the card image when one is clicked', () => {
+  it('swaps the image, tags and price to the picked colour', () => {
     const swatchProduct: ProductDto = {
       ...product,
       imageUrl: 'default.jpg',
       colorSwatches: { Black: 'black-swatch.jpg', White: 'white-swatch.jpg' },
       variants: [
-        { ...product.variants[0], id: 1, attributes: { color: 'Black' }, imageUrls: ['black-photo.jpg'] },
-        { ...product.variants[0], id: 2, sku: 'TUM-WHT', attributes: { color: 'White' }, imageUrls: ['white-photo.jpg'] },
+        {
+          ...product.variants[0],
+          id: 1,
+          attributes: { color: 'Black' },
+          imageUrls: ['black-photo.jpg'],
+          displayPrice: 25,
+        },
+        {
+          ...product.variants[0],
+          id: 2,
+          sku: 'TUM-WHT',
+          attributes: { color: 'White' },
+          imageUrls: ['white-photo.jpg'],
+          displayPrice: 40,
+        },
       ],
     }
 
     render(<ProductCard product={swatchProduct} />, { wrapper: MemoryRouter })
 
     expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'default.jpg')
+    expect(screen.getByText('Black')).toBeInTheDocument()
+    expect(screen.getByText('25 KGS')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'White' }))
+
     expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'white-photo.jpg')
+    expect(screen.getByText('White')).toBeInTheDocument()
+    expect(screen.queryByText('Black')).not.toBeInTheDocument()
+    expect(screen.getByText('40 KGS')).toBeInTheDocument()
   })
 
   it('adds the primary variant to the cart store when the button is clicked', () => {

@@ -31,39 +31,41 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     .toUpperCase()
 
   const sellableVariants = product.variants.filter((variant) => variant.status !== 'SOLD_OUT')
-  const primaryVariant = sellableVariants[0]
   const sellableColors = new Set(
     sellableVariants.map((variant) => String(variant.attributes.color ?? ''))
   )
   const colorSwatches = product.colorSwatches ?? {}
   const swatchColors = Object.keys(colorSwatches).filter((color) => sellableColors.has(color))
-  const activeColorImage = activeColor
-    ? (sellableVariants.find(
-        (variant) => String(variant.attributes.color ?? '') === activeColor && variant.imageUrls.length > 0
-      )?.imageUrls[0] ?? colorSwatches[activeColor])
-    : null
+
+  const activeVariant = activeColor
+    ? sellableVariants.find((variant) => String(variant.attributes.color ?? '') === activeColor)
+    : undefined
+  const shownVariant = activeVariant ?? sellableVariants[0]
+
   const cardImage =
-    activeColorImage ??
-    product.imageUrl ??
-    sellableVariants.find((variant) => variant.imageUrls.length > 0)?.imageUrls[0] ??
+    (activeColor && (activeVariant?.imageUrls[0] ?? colorSwatches[activeColor])) ||
+    product.imageUrl ||
+    sellableVariants.find((variant) => variant.imageUrls.length > 0)?.imageUrls[0] ||
     null
-  const attributeTags = primaryVariant
-    ? Object.entries(primaryVariant.attributes).map(([key, value]) => formatAttributeValue(key, value))
+  const attributeTags = shownVariant
+    ? Object.entries(shownVariant.attributes).map(([key, value]) => formatAttributeValue(key, value))
     : []
+  // no colour picked → the product's "from" (cheapest) price; picked → that colour's price
+  const shownPrice = activeVariant?.displayPrice ?? product.displayPrice
 
   const handleAddToCart = () => {
-    if (!primaryVariant) {
+    if (!shownVariant) {
       return
     }
     addItem({
-      variantId: primaryVariant.id,
+      variantId: shownVariant.id,
       productId: product.id,
       productName: product.name,
-      sku: primaryVariant.sku,
-      attributes: primaryVariant.attributes,
-      unitPrice: primaryVariant.displayPrice ?? product.displayPrice,
+      sku: shownVariant.sku,
+      attributes: shownVariant.attributes,
+      unitPrice: shownVariant.displayPrice ?? product.displayPrice,
       quantity,
-      status: primaryVariant.status,
+      status: shownVariant.status,
     })
     setQuantity(1)
   }
@@ -183,7 +185,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
               hideNameOnMobile ? 'max-sm:text-xs' : hideDescriptionOnMobile ? 'max-sm:text-sm' : ''
             }`}
           >
-            {formatPrice(product.displayPrice)}
+            {formatPrice(shownPrice)}
           </span>
         </div>
 
@@ -191,7 +193,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
           <button
             type="button"
             onClick={handleAddToCart}
-            disabled={!primaryVariant}
+            disabled={!shownVariant}
             aria-label="Добавить в корзину"
             className="hidden w-full items-center justify-center rounded-pill border-2 border-black bg-ink py-2 text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40 max-sm:flex"
           >
@@ -215,7 +217,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
           <button
             type="button"
             onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-            disabled={!primaryVariant || quantity <= 1}
+            disabled={!shownVariant || quantity <= 1}
             aria-label="Уменьшить количество"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white active:scale-90 active:bg-bubblegum-dark active:text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
@@ -227,7 +229,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
           <button
             type="button"
             onClick={() => setQuantity((current) => current + 1)}
-            disabled={!primaryVariant}
+            disabled={!shownVariant}
             aria-label="Увеличить количество"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white active:scale-90 active:bg-bubblegum-dark active:text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
@@ -236,7 +238,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
           <button
             type="button"
             onClick={handleAddToCart}
-            disabled={!primaryVariant}
+            disabled={!shownVariant}
             className="flex-1 rounded-pill border-2 border-black bg-ink px-4 py-2 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
           >
             В корзину
