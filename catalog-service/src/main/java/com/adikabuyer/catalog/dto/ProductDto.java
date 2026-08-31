@@ -15,6 +15,7 @@ public record ProductDto(
         String imageUrl,
         Map<String, String> colorSwatches,
         List<String> labels,
+        boolean isNew,
         List<VariantDto> variants
 ) {
 }

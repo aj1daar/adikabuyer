@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -59,6 +61,21 @@ class ProductMapperTest {
         assertThat(dto.labels()).containsExactly("Limited", "С принтом");
         assertThat(dto.displayPrice()).isEqualByComparingTo("2000");
         assertThat(dto.variants().get(0).displayPrice()).isEqualByComparingTo("2000");
+    }
+
+    @Test
+    void toDto_flagsProductAsNew_whenAddedWithinTwoWeeks() {
+        Product fresh = Product.builder()
+                .id(1L).name("Fresh").basePrice(BigDecimal.ONE).active(true)
+                .createdAt(Instant.now().minus(3, ChronoUnit.DAYS))
+                .build();
+        Product old = Product.builder()
+                .id(2L).name("Old").basePrice(BigDecimal.ONE).active(true)
+                .createdAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+        assertThat(productMapper.toDto(fresh).isNew()).isTrue();
+        assertThat(productMapper.toDto(old).isNew()).isFalse();
     }
 
     @Test
