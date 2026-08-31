@@ -68,6 +68,12 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
   // no colour picked → the product's "from" (cheapest) price; picked → that colour's price
   const shownPrice = activeVariant?.displayPrice ?? product.displayPrice
 
+  // "Новинка" rides in front of the admin's own labels; the backend sets isNew
+  // for two weeks after a product is added.
+  const cardLabels = product.isNew
+    ? ['Новинка', ...(product.labels ?? [])]
+    : product.labels
+
   const handleAddToCart = () => {
     if (!shownVariant) {
       return
@@ -105,7 +111,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
       onClickCapture={handleCardClick}
       className="relative flex flex-col overflow-hidden rounded-3xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000] transition select-none hover:-translate-y-1 hover:shadow-[8px_8px_0_0_#E8799F] active:scale-[0.98]"
     >
-      <ProductLabels labels={product.labels} className="absolute left-3 top-3 z-10" />
+      <ProductLabels labels={cardLabels} className="absolute left-3 top-3 z-10" />
 
       <Link
         to={`/catalog/${product.id}`}

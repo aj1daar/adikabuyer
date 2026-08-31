@@ -226,6 +226,15 @@ describe('ProductCard', () => {
     expect(screen.getByText('591 мл +2')).toBeInTheDocument()
   })
 
+  it('shows a "Новинка" sticker only when the backend flags the product as new', () => {
+    const { rerender } = render(<ProductCard product={product} />, { wrapper: MemoryRouter })
+    expect(screen.queryByText('Новинка')).not.toBeInTheDocument()
+
+    rerender(<ProductCard product={{ ...product, isNew: true, labels: ['Limited'] }} />)
+    expect(screen.getByText('Новинка')).toBeInTheDocument()
+    expect(screen.getByText('Limited')).toBeInTheDocument()
+  })
+
   it('adds the primary variant to the cart store when the button is clicked', () => {
     render(<ProductCard product={product} />, { wrapper: MemoryRouter })
 
