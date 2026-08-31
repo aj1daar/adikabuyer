@@ -89,6 +89,18 @@ describe('useCatalog', () => {
     )
   })
 
+  it('sends includeArchived only when the flag is set', async () => {
+    mockedGet.mockResolvedValue({ data: { items: [], totalCount: 0, page: 0, pageSize: 1000 } } as never)
+
+    const { result } = renderHook(() => useCatalog({ includeArchived: true }))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(mockedGet).toHaveBeenLastCalledWith(
+      '/products',
+      expect.objectContaining({ params: expect.objectContaining({ includeArchived: true }) })
+    )
+  })
+
   it('refetches when the filters change', async () => {
     mockedGet.mockResolvedValue({ data: { items: [], totalCount: 0, page: 0, pageSize: 1000 } } as never)
 

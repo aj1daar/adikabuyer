@@ -69,7 +69,8 @@ export default function ProductPage() {
       .get<ProductDto>(`/products/${id}`, { signal: controller.signal })
       .then((response) => {
         setProduct(response.data)
-        setSelectedVariantId(response.data.variants[0]?.id ?? null)
+        const firstSellable = response.data.variants.find((variant) => variant.status !== 'SOLD_OUT')
+        setSelectedVariantId(firstSellable?.id ?? null)
       })
       .catch((err) => {
         if (!controller.signal.aborted) {
@@ -84,7 +85,10 @@ export default function ProductPage() {
     return () => controller.abort()
   }, [id])
 
-  const selectedVariant = product?.variants.find((variant) => variant.id === selectedVariantId)
+  const sellableVariants = product
+    ? product.variants.filter((variant) => variant.status !== 'SOLD_OUT')
+    : []
+  const selectedVariant = sellableVariants.find((variant) => variant.id === selectedVariantId)
   const gallery = product ? resolveVariantGallery(product, selectedVariant) : []
   const [photoIndex, setPhotoIndex] = useState(0)
   const imageUrl = gallery[Math.min(photoIndex, gallery.length - 1)] ?? null
@@ -95,13 +99,10 @@ export default function ProductPage() {
     setPhotoIndex(0)
   }
 
-  const keys = product ? attributeKeys(product.variants) : []
+  const keys = attributeKeys(sellableVariants)
 
   const chooseAttribute = (key: string, value: string) => {
-    if (!product) {
-      return
-    }
-    const next = selectVariant(product.variants, selectedVariant, key, value)
+    const next = selectVariant(sellableVariants, selectedVariant, key, value)
     if (next) {
       chooseVariant(next.id)
     }
@@ -198,7 +199,7 @@ export default function ProductPage() {
 
                 <p className="font-grotesk text-3xl font-bold text-ink">{formatPrice(price)}</p>
 
-                {product.variants.length > 1 && keys.length > 0 &&
+                {sellableVariants.length > 1 && keys.length > 0 &&
                   keys.map((key) => {
                     const swatches = product.colorSwatches ?? {}
                     const useSwatches = key === COLOR_ATTRIBUTE_KEY && Object.keys(swatches).length > 0
@@ -208,10 +209,10 @@ export default function ProductPage() {
                           {attributeKeyLabel(key)}
                         </span>
                         <div className={`flex flex-wrap ${useSwatches ? 'gap-3' : 'gap-2'}`}>
-                          {attributeValues(product.variants, key).map((value) => {
+                          {attributeValues(sellableVariants, key).map((value) => {
                             const selected = String(selectedVariant?.attributes[key] ?? '') === value
                             const available = isCombinationAvailable(
-                              product.variants,
+                              sellableVariants,
                               selectedVariant,
                               key,
                               value
@@ -266,13 +267,13 @@ export default function ProductPage() {
                     )
                   })}
 
-                {product.variants.length > 1 && keys.length === 0 && (
+                {sellableVariants.length > 1 && keys.length === 0 && (
                   <div className="flex flex-col gap-2">
                     <span className="font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
                       Вариант
                     </span>
                     <div className="flex flex-wrap gap-2">
-                      {product.variants.map((variant, index) => (
+                      {sellableVariants.map((variant, index) => (
                         <button
                           key={variant.id}
                           type="button"

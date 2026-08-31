@@ -17,11 +17,20 @@ import usePageTitle from '../../hooks/usePageTitle'
 
 type AdminTab = 'products' | 'orders' | 'telegram'
 
+const VARIANT_STATUS_LABEL: Record<string, string> = {
+  IN_STOCK: 'В наличии',
+  PRE_ORDER: 'Предзаказ',
+  SOLD_OUT: 'Солдаут',
+}
+
+const isArchived = (product: ProductDto) =>
+  product.variants.length > 0 && product.variants.every((variant) => variant.status === 'SOLD_OUT')
+
 export default function AdminDashboard() {
   usePageTitle('Админ-панель')
   const navigate = useNavigate()
   const clearToken = useAuthStore((state) => state.clearToken)
-  const { products, loading, error, refetch } = useCatalog()
+  const { products, loading, error, refetch } = useCatalog({ includeArchived: true })
 
   const [activeTab, setActiveTab] = useState<AdminTab>('products')
   const {
@@ -193,7 +202,14 @@ export default function AdminDashboard() {
                   product.variants.length > 0
                     ? product.variants.map((variant) => (
                         <tr key={variant.id} className="border-b border-ink/5">
-                          <td className="py-2 pr-4 text-ink">{product.name}</td>
+                          <td className="py-2 pr-4 text-ink">
+                            {product.name}
+                            {isArchived(product) && (
+                              <span className="ml-2 rounded-pill border border-black bg-silver px-2 py-0.5 font-grotesk text-[10px] font-bold uppercase tracking-wide text-ink/60">
+                                В архиве
+                              </span>
+                            )}
+                          </td>
                           <td className="py-2 pr-4 text-ink/70">{product.category ?? '—'}</td>
                           <td className="py-2 pr-4 text-ink/70">
                             {formatPrice(variant.priceOverride ?? product.basePrice)}
@@ -209,7 +225,7 @@ export default function AdminDashboard() {
                           </td>
                           <td className="py-2 pr-4 text-ink/70">{variant.stockQuantity}</td>
                           <td className="py-2 pr-4 text-ink/70">
-                            {variant.status === 'PRE_ORDER' ? 'Предзаказ' : 'В наличии'}
+                            {VARIANT_STATUS_LABEL[variant.status] ?? variant.status}
                           </td>
                           <td className="py-2">
                             <button

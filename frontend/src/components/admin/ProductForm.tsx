@@ -1,5 +1,5 @@
 import { useId, useState, type ChangeEvent } from 'react'
-import type { ProductDto } from '../../types/catalog'
+import type { ProductDto, VariantStatus } from '../../types/catalog'
 import type { ProductPayload, VariantPayload } from '../../types/admin'
 import uploadMedia from '../../api/media'
 import formatPrice from '../../utils/formatPrice'
@@ -48,8 +48,14 @@ type VariantDraft = {
   active: boolean
   imageUrls: string[]
   attributes: AttributeRow[]
-  status: 'IN_STOCK' | 'PRE_ORDER'
+  status: VariantStatus
 }
+
+const STATUS_TOGGLE: { value: VariantStatus; label: string }[] = [
+  { value: 'IN_STOCK', label: 'В наличии' },
+  { value: 'PRE_ORDER', label: 'Под заказ' },
+  { value: 'SOLD_OUT', label: 'Солдаут' },
+]
 
 type ProductFormProps = {
   product?: ProductDto
@@ -353,27 +359,25 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   Активен
                 </label>
                 <div className="col-span-2 flex overflow-hidden rounded-pill border-2 border-black">
-                  <button
-                    type="button"
-                    aria-pressed={variant.status === 'IN_STOCK'}
-                    onClick={() => setVariantStatus(variantIndex, 'IN_STOCK')}
-                    className={`flex-1 px-3 py-2 font-grotesk text-sm font-bold transition ${
-                      variant.status === 'IN_STOCK' ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'
-                    }`}
-                  >
-                    В наличии
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={variant.status === 'PRE_ORDER'}
-                    onClick={() => setVariantStatus(variantIndex, 'PRE_ORDER')}
-                    className={`flex-1 border-l-2 border-black px-3 py-2 font-grotesk text-sm font-bold transition ${
-                      variant.status === 'PRE_ORDER' ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'
-                    }`}
-                  >
-                    Под заказ
-                  </button>
+                  {STATUS_TOGGLE.map((option, optionIndex) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={variant.status === option.value}
+                      onClick={() => setVariantStatus(variantIndex, option.value)}
+                      className={`flex-1 px-3 py-2 font-grotesk text-sm font-bold transition ${
+                        optionIndex > 0 ? 'border-l-2 border-black' : ''
+                      } ${variant.status === option.value ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'}`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
                 </div>
+                {variant.status === 'SOLD_OUT' && (
+                  <p className="col-span-2 text-xs text-ink/50">
+                    Солдаут скрывает вариант из каталога. Если все варианты в солдауте — товар уходит в архив.
+                  </p>
+                )}
               </div>
 
               <div className="mt-3">

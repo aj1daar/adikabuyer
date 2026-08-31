@@ -30,18 +30,22 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     .join('')
     .toUpperCase()
 
-  const primaryVariant = product.variants[0]
+  const sellableVariants = product.variants.filter((variant) => variant.status !== 'SOLD_OUT')
+  const primaryVariant = sellableVariants[0]
+  const sellableColors = new Set(
+    sellableVariants.map((variant) => String(variant.attributes.color ?? ''))
+  )
   const colorSwatches = product.colorSwatches ?? {}
-  const swatchColors = Object.keys(colorSwatches)
+  const swatchColors = Object.keys(colorSwatches).filter((color) => sellableColors.has(color))
   const activeColorImage = activeColor
-    ? (product.variants.find(
+    ? (sellableVariants.find(
         (variant) => String(variant.attributes.color ?? '') === activeColor && variant.imageUrls.length > 0
       )?.imageUrls[0] ?? colorSwatches[activeColor])
     : null
   const cardImage =
     activeColorImage ??
     product.imageUrl ??
-    product.variants.find((variant) => variant.imageUrls.length > 0)?.imageUrls[0] ??
+    sellableVariants.find((variant) => variant.imageUrls.length > 0)?.imageUrls[0] ??
     null
   const attributeTags = primaryVariant
     ? Object.entries(primaryVariant.attributes).map(([key, value]) => formatAttributeValue(key, value))
@@ -180,13 +184,13 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
           >
             {formatPrice(product.displayPrice)}
           </span>
-          {product.variants.length > 1 && (
+          {sellableVariants.length > 1 && (
             <span
               className={`rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink ${
                 hideTagsAndVariantsOnMobile ? 'max-sm:hidden' : ''
               }`}
             >
-              Вариантов: {product.variants.length}
+              Вариантов: {sellableVariants.length}
             </span>
           )}
         </div>

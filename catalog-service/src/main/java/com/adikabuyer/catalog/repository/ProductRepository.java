@@ -33,6 +33,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                       AND (CAST(:volumeMax AS numeric) IS NULL OR (v.attributes ->> 'volume')::numeric <= CAST(:volumeMax AS numeric))
                   )
               )
+              AND (CAST(:includeArchived AS boolean) = TRUE OR EXISTS (
+                  SELECT 1 FROM variant v WHERE v.product_id = p.id AND v.status <> 'SOLD_OUT'
+              ))
             ORDER BY p.id
             """, countQuery = """
             SELECT COUNT(DISTINCT p.id) FROM product p
@@ -55,6 +58,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                       AND (CAST(:volumeMax AS numeric) IS NULL OR (v.attributes ->> 'volume')::numeric <= CAST(:volumeMax AS numeric))
                   )
               )
+              AND (CAST(:includeArchived AS boolean) = TRUE OR EXISTS (
+                  SELECT 1 FROM variant v WHERE v.product_id = p.id AND v.status <> 'SOLD_OUT'
+              ))
             """, nativeQuery = true)
     Page<Product> search(
             @Param("search") String search,
@@ -63,6 +69,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("size") String size,
             @Param("volumeMin") BigDecimal volumeMin,
             @Param("volumeMax") BigDecimal volumeMax,
+            @Param("includeArchived") boolean includeArchived,
             Pageable pageable
     );
 
@@ -86,6 +93,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                       AND (CAST(:volumeMin AS numeric) IS NULL OR (v.attributes ->> 'volume')::numeric >= CAST(:volumeMin AS numeric))
                       AND (CAST(:volumeMax AS numeric) IS NULL OR (v.attributes ->> 'volume')::numeric <= CAST(:volumeMax AS numeric))
                   )
+              )
+              AND EXISTS (
+                  SELECT 1 FROM variant v WHERE v.product_id = p.id AND v.status <> 'SOLD_OUT'
               )
             ORDER BY p.category
             """, nativeQuery = true)

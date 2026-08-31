@@ -46,7 +46,7 @@ class CatalogControllerTest {
     @Test
     void getAllProducts_returns200WithProductList() throws Exception {
         ProductDto product = new ProductDto(1L, "Tumbler", "desc", "Drinkware", BigDecimal.TEN, null, true, null, null, List.of());
-        when(catalogService.getAllProducts(null, null, null, null, null, null, 0, 1000))
+        when(catalogService.getAllProducts(null, null, null, null, null, null, 0, 1000, false))
                 .thenReturn(new ProductPageResponse(List.of(product), 1, 0, 1000));
 
         mockMvc.perform(get("/api/catalog/products"))
@@ -58,7 +58,7 @@ class CatalogControllerTest {
 
     @Test
     void getAllProducts_returns200WithEmptyArray_whenCatalogIsEmpty() throws Exception {
-        when(catalogService.getAllProducts(null, null, null, null, null, null, 0, 1000))
+        when(catalogService.getAllProducts(null, null, null, null, null, null, 0, 1000, false))
                 .thenReturn(new ProductPageResponse(List.of(), 0, 0, 1000));
 
         mockMvc.perform(get("/api/catalog/products"))
@@ -70,7 +70,7 @@ class CatalogControllerTest {
     @Test
     void getAllProducts_forwardsQueryParamsToService() throws Exception {
         when(catalogService.getAllProducts(
-                "tumbler", "Drinkware", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600), 1, 12
+                "tumbler", "Drinkware", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600), 1, 12, false
         )).thenReturn(new ProductPageResponse(List.of(), 0, 1, 12));
 
         mockMvc.perform(get("/api/catalog/products")
@@ -85,8 +85,19 @@ class CatalogControllerTest {
                 .andExpect(status().isOk());
 
         verify(catalogService).getAllProducts(
-                "tumbler", "Drinkware", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600), 1, 12
+                "tumbler", "Drinkware", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600), 1, 12, false
         );
+    }
+
+    @Test
+    void getAllProducts_forwardsIncludeArchivedFlag() throws Exception {
+        when(catalogService.getAllProducts(null, null, null, null, null, null, 0, 1000, true))
+                .thenReturn(new ProductPageResponse(List.of(), 0, 0, 1000));
+
+        mockMvc.perform(get("/api/catalog/products").param("includeArchived", "true"))
+                .andExpect(status().isOk());
+
+        verify(catalogService).getAllProducts(null, null, null, null, null, null, 0, 1000, true);
     }
 
     @Test

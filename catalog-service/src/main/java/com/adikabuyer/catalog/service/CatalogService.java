@@ -2,6 +2,7 @@ package com.adikabuyer.catalog.service;
 
 import com.adikabuyer.catalog.domain.Product;
 import com.adikabuyer.catalog.domain.Variant;
+import com.adikabuyer.catalog.domain.VariantStatus;
 import com.adikabuyer.catalog.dto.ProductDto;
 import com.adikabuyer.catalog.dto.ProductPageResponse;
 import com.adikabuyer.catalog.dto.ProductRequest;
@@ -44,7 +45,7 @@ public class CatalogService {
 
     public ProductPageResponse getAllProducts(
             String search, String category, String color, String size, BigDecimal volumeMin, BigDecimal volumeMax,
-            int page, int pageSize
+            int page, int pageSize, boolean includeArchived
     ) {
         Pageable pageable = PageRequest.of(page, pageSize);
         Page<Product> result = productRepository.search(
@@ -54,6 +55,7 @@ public class CatalogService {
                 normalize(size),
                 volumeMin,
                 volumeMax,
+                includeArchived,
                 pageable
         );
         List<ProductDto> items = result.getContent().stream().map(productMapper::toDto).toList();
@@ -74,9 +76,17 @@ public class CatalogService {
     }
 
     public ProductDto getProductById(Long id) {
-        return productRepository.findById(id)
-                .map(productMapper::toDto)
+        Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + id));
+        if (isArchived(product)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + id);
+        }
+        return productMapper.toDto(product);
+    }
+
+    private boolean isArchived(Product product) {
+        return !product.getVariants().isEmpty()
+                && product.getVariants().stream().allMatch(variant -> variant.getStatus() == VariantStatus.SOLD_OUT);
     }
 
     public boolean isVariantAvailable(Long variantId, int requestedQuantity) {

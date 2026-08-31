@@ -109,6 +109,33 @@ describe('AdminDashboard', () => {
     expect(screen.getByText('Предзаказ')).toBeInTheDocument()
   })
 
+  it('marks a fully sold-out product as archived and labels the status', () => {
+    mockedUseCatalog.mockReturnValue({
+      products: [
+        {
+          ...productWithVariant,
+          name: 'Sold Out Mug',
+          variants: [{ ...productWithVariant.variants[0], status: 'SOLD_OUT' }],
+        },
+      ],
+      totalCount: 1,
+      loading: false,
+      error: null,
+      refetch,
+    })
+
+    renderDashboard()
+
+    expect(screen.getByText('В архиве')).toBeInTheDocument()
+    expect(screen.getByText('Солдаут')).toBeInTheDocument()
+  })
+
+  it('asks the catalog hook to include archived products', () => {
+    renderDashboard()
+
+    expect(mockedUseCatalog).toHaveBeenCalledWith({ includeArchived: true })
+  })
+
   it('renders a placeholder row for a product with no variants', () => {
     renderDashboard()
 

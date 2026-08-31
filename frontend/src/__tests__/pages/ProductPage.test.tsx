@@ -144,6 +144,24 @@ describe('ProductPage', () => {
     expect(screen.getByRole('button', { name: 'TUM-WHT' })).toBeInTheDocument()
   })
 
+  it('hides sold-out variants from the attribute selectors', async () => {
+    const partlySoldOut: ProductDto = {
+      ...product,
+      variants: [
+        { ...product.variants[0], id: 1, attributes: { color: 'Black' }, status: 'IN_STOCK' },
+        { ...product.variants[0], id: 2, attributes: { color: 'White' }, status: 'IN_STOCK' },
+        { ...product.variants[0], id: 3, attributes: { color: 'Red' }, status: 'SOLD_OUT' },
+      ],
+    }
+    mockedGet.mockResolvedValue({ data: partlySoldOut })
+
+    renderPage()
+
+    expect(await screen.findByRole('button', { name: 'Black' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'White' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Red' })).not.toBeInTheDocument()
+  })
+
   it('renders round colour swatches when the product has swatch images', async () => {
     const swatchProduct: ProductDto = {
       ...product,

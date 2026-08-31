@@ -9,6 +9,7 @@ export type CatalogFilters = {
   size?: string
   volumeMin?: string
   volumeMax?: string
+  includeArchived?: boolean
 }
 
 export type CatalogPagination = {
@@ -35,7 +36,7 @@ export default function useCatalog(
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const { search, category, color, size, volumeMin, volumeMax } = filters
+  const { search, category, color, size, volumeMin, volumeMax, includeArchived } = filters
   const { page = 0, pageSize = DEFAULT_PAGE_SIZE } = pagination
 
   const fetchProducts = useCallback(
@@ -45,7 +46,17 @@ export default function useCatalog(
       try {
         const response = await catalogClient.get<ProductPageResponse>('/products', {
           signal,
-          params: { search, category, color, size, volumeMin, volumeMax, page, pageSize },
+          params: {
+            search,
+            category,
+            color,
+            size,
+            volumeMin,
+            volumeMax,
+            page,
+            pageSize,
+            includeArchived: includeArchived || undefined,
+          },
         })
         setProducts(response.data.items)
         setTotalCount(response.data.totalCount)
@@ -59,7 +70,7 @@ export default function useCatalog(
         }
       }
     },
-    [search, category, color, size, volumeMin, volumeMax, page, pageSize]
+    [search, category, color, size, volumeMin, volumeMax, page, pageSize, includeArchived]
   )
 
   useEffect(() => {

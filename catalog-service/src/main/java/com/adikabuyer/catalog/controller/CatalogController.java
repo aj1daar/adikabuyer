@@ -37,9 +37,12 @@ public class CatalogController {
             @RequestParam(required = false) BigDecimal volumeMin,
             @RequestParam(required = false) BigDecimal volumeMax,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "1000") int pageSize
+            @RequestParam(defaultValue = "1000") int pageSize,
+            @RequestParam(defaultValue = "false") boolean includeArchived
     ) {
-        return catalogService.getAllProducts(search, category, color, size, volumeMin, volumeMax, page, pageSize);
+        return catalogService.getAllProducts(
+                search, category, color, size, volumeMin, volumeMax, page, pageSize, includeArchived
+        );
     }
 
     @GetMapping("/categories")

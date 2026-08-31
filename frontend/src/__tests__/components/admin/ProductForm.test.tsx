@@ -268,6 +268,23 @@ describe('ProductForm', () => {
     )
   })
 
+  it('submits SOLD_OUT status when Солдаут is selected for a variant', () => {
+    const onSubmit = vi.fn()
+    render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
+
+    fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
+    fillFirstVariant('NEW-SKU-1', '15')
+    fireEvent.click(screen.getByRole('button', { name: 'Солдаут' }))
+
+    fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variants: [expect.objectContaining({ status: 'SOLD_OUT' })],
+      })
+    )
+  })
+
   it('forces stock to zero and disables the stock input when Под заказ is selected', () => {
     render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
 

@@ -1,4 +1,4 @@
-export type VariantStatus = 'IN_STOCK' | 'PRE_ORDER'
+export type VariantStatus = 'IN_STOCK' | 'PRE_ORDER' | 'SOLD_OUT'
 
 export type VariantDto = {
   id: number
