@@ -108,15 +108,15 @@ describe('ProductCard', () => {
     expect(screen.queryByRole('button', { name: 'Добавить в корзину' })).not.toBeInTheDocument()
   })
 
-  it('hides the variant-count badge on mobile once 2 columns are selected', () => {
-    const productWithVariants: ProductDto = {
+  it('hides the colour-swatch row on mobile once 2 columns are selected', () => {
+    const swatchProduct: ProductDto = {
       ...product,
-      variants: [...product.variants, { ...product.variants[0], id: 2, sku: 'TUM-BLK-750' }],
+      colorSwatches: { Black: 'black-swatch.jpg' },
     }
 
-    render(<ProductCard product={productWithVariants} mobileColumns={2} />, { wrapper: MemoryRouter })
+    render(<ProductCard product={swatchProduct} mobileColumns={2} />, { wrapper: MemoryRouter })
 
-    expect(screen.getByText('Вариантов: 2')).toHaveClass('max-sm:hidden')
+    expect(screen.getByRole('button', { name: 'Black' }).parentElement).toHaveClass('max-sm:hidden')
   })
 
   it('puts the price and compact add-to-cart button in separate rows once compact', () => {

@@ -184,15 +184,6 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
           >
             {formatPrice(product.displayPrice)}
           </span>
-          {sellableVariants.length > 1 && (
-            <span
-              className={`rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink ${
-                hideTagsAndVariantsOnMobile ? 'max-sm:hidden' : ''
-              }`}
-            >
-              Вариантов: {sellableVariants.length}
-            </span>
-          )}
         </div>
 
         {hideDescriptionOnMobile && (
