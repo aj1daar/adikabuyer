@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 export type FieldDot = {
-  /** home position as a fraction of the viewport */
+  /** starting position as a fraction of the viewport */
   xPct: number
   yPct: number
   color: 'pink' | 'ink' | 'white'
@@ -18,9 +18,44 @@ const PAINT: Record<FieldDot['color'], { r: number; g: number; b: number; stroke
   white: { r: 255, g: 255, b: 255, stroke: 'rgba(10,10,10,0.5)' },
 }
 
-const TRAIL_LENGTH = 16
+const TAU = Math.PI * 2
+const FIELD_SCALE = 0.0016 // px⁻¹ — large, soft flow-field features
+const FIELD_MORPH = 0.05 // how fast the field itself drifts
+const EDGE_MARGIN = 70
 
-/** deterministic per-dot randomness so no two dots move alike */
+function hash3(x: number, y: number, z: number) {
+  let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(z, 2246822519)
+  h = Math.imul(h ^ (h >>> 13), 1274126177)
+  h ^= h >>> 16
+  return (h >>> 0) / 4294967296
+}
+
+const smooth = (t: number) => t * t * (3 - 2 * t)
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t
+
+/** 3D value noise → smooth, non-repeating field used to steer the dots */
+function noise3(x: number, y: number, z: number) {
+  const xi = Math.floor(x)
+  const yi = Math.floor(y)
+  const zi = Math.floor(z)
+  const u = smooth(x - xi)
+  const v = smooth(y - yi)
+  const w = smooth(z - zi)
+  return lerp(
+    lerp(
+      lerp(hash3(xi, yi, zi), hash3(xi + 1, yi, zi), u),
+      lerp(hash3(xi, yi + 1, zi), hash3(xi + 1, yi + 1, zi), u),
+      v
+    ),
+    lerp(
+      lerp(hash3(xi, yi, zi + 1), hash3(xi + 1, yi, zi + 1), u),
+      lerp(hash3(xi, yi + 1, zi + 1), hash3(xi + 1, yi + 1, zi + 1), u),
+      v
+    ),
+    w
+  )
+}
+
 function seeded(seed: number) {
   let t = seed + 0x6d2b79f5
   return () => {
@@ -31,9 +66,9 @@ function seeded(seed: number) {
 }
 
 /**
- * The backdrop dots on a full-viewport canvas: each drifts gently, then now and
- * again loops one or two circles, leaving a short fading trail. Every dot gets
- * its own radius, speed, direction and timing.
+ * Backdrop dots roaming the whole viewport on a flow field: each drifts along
+ * smooth, non-repeating curves at its own speed, curls away from the edges, and
+ * leaves a short fading trail. No two move alike; nothing pauses.
  */
 export default function DotField({ dots, reduceMotion }: DotFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -60,31 +95,29 @@ export default function DotField({ dots, reduceMotion }: DotFieldProps) {
     resize()
     window.addEventListener('resize', resize)
 
-    const state = dots.map((_, index) => {
+    const agents = dots.map((dot, index) => {
       const rand = seeded(index * 131 + 7)
       return {
-        driftAmpX: 2 + rand() * 4,
-        driftAmpY: 2 + rand() * 4,
-        driftSpeedX: 0.12 + rand() * 0.22,
-        driftSpeedY: 0.1 + rand() * 0.2,
-        driftPhaseX: rand() * Math.PI * 2,
-        driftPhaseY: rand() * Math.PI * 2,
-        radius: 3.2 + rand() * 1.8,
-        loopRadius: 24 + rand() * 44,
-        loopDuration: 2.2 + rand() * 2.4,
-        loops: rand() < 0.35 ? 2 : 1,
-        direction: rand() < 0.5 ? 1 : -1,
-        looping: false,
-        loopT: 0,
-        cooldown: 1.5 + rand() * 4,
+        x: dot.xPct * width,
+        y: dot.yPct * height,
+        vx: (rand() - 0.5) * 20,
+        vy: (rand() - 0.5) * 20,
+        speed: 24 + rand() * 30,
+        turn: 1 + rand() * 1.8,
+        fieldZ: rand() * 500,
+        wind: 1.5 + rand() * 2.5, // how many full turns the field angle spans
+        jitter: 0.15 + rand() * 0.35,
+        radius: 3.1 + rand() * 1.9,
+        trailLength: 16 + Math.floor(rand() * 12),
         trail: [] as { x: number; y: number }[],
+        rand,
       }
     })
 
     const paintDot = (dot: FieldDot, x: number, y: number, radius: number, alpha: number) => {
       const p = PAINT[dot.color]
       ctx.beginPath()
-      ctx.arc(x, y, radius, 0, Math.PI * 2)
+      ctx.arc(x, y, radius, 0, TAU)
       ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${alpha})`
       ctx.fill()
       if (p.stroke && alpha > 0.5) {
@@ -96,7 +129,7 @@ export default function DotField({ dots, reduceMotion }: DotFieldProps) {
 
     if (reduceMotion) {
       dots.forEach((dot, index) => {
-        paintDot(dot, dot.xPct * width, dot.yPct * height, state[index].radius, 0.9)
+        paintDot(dot, dot.xPct * width, dot.yPct * height, agents[index].radius, 0.9)
       })
       return () => window.removeEventListener('resize', resize)
     }
@@ -111,48 +144,40 @@ export default function DotField({ dots, reduceMotion }: DotFieldProps) {
       ctx.clearRect(0, 0, width, height)
 
       dots.forEach((dot, index) => {
-        const s = state[index]
-        const baseX = dot.xPct * width
-        const baseY = dot.yPct * height
+        const a = agents[index]
 
-        const wobbleX = Math.sin(time * s.driftSpeedX + s.driftPhaseX) * s.driftAmpX
-        const wobbleY = Math.cos(time * s.driftSpeedY + s.driftPhaseY) * s.driftAmpY
+        const flow =
+          noise3(a.x * FIELD_SCALE, a.y * FIELD_SCALE, time * FIELD_MORPH + a.fieldZ) * TAU * a.wind
+        const jitter = (a.rand() - 0.5) * a.jitter
+        const angle = flow + jitter
 
-        let loopX = 0
-        let loopY = 0
-        if (s.looping) {
-          s.loopT += dt
-          const progress = s.loopT / s.loopDuration
-          if (progress >= 1) {
-            s.looping = false
-            s.cooldown = 3 + Math.random() * 7
-          } else {
-            const angle = s.direction * progress * Math.PI * 2 * s.loops
-            const envelope = Math.sin(Math.PI * progress) // 0 → 1 → 0, so it returns home
-            loopX = Math.cos(angle) * s.loopRadius * envelope
-            loopY = Math.sin(angle) * s.loopRadius * envelope
-          }
-        } else {
-          s.cooldown -= dt
-          if (s.cooldown <= 0) {
-            s.looping = true
-            s.loopT = 0
-          }
+        let desiredX = Math.cos(angle) * a.speed
+        let desiredY = Math.sin(angle) * a.speed
+
+        // curl inward near the edges instead of leaving the page
+        if (a.x < EDGE_MARGIN) desiredX += (EDGE_MARGIN - a.x) * 0.9
+        else if (a.x > width - EDGE_MARGIN) desiredX -= (a.x - (width - EDGE_MARGIN)) * 0.9
+        if (a.y < EDGE_MARGIN) desiredY += (EDGE_MARGIN - a.y) * 0.9
+        else if (a.y > height - EDGE_MARGIN) desiredY -= (a.y - (height - EDGE_MARGIN)) * 0.9
+
+        const steer = Math.min(1, a.turn * dt)
+        a.vx += (desiredX - a.vx) * steer
+        a.vy += (desiredY - a.vy) * steer
+
+        a.x += a.vx * dt
+        a.y += a.vy * dt
+        a.x = Math.max(4, Math.min(width - 4, a.x))
+        a.y = Math.max(4, Math.min(height - 4, a.y))
+
+        a.trail.push({ x: a.x, y: a.y })
+        if (a.trail.length > a.trailLength) {
+          a.trail.shift()
         }
-
-        const x = baseX + wobbleX + loopX
-        const y = baseY + wobbleY + loopY
-
-        s.trail.push({ x, y })
-        if (s.trail.length > TRAIL_LENGTH) {
-          s.trail.shift()
-        }
-
-        s.trail.forEach((point, trailIndex) => {
-          const k = trailIndex / TRAIL_LENGTH
-          paintDot(dot, point.x, point.y, s.radius * (0.35 + k * 0.65), k * k * 0.55)
+        a.trail.forEach((point, trailIndex) => {
+          const k = trailIndex / a.trailLength
+          paintDot(dot, point.x, point.y, a.radius * (0.3 + k * 0.7), k * k * 0.5)
         })
-        paintDot(dot, x, y, s.radius, 0.9)
+        paintDot(dot, a.x, a.y, a.radius, 0.9)
       })
 
       raf = requestAnimationFrame(tick)

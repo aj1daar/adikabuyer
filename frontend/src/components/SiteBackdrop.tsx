@@ -20,6 +20,7 @@ const LAYOUTS: Record<string, Layout> = {
       { xPct: 0.05, yPct: 0.64, color: 'ink' },
       { xPct: 0.62, yPct: 0.28, color: 'pink' },
       { xPct: 0.78, yPct: 0.85, color: 'white' },
+      { xPct: 0.4, yPct: 0.5, color: 'ink' },
     ],
   },
   catalog: {
@@ -32,6 +33,7 @@ const LAYOUTS: Record<string, Layout> = {
       { xPct: 0.18, yPct: 0.88, color: 'white' },
       { xPct: 0.88, yPct: 0.3, color: 'pink' },
       { xPct: 0.4, yPct: 0.12, color: 'ink' },
+      { xPct: 0.65, yPct: 0.7, color: 'pink' },
     ],
   },
   product: {
@@ -44,6 +46,7 @@ const LAYOUTS: Record<string, Layout> = {
       { xPct: 0.1, yPct: 0.82, color: 'pink' },
       { xPct: 0.78, yPct: 0.22, color: 'ink' },
       { xPct: 0.5, yPct: 0.9, color: 'white' },
+      { xPct: 0.3, yPct: 0.35, color: 'pink' },
     ],
   },
   about: {
@@ -55,6 +58,7 @@ const LAYOUTS: Record<string, Layout> = {
       { xPct: 0.12, yPct: 0.2, color: 'white' },
       { xPct: 0.86, yPct: 0.82, color: 'pink' },
       { xPct: 0.2, yPct: 0.78, color: 'ink' },
+      { xPct: 0.9, yPct: 0.25, color: 'pink' },
     ],
   },
 }
