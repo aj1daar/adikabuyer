@@ -1,16 +1,18 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
+import HeroBackdrop from './HeroBackdrop'
 
 export default function HeroSection() {
   const reduceMotion = useReducedMotion()
 
   return (
     <section className="relative flex items-center overflow-hidden bg-white py-16 sm:h-[calc(100dvh-10rem)] sm:py-0">
+      <HeroBackdrop />
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: 'easeOut' }}
-        className="relative mx-auto flex w-full max-w-6xl flex-col items-center gap-5 text-center sm:flex-row sm:justify-between sm:gap-10 sm:text-left"
+        className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center gap-5 text-center sm:flex-row sm:justify-between sm:gap-10 sm:text-left"
       >
         <div className="flex flex-col items-center gap-5 sm:items-start">
           <span className="rounded-pill border-2 border-black bg-gradient-to-r from-bubblegum to-bubblegum-light px-5 py-1.5 font-grotesk text-sm font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]">
