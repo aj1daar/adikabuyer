@@ -1,14 +1,42 @@
+import { useReducedMotion } from 'framer-motion'
 import MainLayout from '../layouts/MainLayout'
+import StepCard, { type StepCloud } from '../components/StepCard'
 import usePageTitle from '../hooks/usePageTitle'
 
-const steps = [
-  { title: 'Выбери товар', description: 'Открой каталог и выбери вариант — цвет, размер, объём.' },
-  { title: 'Оформи заказ', description: 'Добавь в корзину, укажи имя, телефон и город.' },
-  { title: 'Получи заказ', description: 'Соберём под тебя и согласуем доставку.' },
+type Step = { title: string; description: string; clouds: StepCloud[] }
+
+const steps: Step[] = [
+  {
+    title: 'Выбери товар',
+    description: 'Открой каталог и выбери вариант — цвет, размер, объём.',
+    clouds: [
+      { text: 'цвет · размер · объём', className: 'right-full top-0 mr-3 -rotate-3' },
+      { text: 'фото под каждый вариант', className: 'right-full top-1/2 mr-6 -translate-y-1/2 rotate-2' },
+      { text: 'sold out видно сразу', className: 'right-full bottom-0 mr-3 rotate-3' },
+    ],
+  },
+  {
+    title: 'Оформи заказ',
+    description: 'Добавь в корзину, укажи имя, телефон и город.',
+    clouds: [
+      { text: 'имя · телефон · город', className: 'right-full top-1 mr-4 -rotate-2' },
+      { text: 'оплата при получении', className: 'right-full bottom-1 mr-3 rotate-3' },
+    ],
+  },
+  {
+    title: 'Получи заказ',
+    description: 'Соберём под тебя и согласуем доставку.',
+    clouds: [
+      { text: 'напишем в telegram', className: 'right-full top-1 mr-3 rotate-2' },
+      { text: 'трек-номер по запросу', className: 'right-full bottom-1 mr-5 -rotate-3' },
+    ],
+  },
 ]
 
 export default function AboutPage() {
   usePageTitle('О нас')
+  const reduceMotion = useReducedMotion()
+
   return (
     <MainLayout>
       <section className="relative flex items-center py-16 sm:h-[calc(100dvh-10rem)] sm:overflow-hidden sm:py-0">
@@ -39,18 +67,14 @@ export default function AboutPage() {
             <h2 className="font-grotesk text-xl font-bold text-ink">Как сделать заказ</h2>
             <ol className="flex w-full max-w-sm flex-col gap-3">
               {steps.map((step, index) => (
-                <li
+                <StepCard
                   key={step.title}
-                  className="flex items-start gap-3 rounded-2xl border-2 border-black bg-white p-4 shadow-[4px_4px_0_0_#E8799F]"
-                >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink font-grotesk text-sm font-bold text-white">
-                    {index + 1}
-                  </span>
-                  <div>
-                    <h3 className="font-grotesk text-base font-bold text-ink">{step.title}</h3>
-                    <p className="text-sm text-ink/60">{step.description}</p>
-                  </div>
-                </li>
+                  index={index + 1}
+                  title={step.title}
+                  description={step.description}
+                  clouds={step.clouds}
+                  reduceMotion={reduceMotion}
+                />
               ))}
             </ol>
             <div className="w-full max-w-sm rounded-2xl border-2 border-black bg-bubblegum-light p-4 text-center shadow-[4px_4px_0_0_#000]">
