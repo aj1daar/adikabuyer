@@ -50,8 +50,8 @@ public class InventoryListener {
     private void deductStock(Variant variant, int quantity) {
         int remainingStock = Math.max(variant.getStockQuantity() - quantity, 0);
         variant.setStockQuantity(remainingStock);
-        if (remainingStock == 0) {
-            variant.setStatus(VariantStatus.PRE_ORDER);
+        if (remainingStock == 0 && variant.getStatus() == VariantStatus.IN_STOCK) {
+            variant.setStatus(VariantStatus.SOLD_OUT);
         }
         variantRepository.save(variant);
     }
