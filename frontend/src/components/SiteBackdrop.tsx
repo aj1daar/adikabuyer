@@ -7,6 +7,12 @@ const FADE_MASK = 'radial-gradient(ellipse 85% 85% at 50% 42%, #000 30%, transpa
 type Shape = { kind: 'ring' | 'square'; className: string }
 type Layout = { shapes: Shape[]; dots: FieldDot[] }
 
+const dotSet = (pink: number, ink: number, white: number): FieldDot[] => [
+  ...Array.from({ length: pink }, () => ({ color: 'pink' as const })),
+  ...Array.from({ length: ink }, () => ({ color: 'ink' as const })),
+  ...Array.from({ length: white }, () => ({ color: 'white' as const })),
+]
+
 /** Same visual language on every storefront page, a different arrangement per route. */
 const LAYOUTS: Record<string, Layout> = {
   home: {
@@ -15,7 +21,7 @@ const LAYOUTS: Record<string, Layout> = {
       { kind: 'ring', className: 'right-[-8rem] top-1/2 h-[27rem] w-[27rem] -translate-y-1/2 border-black/10' },
       { kind: 'square', className: 'bottom-[-5rem] left-[-4rem] h-72 w-72 rotate-12 rounded-3xl border-black/12' },
     ],
-    dots: [{ color: 'pink' }, { color: 'ink' }, { color: 'pink' }, { color: 'white' }, { color: 'ink' }],
+    dots: dotSet(6, 5, 3),
   },
   catalog: {
     shapes: [
@@ -23,7 +29,7 @@ const LAYOUTS: Record<string, Layout> = {
       { kind: 'ring', className: 'right-[-11rem] bottom-[-13rem] h-[32rem] w-[32rem] border-black/10' },
       { kind: 'square', className: 'right-[7%] top-[7rem] h-40 w-40 -rotate-6 rounded-2xl border-black/12' },
     ],
-    dots: [{ color: 'white' }, { color: 'pink' }, { color: 'ink' }, { color: 'pink' }],
+    dots: dotSet(5, 4, 2),
   },
   product: {
     shapes: [
@@ -31,14 +37,14 @@ const LAYOUTS: Record<string, Layout> = {
       { kind: 'square', className: 'bottom-[-4rem] right-[-3rem] h-64 w-64 rotate-12 rounded-3xl border-black/12' },
       { kind: 'ring', className: 'right-[10%] top-[-8rem] h-[22rem] w-[22rem] border-black/10' },
     ],
-    dots: [{ color: 'pink' }, { color: 'ink' }, { color: 'white' }, { color: 'pink' }],
+    dots: dotSet(5, 3, 3),
   },
   about: {
     shapes: [
       { kind: 'ring', className: 'left-1/2 top-1/2 h-[46rem] w-[46rem] -translate-x-1/2 -translate-y-1/2 border-bubblegum/20' },
       { kind: 'ring', className: 'left-1/2 top-1/2 h-[30rem] w-[30rem] -translate-x-1/2 -translate-y-1/2 border-black/8' },
     ],
-    dots: [{ color: 'white' }, { color: 'pink' }, { color: 'ink' }, { color: 'pink' }],
+    dots: dotSet(5, 3, 3),
   },
 }
 
