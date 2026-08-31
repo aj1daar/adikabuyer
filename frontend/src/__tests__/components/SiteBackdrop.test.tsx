@@ -21,14 +21,18 @@ describe('SiteBackdrop', () => {
     expect(root.className).toContain('fixed')
   })
 
-  it('draws a different shape arrangement per route but keeps the grid on all', () => {
-    expect(shapeCount(renderAt('/'))).toBe(6)
-    expect(shapeCount(renderAt('/catalog'))).toBe(5)
-    expect(shapeCount(renderAt('/catalog/7'))).toBe(5)
-    expect(shapeCount(renderAt('/about'))).toBe(4)
+  it('draws a different outline-shape arrangement per route', () => {
+    expect(shapeCount(renderAt('/'))).toBe(3)
+    expect(shapeCount(renderAt('/catalog'))).toBe(3)
+    expect(shapeCount(renderAt('/catalog/7'))).toBe(3)
+    expect(shapeCount(renderAt('/about'))).toBe(2)
   })
 
   it('falls back to the home arrangement on an unknown route', () => {
-    expect(shapeCount(renderAt('/whatever'))).toBe(6)
+    expect(shapeCount(renderAt('/whatever'))).toBe(3)
+  })
+
+  it('renders the animated dot canvas', () => {
+    expect(renderAt('/').querySelector('canvas')).toBeInTheDocument()
   })
 })
