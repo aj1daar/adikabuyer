@@ -1,6 +1,6 @@
 # Adikabuyer
 
-Custom-order catalog for a small drinkware/apparel shop — customers pick a product and variant; checkout persists the order and notifies the store's Telegram admins instead of going through a payment gateway. Prices shown to customers are the admin-entered cost price plus a 15% commission, rounded to the nearest 100; delivery is a flat 250 KGS to Бишкек and 500 KGS everywhere else.
+Custom-order catalog for a small drinkware/apparel shop — customers pick a product and variant; checkout persists the order and notifies the store's Telegram admins instead of going through a payment gateway. Prices shown to customers are entered directly by the admin per variant (no markup math); delivery is a flat 250 KGS to Бишкек and 500 KGS everywhere else.
 
 ## Stack
 

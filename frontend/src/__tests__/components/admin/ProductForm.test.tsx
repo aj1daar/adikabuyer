@@ -40,7 +40,7 @@ const fillFirstVariant = (sku: string, price: string) => {
   fireEvent.change(screen.getByPlaceholderText('Артикул / SKU (необязательно)'), {
     target: { value: sku },
   })
-  fireEvent.change(screen.getByPlaceholderText('Закупочная цена'), { target: { value: price } })
+  fireEvent.change(screen.getByPlaceholderText('Цена для клиента, KGS'), { target: { value: price } })
 }
 
 beforeEach(() => {

@@ -36,7 +36,7 @@ class VariantMapperTest {
         assertThat(dto.sku()).isEqualTo("SKU-1");
         assertThat(dto.attributes()).containsEntry("color", "black").containsEntry("size", "500ml");
         assertThat(dto.priceOverride()).isEqualByComparingTo("1500");
-        assertThat(dto.displayPrice()).isEqualByComparingTo("1700");
+        assertThat(dto.displayPrice()).isEqualByComparingTo("1500");
         assertThat(dto.stockQuantity()).isEqualTo(5);
         assertThat(dto.active()).isTrue();
         assertThat(dto.status()).isEqualTo(VariantStatus.PRE_ORDER);
@@ -72,7 +72,7 @@ class VariantMapperTest {
 
         VariantDto dto = variantMapper.toDto(variant);
 
-        assertThat(dto.displayPrice()).isEqualByComparingTo("2300");
+        assertThat(dto.displayPrice()).isEqualByComparingTo("2000");
     }
 
     @Test

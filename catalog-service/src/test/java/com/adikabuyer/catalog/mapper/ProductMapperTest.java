@@ -55,8 +55,8 @@ class ProductMapperTest {
         assertThat(dto.variants().get(0).attributes()).containsEntry("color", "black");
         assertThat(dto.imageUrl()).isEqualTo("http://localhost:9000/adikabuyer-media/photo.png");
         assertThat(dto.colorSwatches()).containsEntry("black", "http://localhost:9000/adikabuyer-media/black-swatch.png");
-        assertThat(dto.displayPrice()).isEqualByComparingTo("2300");
-        assertThat(dto.variants().get(0).displayPrice()).isEqualByComparingTo("2300");
+        assertThat(dto.displayPrice()).isEqualByComparingTo("2000");
+        assertThat(dto.variants().get(0).displayPrice()).isEqualByComparingTo("2000");
     }
 
     @Test

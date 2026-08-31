@@ -2,8 +2,6 @@ import { useId, useState, type ChangeEvent } from 'react'
 import type { ProductDto, VariantStatus } from '../../types/catalog'
 import type { ProductPayload, VariantPayload } from '../../types/admin'
 import uploadMedia from '../../api/media'
-import formatPrice from '../../utils/formatPrice'
-import previewDisplayPrice from '../../utils/priceCommission'
 import {
   ATTRIBUTE_KEY_OPTIONS,
   ATTRIBUTE_VALUE_OPTIONS,
@@ -328,20 +326,13 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   placeholder="Артикул / SKU (необязательно)"
                   className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                 />
-                <div className="flex flex-col gap-1">
-                  <input
-                    type="number"
-                    value={variant.priceOverride}
-                    onChange={(event) => updateVariant(variantIndex, { priceOverride: event.target.value })}
-                    placeholder="Закупочная цена"
-                    className="w-full rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
-                  />
-                  {variant.priceOverride.trim() !== '' && !Number.isNaN(Number(variant.priceOverride)) && (
-                    <p className="px-3 text-xs text-ink/50">
-                      Клиенту: {formatPrice(previewDisplayPrice(Number(variant.priceOverride)))}
-                    </p>
-                  )}
-                </div>
+                <input
+                  type="number"
+                  value={variant.priceOverride}
+                  onChange={(event) => updateVariant(variantIndex, { priceOverride: event.target.value })}
+                  placeholder="Цена для клиента, KGS"
+                  className="w-full rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+                />
                 <input
                   type="number"
                   value={variant.stockQuantity}
