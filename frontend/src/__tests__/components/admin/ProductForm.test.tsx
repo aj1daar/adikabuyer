@@ -63,10 +63,10 @@ describe('ProductForm', () => {
     expect(screen.getByRole('button', { name: 'Цвет' })).toBeInTheDocument()
   })
 
-  it('shows the value placeholder when a loaded variant has a legacy value outside the known list', () => {
+  it('loads the colour value into a free-text field', () => {
     render(<ProductForm product={existingProduct} onSubmit={vi.fn()} onClose={vi.fn()} />)
 
-    expect(screen.getByRole('button', { name: 'Значение' })).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Цвет (любой)')).toHaveValue('black')
   })
 
   it('disables submit until name is filled and at least one priced variant exists', () => {
@@ -110,8 +110,7 @@ describe('ProductForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /добавить атрибут/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Атрибут' }))
     fireEvent.click(screen.getByRole('button', { name: 'Цвет' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Значение' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Чёрный' }))
+    fireEvent.change(screen.getByPlaceholderText('Цвет (любой)'), { target: { value: 'Чёрный' } })
 
     fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
 
@@ -160,7 +159,7 @@ describe('ProductForm', () => {
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ labels: ['С принтом'] }))
   })
 
-  it('submits a preset attribute value chosen from the dropdown', () => {
+  it('submits a freely typed colour value', () => {
     const onSubmit = vi.fn()
     render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
 
@@ -169,14 +168,13 @@ describe('ProductForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /добавить атрибут/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Атрибут' }))
     fireEvent.click(screen.getByRole('button', { name: 'Цвет' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Значение' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Леопардовый' }))
+    fireEvent.change(screen.getByPlaceholderText('Цвет (любой)'), { target: { value: 'Мятный' } })
 
     fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
 
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
-        variants: [expect.objectContaining({ attributes: { color: 'Леопардовый' } })],
+        variants: [expect.objectContaining({ attributes: { color: 'Мятный' } })],
       })
     )
   })
@@ -188,14 +186,13 @@ describe('ProductForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /добавить атрибут/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Атрибут' }))
     fireEvent.click(screen.getByRole('button', { name: 'Цвет' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Значение' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Розовый' }))
+    fireEvent.change(screen.getByPlaceholderText('Цвет (любой)'), { target: { value: 'Розовый' } })
 
     fireEvent.click(screen.getByRole('button', { name: 'Цвет' }))
     fireEvent.click(screen.getByRole('button', { name: 'Размер' }))
 
     expect(screen.getByRole('button', { name: 'Значение' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Розовый' })).not.toBeInTheDocument()
+    expect(screen.queryByDisplayValue('Розовый')).not.toBeInTheDocument()
   })
 
   it('shows a number input for the volume attribute and submits it as a plain number', () => {

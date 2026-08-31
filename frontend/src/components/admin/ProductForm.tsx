@@ -88,6 +88,7 @@ function toVariantDraft(product?: ProductDto): VariantDraft[] {
 
 export default function ProductForm({ product, onSubmit, onClose, isSubmitting }: ProductFormProps) {
   const imageUploadId = useId()
+  const colorListId = useId()
   const [name, setName] = useState(product?.name ?? '')
   const [description, setDescription] = useState(product?.description ?? '')
   const [category, setCategory] = useState(product?.category ?? '')
@@ -557,6 +558,24 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                             placeholder="Объём, мл"
                             className="w-full rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                           />
+                        ) : attribute.key === COLOR_ATTRIBUTE_KEY ? (
+                          <>
+                            <input
+                              type="text"
+                              list={colorListId}
+                              value={attribute.value}
+                              onChange={(event) =>
+                                updateAttribute(variantIndex, attributeIndex, { value: event.target.value })
+                              }
+                              placeholder="Цвет (любой)"
+                              className="w-full rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+                            />
+                            <datalist id={colorListId}>
+                              {(ATTRIBUTE_VALUE_OPTIONS[COLOR_ATTRIBUTE_KEY] ?? []).map((value) => (
+                                <option key={value} value={value} />
+                              ))}
+                            </datalist>
+                          </>
                         ) : (
                           <OptionDropdown
                             options={valueOptions}
