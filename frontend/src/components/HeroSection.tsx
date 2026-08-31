@@ -1,13 +1,11 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import HeroBackdrop from './HeroBackdrop'
 
 export default function HeroSection() {
   const reduceMotion = useReducedMotion()
 
   return (
-    <section className="relative flex items-center overflow-hidden bg-white py-16 sm:h-[calc(100dvh-10rem)] sm:py-0">
-      <HeroBackdrop />
+    <section className="relative flex items-center overflow-hidden py-16 sm:h-[calc(100dvh-10rem)] sm:py-0">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
@@ -66,12 +64,25 @@ export default function HeroSection() {
               scale: { duration: 6, repeat: Infinity, ease: 'easeInOut' },
             }}
           />
-          <motion.span
+          <motion.svg
             aria-hidden="true"
-            className="absolute -inset-3 rounded-full border-2 border-dashed border-black/40"
+            viewBox="0 0 100 100"
+            className="absolute -inset-3 h-[calc(100%+1.5rem)] w-[calc(100%+1.5rem)] text-black/40"
             animate={reduceMotion ? undefined : { rotate: -360 }}
             transition={{ duration: 26, repeat: Infinity, ease: 'linear' }}
-          />
+          >
+            <circle
+              cx="50"
+              cy="50"
+              r="49"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="0.7"
+              pathLength={100}
+              strokeDasharray="1.5 2.5"
+              strokeLinecap="round"
+            />
+          </motion.svg>
           <img
             src="/adika-buyer-instagram.jpg"
             alt="Adika Buyer в Instagram"
