@@ -87,7 +87,7 @@ export default function HeroSection() {
         >
           <ScribbleNote
             text="залетай к нам ✨"
-            className="bottom-full left-1/2 -translate-x-1/2"
+            className="bottom-full left-1/2 mb-4 -translate-x-1/2"
             rotate={-4}
             direction="down"
             reduceMotion={reduceMotion}
