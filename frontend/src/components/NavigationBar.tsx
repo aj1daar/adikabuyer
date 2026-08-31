@@ -25,8 +25,8 @@ export default function NavigationBar() {
     ? { duration: 0.15 }
     : { type: 'spring' as const, stiffness: 500, damping: 12, mass: 0.6 }
   const logoTween = reduceMotion
-    ? { duration: 0.12 }
-    : { type: 'spring' as const, stiffness: 240, damping: 26, mass: 1 }
+    ? { duration: 0.1 }
+    : { duration: 0.2, ease: [0.16, 1, 0.3, 1] as const }
 
   const desktopLinkClass = ({ isActive }: { isActive: boolean }) =>
     `relative font-grotesk text-sm font-bold transition after:absolute after:-bottom-1.5 after:left-0 after:h-[3px] after:w-full after:origin-left after:rounded-full after:bg-bubblegum after:transition-transform after:duration-200 after:content-[''] ${
@@ -61,15 +61,30 @@ export default function NavigationBar() {
           <MotionLink
             to="/"
             aria-label="Adika Buyer"
-            className="relative shrink-0"
+            className="relative shrink-0 will-change-transform"
             whileHover={reduceMotion ? { scale: 1.02 } : { scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
             transition={logoTween}
           >
-            <span
+            <svg
               aria-hidden="true"
-              className="absolute -inset-2 -z-10 rounded-lg border-2 border-dashed border-black/30"
-            />
+              viewBox="0 0 210 84"
+              preserveAspectRatio="none"
+              className="absolute -inset-x-4 -inset-y-2 -z-10 h-[calc(100%+1rem)] w-[calc(100%+2rem)] text-black/35"
+            >
+              <ellipse
+                cx="105"
+                cy="42"
+                rx="102"
+                ry="39"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                pathLength={100}
+                strokeDasharray="1.1 1.9"
+                strokeLinecap="round"
+              />
+            </svg>
             <Logo className="relative h-16 w-auto" />
           </MotionLink>
 
