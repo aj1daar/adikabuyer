@@ -13,8 +13,11 @@ describe('ScribbleNote', () => {
     expect(root.className).toContain('sm:block')
   })
 
-  it('mirrors the arrow vertically when pointing up', () => {
-    const { container } = render(<ScribbleNote text="го" direction="up" />)
-    expect(container.querySelector('svg')?.getAttribute('class')).toContain('-scale-y-100')
+  it('rotates the arrow to point the requested way', () => {
+    const up = render(<ScribbleNote text="го" direction="up" />).container
+    const left = render(<ScribbleNote text="го" direction="left" />).container
+
+    expect(up.querySelector('svg')?.getAttribute('style')).toContain('rotate(180deg)')
+    expect(left.querySelector('svg')?.getAttribute('style')).toContain('rotate(90deg)')
   })
 })

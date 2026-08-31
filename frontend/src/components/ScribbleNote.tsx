@@ -1,26 +1,42 @@
 import { motion } from 'framer-motion'
 
+type Direction = 'up' | 'down' | 'left' | 'right'
+
 type ScribbleNoteProps = {
   text: string
   /** absolute-position utilities for the wrapper (may include translate) */
   className?: string
   /** base tilt in degrees */
   rotate?: number
-  /** does the arrow sit under the text pointing down, or over it pointing up */
-  direction?: 'down' | 'up'
-  /** extra arrow utilities (size, -scale-x-100 to mirror) */
-  arrowClassName?: string
+  /** which way the arrow points, toward the target */
+  direction?: Direction
   reduceMotion?: boolean | null
 }
 
-function ScribbleArrow({ className }: { className?: string }) {
+/** degrees to rotate the base (downward) arrow so its head points `direction` */
+const ARROW_ROTATE: Record<Direction, number> = { down: 0, up: 180, left: 90, right: -90 }
+/** flex layout so the arrow sits on the target-facing side of the text */
+const LAYOUT: Record<Direction, string> = {
+  down: 'flex-col',
+  up: 'flex-col-reverse',
+  right: 'flex-row',
+  left: 'flex-row-reverse',
+}
+
+function Arrow({ rotate }: { rotate: number }) {
   return (
-    <svg viewBox="0 0 64 52" fill="none" aria-hidden="true" className={className}>
-      <path d="M3 8C22 2 46 5 54 33" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+    <svg
+      viewBox="0 0 40 52"
+      fill="none"
+      aria-hidden="true"
+      className="h-10 w-8 shrink-0 text-ink"
+      style={{ transform: `rotate(${rotate}deg)` }}
+    >
+      <path d="M20 4C10 15 30 26 20 42" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round" />
       <path
-        d="M40 27L55 35L45 47"
+        d="M12 34L20 45L28 34"
         stroke="currentColor"
-        strokeWidth="4"
+        strokeWidth="4.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -28,34 +44,26 @@ function ScribbleArrow({ className }: { className?: string }) {
   )
 }
 
-/** GenZ-style hand-drawn callout: a bold pink line plus a scribbled arrow, wiggling. Desktop only. */
+/** GenZ hand-drawn callout: a bold pink line plus a scribbled arrow aimed at a nearby CTA. Desktop only. */
 export default function ScribbleNote({
   text,
   className,
   rotate = 0,
   direction = 'down',
-  arrowClassName,
   reduceMotion,
 }: ScribbleNoteProps) {
-  const arrow = (
-    <ScribbleArrow
-      className={`text-ink ${direction === 'up' ? '-scale-y-100' : ''} ${arrowClassName ?? 'h-9 w-12'}`}
-    />
-  )
-
   return (
     <div aria-hidden="true" className={`pointer-events-none absolute z-10 hidden select-none sm:block ${className ?? ''}`}>
       <motion.div
-        className="flex flex-col items-center gap-1"
+        className={`flex items-center gap-0.5 ${LAYOUT[direction]}`}
         style={{ rotate }}
-        animate={reduceMotion ? undefined : { rotate: [rotate - 2.5, rotate + 2.5, rotate - 2.5] }}
+        animate={reduceMotion ? undefined : { rotate: [rotate - 1.5, rotate + 1.5, rotate - 1.5] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       >
-        {direction === 'up' && arrow}
         <span className="whitespace-nowrap font-grotesk text-lg font-extrabold lowercase text-bubblegum-dark drop-shadow-[2px_2px_0_rgba(10,10,10,0.18)]">
           {text}
         </span>
-        {direction === 'down' && arrow}
+        <Arrow rotate={ARROW_ROTATE[direction]} />
       </motion.div>
     </div>
   )

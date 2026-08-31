@@ -32,16 +32,16 @@ export default function HeroSection() {
           <div className="relative flex flex-wrap items-center justify-center gap-4 sm:justify-start">
             <ScribbleNote
               text="жми сюда 🔥"
-              className="left-3 top-full mt-1"
-              rotate={-6}
+              className="left-8 top-full"
+              rotate={-5}
               direction="up"
               reduceMotion={reduceMotion}
             />
             <ScribbleNote
               text="а тут инфа 👀"
-              className="left-full top-1/2 ml-3 -translate-y-1/2"
-              rotate={7}
-              arrowClassName="h-8 w-11 -scale-x-100"
+              className="left-full top-1/2 ml-1 -translate-y-1/2"
+              rotate={5}
+              direction="left"
               reduceMotion={reduceMotion}
             />
             <Link
@@ -64,7 +64,7 @@ export default function HeroSection() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Adika Buyer в Instagram"
-          className="group relative mt-8 block h-56 w-56 shrink-0 sm:mt-0 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
+          className="relative mt-8 block h-56 w-56 shrink-0 sm:mt-0 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
           animate={reduceMotion ? undefined : { y: [0, -14, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
           whileHover={{ scale: 1.05, rotate: -3 }}
@@ -72,9 +72,9 @@ export default function HeroSection() {
         >
           <ScribbleNote
             text="залетай к нам ✨"
-            className="-top-11 left-1/2 -translate-x-1/2"
+            className="bottom-full left-1/2 -translate-x-1/2"
             rotate={-4}
-            arrowClassName="h-9 w-12"
+            direction="down"
             reduceMotion={reduceMotion}
           />
           <motion.div
@@ -108,7 +108,7 @@ export default function HeroSection() {
           <img
             src="/adika-buyer-instagram.jpg"
             alt="Adika Buyer в Instagram"
-            className="relative h-full w-full rounded-full border-4 border-black object-cover shadow-[8px_8px_0_0_#000] transition-shadow duration-200 group-hover:shadow-[12px_12px_0_0_#000]"
+            className="relative h-full w-full rounded-full border-4 border-black object-cover"
           />
         </motion.a>
       </motion.div>
