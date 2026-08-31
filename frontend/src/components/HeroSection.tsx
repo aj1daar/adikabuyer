@@ -1,7 +1,9 @@
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 
 export default function HeroSection() {
+  const reduceMotion = useReducedMotion()
+
   return (
     <section className="relative flex items-center overflow-hidden bg-white py-16 sm:h-[calc(100dvh-10rem)] sm:py-0">
       <motion.div
@@ -42,22 +44,38 @@ export default function HeroSection() {
           </div>
         </div>
 
-        <a
+        <motion.a
           href="https://www.instagram.com/adika.buyer/"
           target="_blank"
           rel="noopener noreferrer"
-          className="relative mt-8 block h-56 w-56 shrink-0 sm:mt-0 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
+          aria-label="Adika Buyer в Instagram"
+          className="group relative mt-8 block h-56 w-56 shrink-0 sm:mt-0 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
+          animate={reduceMotion ? undefined : { y: [0, -14, 0] }}
+          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+          whileHover={{ scale: 1.05, rotate: -3 }}
+          whileTap={{ scale: 0.96 }}
         >
-          <div
+          <motion.div
             aria-hidden="true"
-            className="absolute inset-0 rounded-full bg-gradient-to-br from-bubblegum via-bubblegum-light to-silver blur-2xl opacity-70"
+            className="absolute -inset-4 rounded-full bg-gradient-to-br from-bubblegum via-bubblegum-light to-silver blur-2xl opacity-70"
+            animate={reduceMotion ? undefined : { rotate: 360, scale: [1, 1.1, 1] }}
+            transition={{
+              rotate: { duration: 22, repeat: Infinity, ease: 'linear' },
+              scale: { duration: 6, repeat: Infinity, ease: 'easeInOut' },
+            }}
+          />
+          <motion.span
+            aria-hidden="true"
+            className="absolute -inset-3 rounded-full border-2 border-dashed border-black/40"
+            animate={reduceMotion ? undefined : { rotate: -360 }}
+            transition={{ duration: 26, repeat: Infinity, ease: 'linear' }}
           />
           <img
             src="/adika-buyer-instagram.jpg"
             alt="Adika Buyer в Instagram"
-            className="relative h-full w-full rounded-full border-4 border-black object-cover shadow-[8px_8px_0_0_#000]"
+            className="relative h-full w-full rounded-full border-4 border-black object-cover shadow-[8px_8px_0_0_#000] transition-shadow duration-200 group-hover:shadow-[12px_12px_0_0_#000]"
           />
-        </a>
+        </motion.a>
       </motion.div>
     </section>
   )
