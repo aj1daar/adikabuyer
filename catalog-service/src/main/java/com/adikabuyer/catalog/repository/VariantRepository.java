@@ -8,4 +8,6 @@ import java.util.List;
 public interface VariantRepository extends JpaRepository<Variant, Long> {
 
     List<Variant> findByProductId(Long productId);
+
+    boolean existsBySkuIgnoreCase(String sku);
 }

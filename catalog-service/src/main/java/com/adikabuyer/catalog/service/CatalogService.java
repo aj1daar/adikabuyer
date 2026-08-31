@@ -25,7 +25,10 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
 
 @Service
 @RequiredArgsConstructor
@@ -101,8 +104,11 @@ public class CatalogService {
                 .variants(new ArrayList<>())
                 .build();
 
+        Set<String> usedSkus = new HashSet<>();
         for (VariantRequest variantRequest : variantRequests) {
-            product.getVariants().add(VariantReconciler.buildVariant(variantRequest, product, now));
+            Variant variant = VariantReconciler.buildVariant(variantRequest, product, now, skuGuard(usedSkus));
+            usedSkus.add(variant.getSku());
+            product.getVariants().add(variant);
         }
 
         product.setBasePrice(deriveBasePrice(product.getVariants()));
@@ -127,7 +133,7 @@ public class CatalogService {
         product.setActive(request.active());
         product.setUpdatedAt(now);
 
-        VariantReconciler.reconcile(product, variantRequests, now);
+        VariantReconciler.reconcile(product, variantRequests, now, variantRepository::existsBySkuIgnoreCase);
 
         product.setBasePrice(deriveBasePrice(product.getVariants()));
         product.setImageUrl(deriveImageUrl(product.getVariants()));
@@ -160,6 +166,10 @@ public class CatalogService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + id));
         productRepository.delete(product);
+    }
+
+    private Predicate<String> skuGuard(Set<String> used) {
+        return sku -> used.contains(sku) || variantRepository.existsBySkuIgnoreCase(sku);
     }
 
     private List<VariantRequest> nullSafeVariants(ProductRequest request) {
