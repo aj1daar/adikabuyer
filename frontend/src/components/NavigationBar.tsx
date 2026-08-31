@@ -24,6 +24,9 @@ export default function NavigationBar() {
   const springy = reduceMotion
     ? { duration: 0.15 }
     : { type: 'spring' as const, stiffness: 500, damping: 12, mass: 0.6 }
+  const logoTween = reduceMotion
+    ? { duration: 0.12 }
+    : { type: 'spring' as const, stiffness: 240, damping: 26, mass: 1 }
 
   const desktopLinkClass = ({ isActive }: { isActive: boolean }) =>
     `relative font-grotesk text-sm font-bold transition after:absolute after:-bottom-1.5 after:left-0 after:h-[3px] after:w-full after:origin-left after:rounded-full after:bg-bubblegum after:transition-transform after:duration-200 after:content-[''] ${
@@ -45,23 +48,27 @@ export default function NavigationBar() {
           hidden ? '-translate-y-full sm:translate-y-0' : 'translate-y-0'
         }`}
       >
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 overflow-hidden"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, rgba(212,92,134,0.09) 1px, transparent 1px), linear-gradient(to bottom, rgba(212,92,134,0.09) 1px, transparent 1px)',
+            backgroundSize: '18px 18px',
+          }}
+        />
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <MotionLink
             to="/"
             aria-label="Adika Buyer"
             className="relative shrink-0"
-            whileHover={reduceMotion ? { scale: 1.02 } : { rotate: -3, scale: 1.05 }}
-            whileTap={{ scale: 0.96 }}
-            transition={springy}
+            whileHover={reduceMotion ? { scale: 1.02 } : { scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+            transition={logoTween}
           >
             <span
               aria-hidden="true"
-              className="absolute -inset-x-2 -inset-y-1 -z-10 rounded-2xl border-2 border-dashed border-black/15"
-            />
-            <Sparkle
-              spin
-              reduceMotion={reduceMotion}
-              className="absolute -right-2 -top-1 h-5 w-5 text-bubblegum drop-shadow-[1px_1px_0_#000]"
+              className="absolute -inset-2 -z-10 rounded-lg border-2 border-dashed border-black/30"
             />
             <Logo className="relative h-16 w-auto" />
           </MotionLink>
