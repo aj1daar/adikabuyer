@@ -1,11 +1,5 @@
 import type { VariantDto } from '../types/catalog'
 
-export function stringifyAttributes(attributes: Record<string, unknown>): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(attributes).map(([key, value]) => [key, String(value)])
-  )
-}
-
 /** Attribute keys present on any variant, in first-seen order. */
 export function attributeKeys(variants: VariantDto[]): string[] {
   const keys: string[] = []
@@ -35,51 +29,55 @@ export function attributeValues(variants: VariantDto[], key: string): string[] {
   return values
 }
 
-function matchCount(variant: VariantDto, target: Record<string, string>): number {
-  return Object.entries(target).reduce(
-    (count, [key, value]) => (String(variant.attributes[key] ?? '') === value ? count + 1 : count),
-    0
-  )
-}
-
 /**
- * Pick the variant that best matches the current selection with `key` overridden to
- * `value`. Always returns a variant that actually has `key === value`; other
- * attributes are relaxed to whichever real variant is closest.
+ * Best variant for an explicit, possibly partial selection. Empty selection →
+ * the first variant. `priorityKey` (the attribute the shopper just touched) is
+ * treated as a hard constraint when any variant can honour it; the remaining
+ * picks are then matched as closely as possible, first-seen breaking ties.
  */
-export function selectVariant(
+export function resolveVariant(
   variants: VariantDto[],
-  current: VariantDto | undefined,
-  key: string,
-  value: string
+  selection: Record<string, string>,
+  priorityKey?: string
 ): VariantDto | undefined {
-  const candidates = variants.filter((variant) => String(variant.attributes[key] ?? '') === value)
-  if (candidates.length === 0) {
-    return current
+  if (variants.length === 0) {
+    return undefined
   }
-  const target = { ...(current ? stringifyAttributes(current.attributes) : {}), [key]: value }
-  return candidates.reduce((best, variant) =>
-    matchCount(variant, target) > matchCount(best, target) ? variant : best
-  )
+  const entries = Object.entries(selection)
+  if (entries.length === 0) {
+    return variants[0]
+  }
+  let pool = variants
+  if (priorityKey && selection[priorityKey] !== undefined) {
+    const hard = variants.filter(
+      (variant) => String(variant.attributes[priorityKey] ?? '') === selection[priorityKey]
+    )
+    if (hard.length > 0) {
+      pool = hard
+    }
+  }
+  const score = (variant: VariantDto) =>
+    entries.reduce((n, [key, value]) => (String(variant.attributes[key] ?? '') === value ? n + 1 : n), 0)
+  return pool.reduce((best, variant) => (score(variant) > score(best) ? variant : best))
 }
 
 /**
- * True when some variant has `key === value` while still matching every other
- * attribute of the current selection — i.e. picking it changes nothing else.
+ * True when some variant has `key === value` while matching every *other* picked
+ * attribute — i.e. adding this pick keeps a real variant reachable.
  */
-export function isCombinationAvailable(
+export function isValueAvailable(
   variants: VariantDto[],
-  current: VariantDto | undefined,
+  selection: Record<string, string>,
   key: string,
   value: string
 ): boolean {
-  const rest = current ? stringifyAttributes(current.attributes) : {}
   return variants.some((variant) => {
     if (String(variant.attributes[key] ?? '') !== value) {
       return false
     }
-    return Object.entries(rest).every(
+    return Object.entries(selection).every(
       ([otherKey, otherValue]) => otherKey === key || String(variant.attributes[otherKey] ?? '') === otherValue
     )
   })
 }
+

@@ -13,8 +13,8 @@ import { attributeKeyLabel, COLOR_ATTRIBUTE_KEY, formatAttributeValue } from '..
 import {
   attributeKeys,
   attributeValues,
-  isCombinationAvailable,
-  selectVariant,
+  isValueAvailable,
+  resolveVariant,
 } from '../utils/variantSelection'
 
 function variantLabel(variant: VariantDto, index: number): string {
@@ -35,6 +35,8 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
+  // explicit attribute picks; a second click on an active value drops it
+  const [selection, setSelection] = useState<Record<string, string>>({})
   const [quantity, setQuantity] = useState(1)
 
   usePageTitle(product?.name)
@@ -72,6 +74,7 @@ export default function ProductPage() {
         setProduct(response.data)
         const firstSellable = response.data.variants.find((variant) => variant.status !== 'SOLD_OUT')
         setSelectedVariantId(firstSellable?.id ?? null)
+        setSelection({})
       })
       .catch((err) => {
         if (!controller.signal.aborted) {
@@ -103,7 +106,14 @@ export default function ProductPage() {
   const keys = attributeKeys(sellableVariants)
 
   const chooseAttribute = (key: string, value: string) => {
-    const next = selectVariant(sellableVariants, selectedVariant, key, value)
+    const nextSelection = { ...selection }
+    if (nextSelection[key] === value) {
+      delete nextSelection[key]
+    } else {
+      nextSelection[key] = value
+    }
+    setSelection(nextSelection)
+    const next = resolveVariant(sellableVariants, nextSelection, key)
     if (next) {
       chooseVariant(next.id)
     }
@@ -219,13 +229,8 @@ export default function ProductPage() {
                         </span>
                         <div className={`flex flex-wrap ${useSwatches ? 'gap-3' : 'gap-2'}`}>
                           {attributeValues(sellableVariants, key).map((value) => {
-                            const selected = String(selectedVariant?.attributes[key] ?? '') === value
-                            const available = isCombinationAvailable(
-                              sellableVariants,
-                              selectedVariant,
-                              key,
-                              value
-                            )
+                            const selected = selection[key] === value
+                            const available = isValueAvailable(sellableVariants, selection, key, value)
                             const swatch = useSwatches ? swatches[value] : undefined
                             if (swatch) {
                               return (

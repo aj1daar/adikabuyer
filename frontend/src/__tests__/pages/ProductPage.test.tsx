@@ -178,28 +178,39 @@ describe('ProductPage', () => {
     expect(screen.getByText('30 KGS')).toBeInTheDocument()
   })
 
-  it('keeps the rest of the selection when a compatible value is picked, snaps it otherwise', async () => {
-    const matrixProduct: ProductDto = {
-      ...product,
-      variants: [
-        { ...product.variants[0], id: 11, sku: 'DEFAULT-A', attributes: { color: 'Black', volume: '591' }, imageUrls: ['a.jpg'] },
-        { ...product.variants[0], id: 12, sku: 'DEFAULT-B', attributes: { color: 'Black', volume: '414' }, imageUrls: ['b.jpg'] },
-        { ...product.variants[0], id: 13, sku: 'DEFAULT-C', attributes: { color: 'White', volume: '591' }, imageUrls: ['c.jpg'] },
-      ],
-    }
-    mockedGet.mockResolvedValue({ data: matrixProduct })
+  const matrixProduct: ProductDto = {
+    ...product,
+    variants: [
+      { ...product.variants[0], id: 11, sku: 'DEFAULT-A', attributes: { color: 'Black', volume: '591' }, imageUrls: ['a.jpg'] },
+      { ...product.variants[0], id: 12, sku: 'DEFAULT-B', attributes: { color: 'Black', volume: '414' }, imageUrls: ['b.jpg'] },
+      { ...product.variants[0], id: 13, sku: 'DEFAULT-C', attributes: { color: 'White', volume: '591' }, imageUrls: ['c.jpg'] },
+    ],
+  }
 
+  it('pins the just-picked attribute and matches the closest variant for the rest', async () => {
+    mockedGet.mockResolvedValue({ data: matrixProduct })
     renderPage()
 
-    // start: Black / 591
     fireEvent.click(await screen.findByRole('button', { name: '414 мл' }))
-    expect(screen.getByRole('button', { name: 'Black' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: '414 мл' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'b.jpg')
 
-    // White has no 414 -> snaps volume back to 591
+    // White has no 414 variant -> White wins (last touched), the 414 pick is kept
     fireEvent.click(screen.getByRole('button', { name: 'White' }))
     expect(screen.getByRole('button', { name: 'White' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: '591 мл' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: '414 мл' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'c.jpg')
+  })
+
+  it('drops an attribute pick when its active value is clicked again', async () => {
+    mockedGet.mockResolvedValue({ data: matrixProduct })
+    renderPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'White' }))
+    expect(screen.getByRole('button', { name: 'White' })).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(screen.getByRole('button', { name: 'White' }))
+    expect(screen.getByRole('button', { name: 'White' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Black' })).toHaveAttribute('aria-pressed', 'false')
   })
 })

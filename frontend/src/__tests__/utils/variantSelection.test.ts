@@ -3,8 +3,8 @@ import type { VariantDto } from '../../types/catalog'
 import {
   attributeKeys,
   attributeValues,
-  isCombinationAvailable,
-  selectVariant,
+  isValueAvailable,
+  resolveVariant,
 } from '../../utils/variantSelection'
 
 const base: Omit<VariantDto, 'id' | 'sku' | 'attributes' | 'imageUrls'> = {
@@ -40,25 +40,21 @@ describe('variantSelection', () => {
     expect(attributeValues(matrix, 'volume')).toEqual(['591', '414'])
   })
 
-  it('keeps the other attributes when the picked value is compatible', () => {
-    const current = matrix[0] // Чёрный / 591
-    expect(selectVariant(matrix, current, 'volume', '414')?.id).toBe(2)
+  it('returns the first variant for an empty selection', () => {
+    expect(resolveVariant(matrix, {})?.id).toBe(1)
   })
 
-  it('relaxes the other attributes when no exact variant exists', () => {
-    const current = matrix[1] // Чёрный / 414
-    // Белый has no 414 -> snap to the closest Белый variant
-    expect(selectVariant(matrix, current, 'color', 'Белый')?.id).toBe(3)
+  it('matches an exact combination', () => {
+    expect(resolveVariant(matrix, { color: 'Чёрный', volume: '414' }, 'volume')?.id).toBe(2)
   })
 
-  it('returns the current variant when the value matches nothing', () => {
-    const current = matrix[0]
-    expect(selectVariant(matrix, current, 'color', 'Розовый')?.id).toBe(1)
+  it('honours the just-touched attribute and relaxes the rest', () => {
+    // volume 414 kept from before, colour Белый just picked, no Белый/414 exists
+    expect(resolveVariant(matrix, { color: 'Белый', volume: '414' }, 'color')?.id).toBe(3)
   })
 
-  it('reports whether a value stays compatible with the current selection', () => {
-    const current = matrix[1] // Чёрный / 414
-    expect(isCombinationAvailable(matrix, current, 'color', 'Чёрный')).toBe(true)
-    expect(isCombinationAvailable(matrix, current, 'color', 'Белый')).toBe(false)
+  it('reports whether a value keeps a real variant reachable', () => {
+    expect(isValueAvailable(matrix, { volume: '414' }, 'color', 'Чёрный')).toBe(true)
+    expect(isValueAvailable(matrix, { volume: '414' }, 'color', 'Белый')).toBe(false)
   })
 })
