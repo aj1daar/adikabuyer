@@ -31,12 +31,12 @@ function Arrow({ rotate }: { rotate: number }) {
       viewBox="0 0 40 52"
       fill="none"
       aria-hidden="true"
-      className="h-10 w-8 shrink-0 text-black/25"
+      /* opacity on the <svg> flattens the group, so the two strokes don't darken where they meet */
+      className="h-10 w-8 shrink-0 text-ink opacity-30"
       style={{ transform: `rotate(${rotate}deg)` }}
     >
-      <path d="M20 4C10 15 30 26 20 42" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" />
       <path
-        d="M12 34L20 45L28 34"
+        d="M20 4C10 15 30 26 20 42M12 34L20 45L28 34"
         stroke="currentColor"
         strokeWidth="2.75"
         strokeLinecap="round"
