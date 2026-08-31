@@ -1,8 +1,12 @@
+import { motion, useReducedMotion } from 'framer-motion'
 import { Link, NavLink } from 'react-router-dom'
 import Logo from './Logo'
+import Sparkle from './Sparkle'
 import useCartStore from '../store/useCartStore'
 import useFilterSheetStore from '../store/useFilterSheetStore'
 import useHideOnScroll from '../hooks/useHideOnScroll'
+
+const MotionLink = motion.create(Link)
 
 const navItems = [
   { to: '/catalog', label: 'Каталог' },
@@ -15,9 +19,18 @@ export default function NavigationBar() {
   const scrolledHidden = useHideOnScroll()
   const filterSheetOpen = useFilterSheetStore((state) => state.isOpen)
   const hidden = scrolledHidden || filterSheetOpen
+  const reduceMotion = useReducedMotion()
+
+  const springy = reduceMotion
+    ? { duration: 0.15 }
+    : { type: 'spring' as const, stiffness: 500, damping: 12, mass: 0.6 }
 
   const desktopLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `font-grotesk text-sm font-bold transition ${isActive ? 'text-bubblegum-dark' : 'text-ink/60 hover:text-ink'}`
+    `relative font-grotesk text-sm font-bold transition after:absolute after:-bottom-1.5 after:left-0 after:h-[3px] after:w-full after:origin-left after:rounded-full after:bg-bubblegum after:transition-transform after:duration-200 after:content-[''] ${
+      isActive
+        ? 'text-bubblegum-dark after:scale-x-100'
+        : 'text-ink/60 hover:text-ink after:scale-x-0 hover:after:scale-x-100'
+    }`
 
   const tabLinkClass = ({ isActive }: { isActive: boolean }) =>
     `flex flex-1 flex-col items-center gap-1 py-3 font-grotesk text-xs font-bold transition ${
@@ -33,11 +46,28 @@ export default function NavigationBar() {
         }`}
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link to="/" aria-label="Adika Buyer">
-            <Logo className="h-16 w-auto" />
-          </Link>
+          <MotionLink
+            to="/"
+            aria-label="Adika Buyer"
+            className="relative shrink-0"
+            whileHover={reduceMotion ? { scale: 1.02 } : { rotate: -3, scale: 1.05 }}
+            whileTap={{ scale: 0.96 }}
+            transition={springy}
+          >
+            <span
+              aria-hidden="true"
+              className="absolute -inset-x-2 -inset-y-1 -z-10 rounded-2xl border-2 border-dashed border-black/15"
+            />
+            <Sparkle
+              spin
+              reduceMotion={reduceMotion}
+              className="absolute -right-2 -top-1 h-5 w-5 text-bubblegum drop-shadow-[1px_1px_0_#000]"
+            />
+            <Logo className="relative h-16 w-auto" />
+          </MotionLink>
 
           <nav className="hidden items-center gap-6 sm:flex">
+            <Sparkle className="h-3.5 w-3.5 text-bubblegum-dark/70" />
             {navItems.map((item) => (
               <NavLink key={item.to} to={item.to} className={desktopLinkClass}>
                 {item.label}
@@ -45,13 +75,23 @@ export default function NavigationBar() {
             ))}
           </nav>
 
-          <button
+          <motion.button
             type="button"
             onClick={toggleCart}
-            className="rounded-pill border-2 border-black bg-silver px-4 py-2 font-grotesk text-sm font-bold tabular-nums text-ink transition hover:bg-bubblegum hover:text-white"
+            className="relative rounded-pill border-2 border-black bg-silver px-4 py-2 font-grotesk text-sm font-bold tabular-nums text-ink shadow-[3px_3px_0_0_#000] transition-[background-color,color] hover:bg-bubblegum hover:text-white"
+            whileHover={reduceMotion ? { scale: 1.03 } : { y: -3 }}
+            whileTap={{ y: 0, scale: 0.95 }}
+            transition={springy}
           >
             Корзина ({totalCount})
-          </button>
+            {totalCount > 0 && (
+              <Sparkle
+                spin
+                reduceMotion={reduceMotion}
+                className="absolute -right-2 -top-2 h-4 w-4 text-bubblegum drop-shadow-[1px_1px_0_#000]"
+              />
+            )}
+          </motion.button>
         </div>
       </header>
 
