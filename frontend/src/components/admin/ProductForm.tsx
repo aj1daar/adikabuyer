@@ -8,10 +8,12 @@ import {
   ATTRIBUTE_KEY_OPTIONS,
   ATTRIBUTE_VALUE_OPTIONS,
   attributeKeyLabel,
+  COLOR_ATTRIBUTE_KEY,
   CUSTOM_ATTRIBUTE_KEY,
   VOLUME_ATTRIBUTE_KEY,
 } from '../../utils/attributeOptions'
 import OptionDropdown from '../OptionDropdown'
+import CircleCropper from './CircleCropper'
 
 const KNOWN_ATTRIBUTE_KEYS = ATTRIBUTE_KEY_OPTIONS.map((option) => option.value).filter(
   (value) => value !== CUSTOM_ATTRIBUTE_KEY
@@ -90,6 +92,43 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   const [uploadingVariantIndex, setUploadingVariantIndex] = useState<number | null>(null)
   const [variantUploadError, setVariantUploadError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
+  const [colorSwatches, setColorSwatches] = useState<Record<string, string>>(product?.colorSwatches ?? {})
+  const [cropper, setCropper] = useState<{ color: string; file: File } | null>(null)
+  const [swatchUploading, setSwatchUploading] = useState(false)
+
+  const colorValues = Array.from(
+    new Set(
+      variants
+        .flatMap((variant) => variant.attributes)
+        .filter((attribute) => attribute.key === COLOR_ATTRIBUTE_KEY && attribute.value.trim() !== '')
+        .map((attribute) => attribute.value)
+    )
+  )
+
+  const handleSwatchFileSelected = (color: string, event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (file) {
+      setCropper({ color, file })
+    }
+  }
+
+  const handleCropperConfirm = async (blob: Blob) => {
+    if (!cropper) {
+      return
+    }
+    setSwatchUploading(true)
+    setVariantUploadError(null)
+    try {
+      const response = await uploadMedia(new File([blob], 'swatch.png', { type: 'image/png' }))
+      setColorSwatches((current) => ({ ...current, [cropper.color]: response.url }))
+      setCropper(null)
+    } catch (err) {
+      setVariantUploadError(err instanceof Error ? err.message : 'Не удалось загрузить кружок.')
+    } finally {
+      setSwatchUploading(false)
+    }
+  }
 
   const handleVariantImageSelected = async (
     variantIndex: number,
@@ -186,6 +225,9 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
       description: description.trim() === '' ? null : description,
       category: category.trim() === '' ? null : category,
       active,
+      colorSwatches: Object.fromEntries(
+        Object.entries(colorSwatches).filter(([color]) => colorValues.includes(color))
+      ),
       variants: variantPayloads,
     }
 
@@ -196,7 +238,8 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
     (variant) => variant.priceOverride.trim() !== '' && !Number.isNaN(Number(variant.priceOverride))
   )
 
-  const canSubmit = name.trim() !== '' && hasPricedVariant && uploadingVariantIndex === null
+  const canSubmit =
+    name.trim() !== '' && hasPricedVariant && uploadingVariantIndex === null && !swatchUploading
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4">
@@ -482,7 +525,68 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               </div>
             </div>
           ))}
+
+          {colorValues.length > 0 && (
+            <div className="mt-6">
+              <h3 className="font-grotesk text-base font-bold text-ink">Кружки цвета</h3>
+              <p className="mt-1 text-xs text-ink/50">
+                Отдельное круглое фото для каждого цвета — показывается в каталоге и на странице товара.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-4">
+                {colorValues.map((color) => (
+                  <div key={color} className="flex w-20 flex-col items-center gap-1">
+                    <label
+                      className="relative flex h-16 w-16 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-black bg-silver transition hover:border-bubblegum-dark aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                      aria-disabled={swatchUploading}
+                    >
+                      {colorSwatches[color] ? (
+                        <img src={colorSwatches[color]} alt={color} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="font-grotesk text-xl font-bold text-ink/30">+</span>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        aria-label={`Фото цвета ${color}`}
+                        disabled={swatchUploading}
+                        onChange={(event) => handleSwatchFileSelected(color, event)}
+                        className="hidden"
+                      />
+                    </label>
+                    <span className="truncate text-center font-grotesk text-xs font-bold text-ink" title={color}>
+                      {color}
+                    </span>
+                    {colorSwatches[color] && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setColorSwatches((current) => {
+                            const next = { ...current }
+                            delete next[color]
+                            return next
+                          })
+                        }
+                        className="font-grotesk text-xs font-bold text-ink/40 hover:text-bubblegum-dark"
+                      >
+                        Убрать
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+
+        {cropper && (
+          <CircleCropper
+            file={cropper.file}
+            title={`Кружок цвета: ${cropper.color}`}
+            busy={swatchUploading}
+            onCancel={() => setCropper(null)}
+            onConfirm={handleCropperConfirm}
+          />
+        )}
 
         <div className="border-t-2 border-black px-6 py-4">
           <button

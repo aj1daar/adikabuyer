@@ -17,6 +17,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
   const playTransition = useCardTransitionStore((state) => state.play)
   const cardRef = useRef<HTMLDivElement>(null)
   const [quantity, setQuantity] = useState(1)
+  const [activeColor, setActiveColor] = useState<string | null>(null)
   const hideDescriptionOnMobile = mobileColumns >= 2
   const hideTagsAndVariantsOnMobile = mobileColumns >= 2
   const hideCategoryOnMobile = mobileColumns >= 2
@@ -30,7 +31,15 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     .toUpperCase()
 
   const primaryVariant = product.variants[0]
+  const colorSwatches = product.colorSwatches ?? {}
+  const swatchColors = Object.keys(colorSwatches)
+  const activeColorImage = activeColor
+    ? (product.variants.find(
+        (variant) => String(variant.attributes.color ?? '') === activeColor && variant.imageUrls.length > 0
+      )?.imageUrls[0] ?? colorSwatches[activeColor])
+    : null
   const cardImage =
+    activeColorImage ??
     product.imageUrl ??
     product.variants.find((variant) => variant.imageUrls.length > 0)?.imageUrls[0] ??
     null
@@ -134,6 +143,27 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
               >
                 {tag}
               </span>
+            ))}
+          </div>
+        )}
+
+        {swatchColors.length > 0 && (
+          <div className={`flex flex-wrap gap-2 ${hideTagsAndVariantsOnMobile ? 'max-sm:hidden' : ''}`}>
+            {swatchColors.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => setActiveColor((current) => (current === color ? null : color))}
+                aria-label={color}
+                aria-pressed={activeColor === color}
+                className={`h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 transition ${
+                  activeColor === color
+                    ? 'border-bubblegum-dark shadow-[2px_2px_0_0_#E8799F]'
+                    : 'border-black hover:border-bubblegum-dark'
+                }`}
+              >
+                <img src={colorSwatches[color]} alt="" className="h-full w-full object-cover" />
+              </button>
             ))}
           </div>
         )}

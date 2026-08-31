@@ -17,6 +17,7 @@ const payload: ProductPayload = {
   description: null,
   category: null,
   active: true,
+  colorSwatches: {},
   variants: [],
 }
 

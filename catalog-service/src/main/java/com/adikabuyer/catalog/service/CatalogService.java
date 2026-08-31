@@ -25,10 +25,14 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -113,6 +117,7 @@ public class CatalogService {
 
         product.setBasePrice(deriveBasePrice(product.getVariants()));
         product.setImageUrl(deriveImageUrl(product.getVariants()));
+        product.setColorSwatches(pruneColorSwatches(request.colorSwatches(), product.getVariants()));
 
         return productMapper.toDto(saveOrConflict(product));
     }
@@ -137,8 +142,27 @@ public class CatalogService {
 
         product.setBasePrice(deriveBasePrice(product.getVariants()));
         product.setImageUrl(deriveImageUrl(product.getVariants()));
+        product.setColorSwatches(pruneColorSwatches(request.colorSwatches(), product.getVariants()));
 
         return productMapper.toDto(saveOrConflict(product));
+    }
+
+    private Map<String, String> pruneColorSwatches(Map<String, String> requested, List<Variant> variants) {
+        if (requested == null || requested.isEmpty()) {
+            return new HashMap<>();
+        }
+        Set<String> colours = variants.stream()
+                .map(variant -> variant.getAttributes().get("color"))
+                .filter(Objects::nonNull)
+                .map(String::valueOf)
+                .collect(Collectors.toSet());
+        Map<String, String> kept = new HashMap<>();
+        requested.forEach((colour, url) -> {
+            if (colours.contains(colour) && url != null && !url.isBlank()) {
+                kept.put(colour, url);
+            }
+        });
+        return kept;
     }
 
     private void requireVariants(List<VariantRequest> variantRequests) {

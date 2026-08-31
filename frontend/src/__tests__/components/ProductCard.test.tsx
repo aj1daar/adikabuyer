@@ -156,6 +156,25 @@ describe('ProductCard', () => {
     expect(minus).toBeDisabled()
   })
 
+  it('shows a round swatch per colour and swaps the card image when one is clicked', () => {
+    const swatchProduct: ProductDto = {
+      ...product,
+      imageUrl: 'default.jpg',
+      colorSwatches: { Black: 'black-swatch.jpg', White: 'white-swatch.jpg' },
+      variants: [
+        { ...product.variants[0], id: 1, attributes: { color: 'Black' }, imageUrls: ['black-photo.jpg'] },
+        { ...product.variants[0], id: 2, sku: 'TUM-WHT', attributes: { color: 'White' }, imageUrls: ['white-photo.jpg'] },
+      ],
+    }
+
+    render(<ProductCard product={swatchProduct} />, { wrapper: MemoryRouter })
+
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'default.jpg')
+
+    fireEvent.click(screen.getByRole('button', { name: 'White' }))
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'white-photo.jpg')
+  })
+
   it('adds the primary variant to the cart store when the button is clicked', () => {
     render(<ProductCard product={product} />, { wrapper: MemoryRouter })
 

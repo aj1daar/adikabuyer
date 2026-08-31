@@ -8,7 +8,7 @@ import { resolveVariantGallery } from '../utils/variantImage'
 import usePageTitle from '../hooks/usePageTitle'
 import formatPrice from '../utils/formatPrice'
 import type { ProductDto, VariantDto } from '../types/catalog'
-import { attributeKeyLabel, formatAttributeValue } from '../utils/attributeOptions'
+import { attributeKeyLabel, COLOR_ATTRIBUTE_KEY, formatAttributeValue } from '../utils/attributeOptions'
 import {
   attributeKeys,
   attributeValues,
@@ -199,41 +199,72 @@ export default function ProductPage() {
                 <p className="font-grotesk text-3xl font-bold text-ink">{formatPrice(price)}</p>
 
                 {product.variants.length > 1 && keys.length > 0 &&
-                  keys.map((key) => (
-                    <div key={key} className="flex flex-col gap-2">
-                      <span className="font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
-                        {attributeKeyLabel(key)}
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {attributeValues(product.variants, key).map((value) => {
-                          const selected = String(selectedVariant?.attributes[key] ?? '') === value
-                          const available = isCombinationAvailable(
-                            product.variants,
-                            selectedVariant,
-                            key,
-                            value
-                          )
-                          return (
-                            <button
-                              key={value}
-                              type="button"
-                              onClick={() => chooseAttribute(key, value)}
-                              aria-pressed={selected}
-                              className={`min-h-[44px] rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
-                                selected
-                                  ? 'bg-ink text-white shadow-[3px_3px_0_0_#E8799F]'
-                                  : available
-                                    ? 'bg-white text-ink hover:bg-bubblegum hover:text-white'
-                                    : 'bg-white text-ink/40 line-through hover:bg-bubblegum hover:text-white hover:no-underline'
-                              }`}
-                            >
-                              {formatAttributeValue(key, value)}
-                            </button>
-                          )
-                        })}
+                  keys.map((key) => {
+                    const swatches = product.colorSwatches ?? {}
+                    const useSwatches = key === COLOR_ATTRIBUTE_KEY && Object.keys(swatches).length > 0
+                    return (
+                      <div key={key} className="flex flex-col gap-2">
+                        <span className="font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
+                          {attributeKeyLabel(key)}
+                        </span>
+                        <div className={`flex flex-wrap ${useSwatches ? 'gap-3' : 'gap-2'}`}>
+                          {attributeValues(product.variants, key).map((value) => {
+                            const selected = String(selectedVariant?.attributes[key] ?? '') === value
+                            const available = isCombinationAvailable(
+                              product.variants,
+                              selectedVariant,
+                              key,
+                              value
+                            )
+                            const swatch = useSwatches ? swatches[value] : undefined
+                            if (swatch) {
+                              return (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => chooseAttribute(key, value)}
+                                  aria-pressed={selected}
+                                  aria-label={value}
+                                  title={value}
+                                  className={`h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 transition ${
+                                    selected
+                                      ? 'border-bubblegum-dark shadow-[3px_3px_0_0_#E8799F]'
+                                      : available
+                                        ? 'border-black hover:border-bubblegum-dark'
+                                        : 'border-black/30 opacity-40 hover:opacity-100'
+                                  }`}
+                                >
+                                  <img src={swatch} alt="" className="h-full w-full object-cover" />
+                                </button>
+                              )
+                            }
+                            return (
+                              <button
+                                key={value}
+                                type="button"
+                                onClick={() => chooseAttribute(key, value)}
+                                aria-pressed={selected}
+                                className={`min-h-[44px] rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
+                                  selected
+                                    ? 'bg-ink text-white shadow-[3px_3px_0_0_#E8799F]'
+                                    : available
+                                      ? 'bg-white text-ink hover:bg-bubblegum hover:text-white'
+                                      : 'bg-white text-ink/40 line-through hover:bg-bubblegum hover:text-white hover:no-underline'
+                                }`}
+                              >
+                                {formatAttributeValue(key, value)}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        {useSwatches && selectedVariant?.attributes[key] != null && (
+                          <span className="font-grotesk text-sm font-bold text-ink">
+                            {String(selectedVariant.attributes[key])}
+                          </span>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
 
                 {product.variants.length > 1 && keys.length === 0 && (
                   <div className="flex flex-col gap-2">

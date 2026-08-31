@@ -53,7 +53,7 @@ class SecurityConfigTest {
 
     @Test
     void publicGetEndpoint_isAccessibleWithoutAuthentication() throws Exception {
-        ProductDto product = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, null, true, null, List.of());
+        ProductDto product = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, null, true, null, null, List.of());
         when(catalogService.getAllProducts(null, null, null, null, null, null, 0, 1000))
                 .thenReturn(new ProductPageResponse(List.of(product), 1, 0, 1000));
 

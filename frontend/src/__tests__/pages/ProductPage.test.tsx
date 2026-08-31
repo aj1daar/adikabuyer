@@ -144,6 +144,22 @@ describe('ProductPage', () => {
     expect(screen.getByRole('button', { name: 'TUM-WHT' })).toBeInTheDocument()
   })
 
+  it('renders round colour swatches when the product has swatch images', async () => {
+    const swatchProduct: ProductDto = {
+      ...product,
+      colorSwatches: { Black: 'black-swatch.jpg', White: 'white-swatch.jpg' },
+    }
+    mockedGet.mockResolvedValue({ data: swatchProduct })
+
+    renderPage()
+
+    const blackSwatch = await screen.findByRole('button', { name: 'Black' })
+    expect(blackSwatch.querySelector('img')).toHaveAttribute('src', 'black-swatch.jpg')
+
+    fireEvent.click(screen.getByRole('button', { name: 'White' }))
+    expect(screen.getByText('30 KGS')).toBeInTheDocument()
+  })
+
   it('keeps the rest of the selection when a compatible value is picked, snaps it otherwise', async () => {
     const matrixProduct: ProductDto = {
       ...product,

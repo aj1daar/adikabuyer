@@ -121,6 +121,7 @@ describe('ProductForm', () => {
       description: null,
       category: null,
       active: true,
+      colorSwatches: {},
       variants: [
         {
           id: undefined,
@@ -305,6 +306,17 @@ describe('ProductForm', () => {
 
     expect(screen.getByRole('button', { name: /сохранить/i })).toBeDisabled()
     expect(screen.getByText(/добавьте хотя бы один вариант/i)).toBeInTheDocument()
+  })
+
+  it('shows a colour-swatch section and opens the cropper when a swatch photo is picked', () => {
+    render(<ProductForm product={existingProduct} onSubmit={vi.fn()} onClose={vi.fn()} />)
+
+    expect(screen.getByText('Кружки цвета')).toBeInTheDocument()
+
+    const input = screen.getByLabelText('Фото цвета black')
+    fireEvent.change(input, { target: { files: [new File(['x'], 's.png', { type: 'image/png' })] } })
+
+    expect(screen.getByText('Кружок цвета: black')).toBeInTheDocument()
   })
 
   it('uploads a variant image and includes it in the submit payload', async () => {
