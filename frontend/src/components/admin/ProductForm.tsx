@@ -16,6 +16,25 @@ const KNOWN_ATTRIBUTE_KEYS = ATTRIBUTE_KEY_OPTIONS.map((option) => option.value)
   (value) => value !== CUSTOM_ATTRIBUTE_KEY
 )
 
+function attributeKeyLabel(key: string): string {
+  return ATTRIBUTE_KEY_OPTIONS.find((option) => option.value === key)?.label ?? key
+}
+
+function findDuplicateAttribute(rows: AttributeRow[]): string | null {
+  const seen = new Set<string>()
+  for (const row of rows) {
+    const key = row.key.trim()
+    if (key === '') {
+      continue
+    }
+    if (seen.has(key)) {
+      return key
+    }
+    seen.add(key)
+  }
+  return null
+}
+
 type AttributeRow = {
   key: string
   value: string
@@ -73,6 +92,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   const [variants, setVariants] = useState<VariantDraft[]>(toVariantDraft(product))
   const [uploadingVariantIndex, setUploadingVariantIndex] = useState<number | null>(null)
   const [variantUploadError, setVariantUploadError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const handleVariantImageSelected = async (
     variantIndex: number,
@@ -138,6 +158,18 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   }
 
   const handleSubmit = () => {
+    for (let i = 0; i < variants.length; i += 1) {
+      const duplicateKey = findDuplicateAttribute(variants[i].attributes)
+      if (duplicateKey) {
+        setFormError(
+          `Вариант ${i + 1}: атрибут «${attributeKeyLabel(duplicateKey)}» добавлен дважды. ` +
+            'Разные значения (объёмы, цвета) — это отдельные варианты: нажмите «Добавить вариант».'
+        )
+        return
+      }
+    }
+    setFormError(null)
+
     const variantPayloads: VariantPayload[] = variants.map((variant) => ({
       id: variant.id,
       sku: variant.sku,
@@ -227,6 +259,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
             <p className="mt-2 text-xs text-red-500">Добавьте хотя бы один вариант — цена и фото задаются только на уровне варианта.</p>
           )}
           {variantUploadError && <p className="mt-2 text-xs text-red-500">{variantUploadError}</p>}
+          {formError && <p className="mt-2 text-xs text-red-500">{formError}</p>}
 
           {variants.map((variant, variantIndex) => (
             <div key={variantIndex} className="mt-4 rounded-2xl border-2 border-black p-4">
@@ -246,7 +279,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   type="text"
                   value={variant.sku}
                   onChange={(event) => updateVariant(variantIndex, { sku: event.target.value })}
-                  placeholder="Название варианта (Розовый, Леопардовый...)"
+                  placeholder="Артикул / SKU (необязательно)"
                   className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                 />
                 <div className="flex flex-col gap-1">

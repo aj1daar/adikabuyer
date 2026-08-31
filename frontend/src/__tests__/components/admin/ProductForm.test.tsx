@@ -37,7 +37,7 @@ const existingProduct: ProductDto = {
 
 const fillFirstVariant = (sku: string, price: string) => {
   fireEvent.click(screen.getByRole('button', { name: /добавить вариант/i }))
-  fireEvent.change(screen.getByPlaceholderText('Название варианта (Розовый, Леопардовый...)'), {
+  fireEvent.change(screen.getByPlaceholderText('Артикул / SKU (необязательно)'), {
     target: { value: sku },
   })
   fireEvent.change(screen.getByPlaceholderText('Закупочная цена'), { target: { value: price } })
@@ -192,6 +192,28 @@ describe('ProductForm', () => {
         variants: [expect.objectContaining({ attributes: { volume: '500' } })],
       })
     )
+  })
+
+  it('blocks submit and warns when a variant repeats the same attribute key', () => {
+    const onSubmit = vi.fn()
+    render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
+
+    fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
+    fillFirstVariant('NEW-SKU-1', '15')
+
+    fireEvent.click(screen.getByRole('button', { name: /добавить атрибут/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Атрибут' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Объём' }))
+    fireEvent.change(screen.getByPlaceholderText('Объём, мл'), { target: { value: '591' } })
+
+    fireEvent.click(screen.getByRole('button', { name: /добавить атрибут/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Атрибут' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Объём' }).at(-1)!)
+
+    fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
+
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(screen.getByText(/добавлен дважды/i)).toBeInTheDocument()
   })
 
   it('lets the admin add a custom attribute key and value not on the preset lists', () => {
