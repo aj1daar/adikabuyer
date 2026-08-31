@@ -120,6 +120,7 @@ describe('ProductForm', () => {
       name: 'New Product',
       description: null,
       category: null,
+      brand: null,
       active: true,
       colorSwatches: {},
       labels: [],

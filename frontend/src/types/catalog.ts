@@ -18,6 +18,7 @@ export type ProductDto = {
   name: string
   description: string | null
   category: string | null
+  brand?: string | null
   basePrice: number
   displayPrice: number
   active: boolean

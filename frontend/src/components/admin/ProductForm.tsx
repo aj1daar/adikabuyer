@@ -91,6 +91,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   const [name, setName] = useState(product?.name ?? '')
   const [description, setDescription] = useState(product?.description ?? '')
   const [category, setCategory] = useState(product?.category ?? '')
+  const [brand, setBrand] = useState(product?.brand ?? '')
   const [active, setActive] = useState(product?.active ?? true)
   const [labels, setLabels] = useState<string[]>(product?.labels ?? [])
   const [labelDraft, setLabelDraft] = useState('')
@@ -238,6 +239,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
       name,
       description: description.trim() === '' ? null : description,
       category: category.trim() === '' ? null : category,
+      brand: brand.trim() === '' ? null : brand.trim(),
       active,
       colorSwatches: Object.fromEntries(
         Object.entries(colorSwatches).filter(([color]) => colorValues.includes(color))
@@ -282,6 +284,13 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Описание"
               className="rounded-3xl border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+            />
+            <input
+              type="text"
+              value={brand}
+              onChange={(event) => setBrand(event.target.value)}
+              placeholder="Бренд"
+              className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
             />
             <input
               type="text"

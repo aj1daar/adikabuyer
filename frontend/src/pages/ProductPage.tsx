@@ -187,6 +187,11 @@ export default function ProductPage() {
 
               <div className="flex flex-col gap-5">
                 <div className="flex flex-wrap items-center gap-2">
+                  {product.brand && (
+                    <span className="w-fit rounded-pill border-2 border-black bg-ink px-4 py-1 font-grotesk text-xs font-bold uppercase tracking-wider text-white shadow-[3px_3px_0_0_#000]">
+                      {product.brand}
+                    </span>
+                  )}
                   {product.category && (
                     <span className="w-fit rounded-pill border-2 border-black bg-gradient-to-r from-bubblegum to-bubblegum-light px-4 py-1 font-grotesk text-xs font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]">
                       {product.category}

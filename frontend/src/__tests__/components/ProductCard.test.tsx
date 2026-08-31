@@ -67,7 +67,7 @@ describe('ProductCard', () => {
 
     expect(screen.getByText('Insulated steel tumbler')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Black').closest('div')).toHaveClass('max-sm:hidden')
-    expect(screen.getByText('Drinkware')).toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Drinkware').closest('div')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Custom Tumbler').closest('a')).not.toHaveClass('max-sm:hidden')
   })
 
@@ -75,7 +75,7 @@ describe('ProductCard', () => {
     render(<ProductCard product={product} mobileColumns={3} />, { wrapper: MemoryRouter })
 
     expect(screen.getByText('Insulated steel tumbler')).toHaveClass('max-sm:hidden')
-    expect(screen.getByText('Drinkware')).toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Drinkware').closest('div')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Black').closest('div')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Custom Tumbler').closest('a')).toHaveClass('max-sm:hidden')
   })
@@ -224,6 +224,13 @@ describe('ProductCard', () => {
     render(<ProductCard product={matrix} />, { wrapper: MemoryRouter })
 
     expect(screen.getByText('591 мл +2')).toBeInTheDocument()
+  })
+
+  it('shows the brand ahead of the category when set', () => {
+    render(<ProductCard product={{ ...product, brand: 'Stanley' }} />, { wrapper: MemoryRouter })
+
+    expect(screen.getByText('Stanley')).toBeInTheDocument()
+    expect(screen.getByText('Drinkware')).toBeInTheDocument()
   })
 
   it('shows a "Новинка" sticker only when the backend flags the product as new', () => {

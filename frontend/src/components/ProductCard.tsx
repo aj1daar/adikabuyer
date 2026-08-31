@@ -132,14 +132,21 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
       </Link>
 
       <div className={`flex flex-1 flex-col gap-2 p-5 ${mobileColumns >= 2 ? 'max-sm:p-3' : ''}`}>
-        {product.category && (
-          <span
-            className={`font-grotesk text-xs font-bold uppercase tracking-wide text-bubblegum-dark ${
-              hideCategoryOnMobile ? 'max-sm:hidden' : ''
-            }`}
+        {(product.brand || product.category) && (
+          <div
+            className={`flex flex-wrap items-center gap-1.5 ${hideCategoryOnMobile ? 'max-sm:hidden' : ''}`}
           >
-            {product.category}
-          </span>
+            {product.brand && (
+              <span className="rounded-pill border-2 border-black bg-ink px-2 py-0.5 font-grotesk text-[10px] font-bold uppercase tracking-wide text-white">
+                {product.brand}
+              </span>
+            )}
+            {product.category && (
+              <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-bubblegum-dark">
+                {product.category}
+              </span>
+            )}
+          </div>
         )}
 
         <Link

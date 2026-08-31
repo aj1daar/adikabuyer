@@ -16,6 +16,7 @@ const payload: ProductPayload = {
   name: 'Custom Tumbler',
   description: null,
   category: null,
+  brand: null,
   active: true,
   colorSwatches: {},
   labels: [],

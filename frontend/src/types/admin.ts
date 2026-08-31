@@ -16,6 +16,7 @@ export type ProductPayload = {
   name: string
   description: string | null
   category: string | null
+  brand: string | null
   active: boolean
   colorSwatches: Record<string, string>
   labels: string[]
