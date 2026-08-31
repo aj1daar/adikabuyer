@@ -15,13 +15,7 @@ const LAYOUTS: Record<string, Layout> = {
       { kind: 'ring', className: 'right-[-8rem] top-1/2 h-[27rem] w-[27rem] -translate-y-1/2 border-black/10' },
       { kind: 'square', className: 'bottom-[-5rem] left-[-4rem] h-72 w-72 rotate-12 rounded-3xl border-black/12' },
     ],
-    dots: [
-      { xPct: 0.09, yPct: 0.16, color: 'pink' },
-      { xPct: 0.05, yPct: 0.64, color: 'ink' },
-      { xPct: 0.62, yPct: 0.28, color: 'pink' },
-      { xPct: 0.78, yPct: 0.85, color: 'white' },
-      { xPct: 0.4, yPct: 0.5, color: 'ink' },
-    ],
+    dots: [{ color: 'pink' }, { color: 'ink' }, { color: 'pink' }, { color: 'white' }, { color: 'ink' }],
   },
   catalog: {
     shapes: [
@@ -29,12 +23,7 @@ const LAYOUTS: Record<string, Layout> = {
       { kind: 'ring', className: 'right-[-11rem] bottom-[-13rem] h-[32rem] w-[32rem] border-black/10' },
       { kind: 'square', className: 'right-[7%] top-[7rem] h-40 w-40 -rotate-6 rounded-2xl border-black/12' },
     ],
-    dots: [
-      { xPct: 0.18, yPct: 0.88, color: 'white' },
-      { xPct: 0.88, yPct: 0.3, color: 'pink' },
-      { xPct: 0.4, yPct: 0.12, color: 'ink' },
-      { xPct: 0.65, yPct: 0.7, color: 'pink' },
-    ],
+    dots: [{ color: 'white' }, { color: 'pink' }, { color: 'ink' }, { color: 'pink' }],
   },
   product: {
     shapes: [
@@ -42,24 +31,14 @@ const LAYOUTS: Record<string, Layout> = {
       { kind: 'square', className: 'bottom-[-4rem] right-[-3rem] h-64 w-64 rotate-12 rounded-3xl border-black/12' },
       { kind: 'ring', className: 'right-[10%] top-[-8rem] h-[22rem] w-[22rem] border-black/10' },
     ],
-    dots: [
-      { xPct: 0.1, yPct: 0.82, color: 'pink' },
-      { xPct: 0.78, yPct: 0.22, color: 'ink' },
-      { xPct: 0.5, yPct: 0.9, color: 'white' },
-      { xPct: 0.3, yPct: 0.35, color: 'pink' },
-    ],
+    dots: [{ color: 'pink' }, { color: 'ink' }, { color: 'white' }, { color: 'pink' }],
   },
   about: {
     shapes: [
       { kind: 'ring', className: 'left-1/2 top-1/2 h-[46rem] w-[46rem] -translate-x-1/2 -translate-y-1/2 border-bubblegum/20' },
       { kind: 'ring', className: 'left-1/2 top-1/2 h-[30rem] w-[30rem] -translate-x-1/2 -translate-y-1/2 border-black/8' },
     ],
-    dots: [
-      { xPct: 0.12, yPct: 0.2, color: 'white' },
-      { xPct: 0.86, yPct: 0.82, color: 'pink' },
-      { xPct: 0.2, yPct: 0.78, color: 'ink' },
-      { xPct: 0.9, yPct: 0.25, color: 'pink' },
-    ],
+    dots: [{ color: 'white' }, { color: 'pink' }, { color: 'ink' }, { color: 'pink' }],
   },
 }
 

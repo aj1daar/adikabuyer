@@ -1,9 +1,6 @@
 import { useEffect, useRef } from 'react'
 
 export type FieldDot = {
-  /** starting position as a fraction of the viewport */
-  xPct: number
-  yPct: number
   color: 'pink' | 'ink' | 'white'
 }
 
@@ -72,6 +69,8 @@ function seeded(seed: number) {
  */
 export default function DotField({ dots, reduceMotion }: DotFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  // fresh per mount so spawn points and paths differ every visit
+  const runSeed = useRef(Math.floor(Math.random() * 1_000_000_000)).current
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -95,11 +94,11 @@ export default function DotField({ dots, reduceMotion }: DotFieldProps) {
     resize()
     window.addEventListener('resize', resize)
 
-    const agents = dots.map((dot, index) => {
-      const rand = seeded(index * 131 + 7)
+    const agents = dots.map((_, index) => {
+      const rand = seeded(index * 131 + 7 + runSeed)
       return {
-        x: dot.xPct * width,
-        y: dot.yPct * height,
+        x: EDGE_MARGIN + rand() * Math.max(1, width - EDGE_MARGIN * 2),
+        y: EDGE_MARGIN + rand() * Math.max(1, height - EDGE_MARGIN * 2),
         vx: (rand() - 0.5) * 20,
         vy: (rand() - 0.5) * 20,
         speed: 24 + rand() * 30,
@@ -129,7 +128,7 @@ export default function DotField({ dots, reduceMotion }: DotFieldProps) {
 
     if (reduceMotion) {
       dots.forEach((dot, index) => {
-        paintDot(dot, dot.xPct * width, dot.yPct * height, agents[index].radius, 0.9)
+        paintDot(dot, agents[index].x, agents[index].y, agents[index].radius, 0.9)
       })
       return () => window.removeEventListener('resize', resize)
     }
@@ -188,7 +187,7 @@ export default function DotField({ dots, reduceMotion }: DotFieldProps) {
       cancelAnimationFrame(raf)
       window.removeEventListener('resize', resize)
     }
-  }, [dots, reduceMotion])
+  }, [dots, reduceMotion, runSeed])
 
   return <canvas ref={canvasRef} aria-hidden="true" className="pointer-events-none absolute inset-0" />
 }
