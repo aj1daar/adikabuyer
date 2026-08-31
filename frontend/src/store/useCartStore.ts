@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { VariantStatus } from '../types/catalog'
 
 export type CartItem = {
   variantId: number
@@ -8,7 +9,7 @@ export type CartItem = {
   attributes: Record<string, unknown>
   unitPrice: number
   quantity: number
-  status: 'IN_STOCK' | 'PRE_ORDER'
+  status: VariantStatus
 }
 
 type CartStore = {

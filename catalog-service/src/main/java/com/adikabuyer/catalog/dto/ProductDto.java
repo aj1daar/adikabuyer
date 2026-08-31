@@ -2,6 +2,7 @@ package com.adikabuyer.catalog.dto;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 public record ProductDto(
         Long id,
@@ -12,6 +13,9 @@ public record ProductDto(
         BigDecimal displayPrice,
         boolean active,
         String imageUrl,
+        Map<String, String> colorSwatches,
+        List<String> labels,
+        boolean isNew,
         List<VariantDto> variants
 ) {
 }

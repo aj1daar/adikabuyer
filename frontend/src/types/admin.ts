@@ -1,3 +1,5 @@
+import type { VariantStatus } from './catalog'
+
 export type VariantPayload = {
   id?: number
   sku: string
@@ -6,7 +8,7 @@ export type VariantPayload = {
   stockQuantity: number
   active: boolean
   imageUrls: string[]
-  status: 'IN_STOCK' | 'PRE_ORDER'
+  status: VariantStatus
 }
 
 export type ProductPayload = {
@@ -15,5 +17,7 @@ export type ProductPayload = {
   description: string | null
   category: string | null
   active: boolean
+  colorSwatches: Record<string, string>
+  labels: string[]
   variants: VariantPayload[]
 }

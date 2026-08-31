@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +36,8 @@ class ProductMapperTest {
                 .basePrice(BigDecimal.valueOf(2000))
                 .active(true)
                 .imageUrl("http://localhost:9000/adikabuyer-media/photo.png")
+                .colorSwatches(Map.of("black", "http://localhost:9000/adikabuyer-media/black-swatch.png"))
+                .labels(List.of("Limited", "С принтом"))
                 .build();
         Variant variant = Variant.builder()
                 .id(10L)
@@ -53,8 +57,25 @@ class ProductMapperTest {
         assertThat(dto.variants().get(0).sku()).isEqualTo("TUM-BLK-500");
         assertThat(dto.variants().get(0).attributes()).containsEntry("color", "black");
         assertThat(dto.imageUrl()).isEqualTo("http://localhost:9000/adikabuyer-media/photo.png");
-        assertThat(dto.displayPrice()).isEqualByComparingTo("2300");
-        assertThat(dto.variants().get(0).displayPrice()).isEqualByComparingTo("2300");
+        assertThat(dto.colorSwatches()).containsEntry("black", "http://localhost:9000/adikabuyer-media/black-swatch.png");
+        assertThat(dto.labels()).containsExactly("Limited", "С принтом");
+        assertThat(dto.displayPrice()).isEqualByComparingTo("2000");
+        assertThat(dto.variants().get(0).displayPrice()).isEqualByComparingTo("2000");
+    }
+
+    @Test
+    void toDto_flagsProductAsNew_whenAddedWithinTwoWeeks() {
+        Product fresh = Product.builder()
+                .id(1L).name("Fresh").basePrice(BigDecimal.ONE).active(true)
+                .createdAt(Instant.now().minus(3, ChronoUnit.DAYS))
+                .build();
+        Product old = Product.builder()
+                .id(2L).name("Old").basePrice(BigDecimal.ONE).active(true)
+                .createdAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+        assertThat(productMapper.toDto(fresh).isNew()).isTrue();
+        assertThat(productMapper.toDto(old).isNew()).isFalse();
     }
 
     @Test

@@ -7,8 +7,15 @@ import useCardTransitionStore from '../store/useCardTransitionStore'
 import { resolveVariantGallery } from '../utils/variantImage'
 import usePageTitle from '../hooks/usePageTitle'
 import formatPrice from '../utils/formatPrice'
+import ProductLabels from '../components/ProductLabels'
 import type { ProductDto, VariantDto } from '../types/catalog'
-import { formatAttributeValue } from '../utils/attributeOptions'
+import { attributeKeyLabel, COLOR_ATTRIBUTE_KEY, formatAttributeValue } from '../utils/attributeOptions'
+import {
+  attributeKeys,
+  attributeValues,
+  isCombinationAvailable,
+  selectVariant,
+} from '../utils/variantSelection'
 
 function variantLabel(variant: VariantDto, index: number): string {
   if (!variant.sku.startsWith('DEFAULT-')) {
@@ -16,10 +23,6 @@ function variantLabel(variant: VariantDto, index: number): string {
   }
   const values = Object.entries(variant.attributes).map(([key, value]) => formatAttributeValue(key, value))
   return values.length > 0 ? values.join(' · ') : `Вариант ${index + 1}`
-}
-
-function variantAttributeTags(variant: VariantDto): string[] {
-  return Object.entries(variant.attributes).map(([key, value]) => formatAttributeValue(key, value))
 }
 
 export default function ProductPage() {
@@ -67,7 +70,8 @@ export default function ProductPage() {
       .get<ProductDto>(`/products/${id}`, { signal: controller.signal })
       .then((response) => {
         setProduct(response.data)
-        setSelectedVariantId(response.data.variants[0]?.id ?? null)
+        const firstSellable = response.data.variants.find((variant) => variant.status !== 'SOLD_OUT')
+        setSelectedVariantId(firstSellable?.id ?? null)
       })
       .catch((err) => {
         if (!controller.signal.aborted) {
@@ -82,15 +86,27 @@ export default function ProductPage() {
     return () => controller.abort()
   }, [id])
 
-  const selectedVariant = product?.variants.find((variant) => variant.id === selectedVariantId)
+  const sellableVariants = product
+    ? product.variants.filter((variant) => variant.status !== 'SOLD_OUT')
+    : []
+  const selectedVariant = sellableVariants.find((variant) => variant.id === selectedVariantId)
   const gallery = product ? resolveVariantGallery(product, selectedVariant) : []
   const [photoIndex, setPhotoIndex] = useState(0)
   const imageUrl = gallery[Math.min(photoIndex, gallery.length - 1)] ?? null
   const price = selectedVariant?.displayPrice ?? product?.displayPrice ?? 0
 
-  const selectVariant = (variantId: number) => {
+  const chooseVariant = (variantId: number) => {
     setSelectedVariantId(variantId)
     setPhotoIndex(0)
+  }
+
+  const keys = attributeKeys(sellableVariants)
+
+  const chooseAttribute = (key: string, value: string) => {
+    const next = selectVariant(sellableVariants, selectedVariant, key, value)
+    if (next) {
+      chooseVariant(next.id)
+    }
   }
 
   const initials = (product?.name ?? '')
@@ -170,11 +186,14 @@ export default function ProductPage() {
               </div>
 
               <div className="flex flex-col gap-5">
-                {product.category && (
-                  <span className="w-fit rounded-pill border-2 border-black bg-gradient-to-r from-bubblegum to-bubblegum-light px-4 py-1 font-grotesk text-xs font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]">
-                    {product.category}
-                  </span>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  {product.category && (
+                    <span className="w-fit rounded-pill border-2 border-black bg-gradient-to-r from-bubblegum to-bubblegum-light px-4 py-1 font-grotesk text-xs font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]">
+                      {product.category}
+                    </span>
+                  )}
+                  <ProductLabels labels={product.labels} size="page" />
+                </div>
 
                 <h1 className="font-grotesk text-4xl font-bold text-ink sm:text-5xl">{product.name}</h1>
 
@@ -184,19 +203,87 @@ export default function ProductPage() {
 
                 <p className="font-grotesk text-3xl font-bold text-ink">{formatPrice(price)}</p>
 
-                {product.variants.length > 1 && (
+                {sellableVariants.length > 1 && keys.length > 0 &&
+                  keys.map((key) => {
+                    const swatches = product.colorSwatches ?? {}
+                    const useSwatches = key === COLOR_ATTRIBUTE_KEY && Object.keys(swatches).length > 0
+                    return (
+                      <div key={key} className="flex flex-col gap-2">
+                        <span className="font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
+                          {attributeKeyLabel(key)}
+                        </span>
+                        <div className={`flex flex-wrap ${useSwatches ? 'gap-3' : 'gap-2'}`}>
+                          {attributeValues(sellableVariants, key).map((value) => {
+                            const selected = String(selectedVariant?.attributes[key] ?? '') === value
+                            const available = isCombinationAvailable(
+                              sellableVariants,
+                              selectedVariant,
+                              key,
+                              value
+                            )
+                            const swatch = useSwatches ? swatches[value] : undefined
+                            if (swatch) {
+                              return (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => chooseAttribute(key, value)}
+                                  aria-pressed={selected}
+                                  aria-label={value}
+                                  title={value}
+                                  className={`h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 transition ${
+                                    selected
+                                      ? 'border-bubblegum-dark shadow-[3px_3px_0_0_#E8799F]'
+                                      : available
+                                        ? 'border-black hover:border-bubblegum-dark'
+                                        : 'border-black/30 opacity-40 hover:opacity-100'
+                                  }`}
+                                >
+                                  <img src={swatch} alt="" className="h-full w-full object-cover" />
+                                </button>
+                              )
+                            }
+                            return (
+                              <button
+                                key={value}
+                                type="button"
+                                onClick={() => chooseAttribute(key, value)}
+                                aria-pressed={selected}
+                                className={`min-h-[44px] rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
+                                  selected
+                                    ? 'bg-ink text-white shadow-[3px_3px_0_0_#E8799F]'
+                                    : available
+                                      ? 'bg-white text-ink hover:bg-bubblegum hover:text-white'
+                                      : 'bg-white text-ink/40 line-through hover:bg-bubblegum hover:text-white hover:no-underline'
+                                }`}
+                              >
+                                {formatAttributeValue(key, value)}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        {useSwatches && selectedVariant?.attributes[key] != null && (
+                          <span className="font-grotesk text-sm font-bold text-ink">
+                            {String(selectedVariant.attributes[key])}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+
+                {sellableVariants.length > 1 && keys.length === 0 && (
                   <div className="flex flex-col gap-2">
                     <span className="font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
                       Вариант
                     </span>
                     <div className="flex flex-wrap gap-2">
-                      {product.variants.map((variant, index) => (
+                      {sellableVariants.map((variant, index) => (
                         <button
                           key={variant.id}
                           type="button"
-                          onClick={() => selectVariant(variant.id)}
+                          onClick={() => chooseVariant(variant.id)}
                           aria-pressed={variant.id === selectedVariantId}
-                          className={`rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
+                          className={`min-h-[44px] rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
                             variant.id === selectedVariantId
                               ? 'bg-ink text-white shadow-[3px_3px_0_0_#E8799F]'
                               : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
@@ -206,19 +293,6 @@ export default function ProductPage() {
                         </button>
                       ))}
                     </div>
-                  </div>
-                )}
-
-                {selectedVariant && variantAttributeTags(selectedVariant).length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {variantAttributeTags(selectedVariant).map((tag, index) => (
-                      <span
-                        key={index}
-                        className="rounded-pill border-2 border-black bg-silver px-2 py-0.5 font-grotesk text-xs font-bold text-ink"
-                      >
-                        {tag}
-                      </span>
-                    ))}
                   </div>
                 )}
 

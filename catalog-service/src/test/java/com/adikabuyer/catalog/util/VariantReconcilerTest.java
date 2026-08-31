@@ -50,6 +50,74 @@ class VariantReconcilerTest {
     }
 
     @Test
+    void buildVariant_generatesSkuFromAttributes_whenRequestSkuIsBlank() {
+        Product product = Product.builder().id(1L).build();
+        Map<String, Object> attributes = new java.util.LinkedHashMap<>();
+        attributes.put("volume", "591");
+        attributes.put("color", "Чёрный");
+        attributes.put("size", "M");
+        VariantRequest request = new VariantRequest(
+                null, "   ", attributes, BigDecimal.TEN, 1, true, List.of(), VariantStatus.IN_STOCK
+        );
+
+        Variant variant = VariantReconciler.buildVariant(request, product, NOW);
+
+        assertThat(variant.getSku()).isEqualTo("ЧЁРНЫЙ-M-591");
+    }
+
+    @Test
+    void buildVariant_generatesPlaceholderSku_whenBlankAndNoAttributes() {
+        Product product = Product.builder().id(1L).build();
+        VariantRequest request = new VariantRequest(
+                null, "", Map.of(), BigDecimal.TEN, 1, true, List.of(), VariantStatus.IN_STOCK
+        );
+
+        Variant variant = VariantReconciler.buildVariant(request, product, NOW);
+
+        assertThat(variant.getSku()).startsWith("DEFAULT-");
+    }
+
+    @Test
+    void buildVariant_appendsSuffix_whenGeneratedSkuIsAlreadyTaken() {
+        Product product = Product.builder().id(1L).build();
+        VariantRequest request = new VariantRequest(
+                null, null, Map.of("color", "Чёрный"), BigDecimal.TEN, 1, true, List.of(), VariantStatus.IN_STOCK
+        );
+
+        Variant variant = VariantReconciler.buildVariant(request, product, NOW, sku -> sku.equals("ЧЁРНЫЙ"));
+
+        assertThat(variant.getSku()).isEqualTo("ЧЁРНЫЙ-2");
+    }
+
+    @Test
+    void reconcile_generatesDistinctSkus_forTwoNewVariantsThatShareAttributes() {
+        Product product = Product.builder().id(1L).variants(new ArrayList<>()).build();
+        VariantRequest a = new VariantRequest(
+                null, null, Map.of("color", "Чёрный"), BigDecimal.TEN, 1, true, List.of(), VariantStatus.IN_STOCK
+        );
+        VariantRequest b = new VariantRequest(
+                null, null, Map.of("color", "Чёрный"), BigDecimal.TEN, 1, true, List.of(), VariantStatus.IN_STOCK
+        );
+
+        VariantReconciler.reconcile(product, List.of(a, b), NOW);
+
+        assertThat(product.getVariants()).extracting(Variant::getSku).containsExactly("ЧЁРНЫЙ", "ЧЁРНЫЙ-2");
+    }
+
+    @Test
+    void reconcile_keepsExistingSku_whenUpdateRequestSkuIsBlank() {
+        Variant existing = Variant.builder().id(10L).sku("KEEP-ME").stockQuantity(2).active(true).build();
+        Product product = Product.builder().id(1L).variants(new ArrayList<>(List.of(existing))).build();
+        VariantRequest request = new VariantRequest(
+                10L, "", Map.of("color", "black"), BigDecimal.TEN, 2, true, List.of(), VariantStatus.IN_STOCK
+        );
+
+        VariantReconciler.reconcile(product, List.of(request), NOW);
+
+        assertThat(product.getVariants().get(0).getSku()).isEqualTo("KEEP-ME");
+    }
+
+    @Test
     void reconcile_addsNewVariant_whenRequestHasNoId() {
         Product product = Product.builder().id(1L).variants(new ArrayList<>()).build();
 

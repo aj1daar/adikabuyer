@@ -37,10 +37,10 @@ const existingProduct: ProductDto = {
 
 const fillFirstVariant = (sku: string, price: string) => {
   fireEvent.click(screen.getByRole('button', { name: /добавить вариант/i }))
-  fireEvent.change(screen.getByPlaceholderText('Название варианта (Розовый, Леопардовый...)'), {
+  fireEvent.change(screen.getByPlaceholderText('Артикул / SKU (необязательно)'), {
     target: { value: sku },
   })
-  fireEvent.change(screen.getByPlaceholderText('Закупочная цена'), { target: { value: price } })
+  fireEvent.change(screen.getByPlaceholderText('Цена для клиента, KGS'), { target: { value: price } })
 }
 
 beforeEach(() => {
@@ -121,6 +121,8 @@ describe('ProductForm', () => {
       description: null,
       category: null,
       active: true,
+      colorSwatches: {},
+      labels: [],
       variants: [
         {
           id: undefined,
@@ -134,6 +136,27 @@ describe('ProductForm', () => {
         },
       ],
     })
+  })
+
+  it('adds product labels as removable chips and submits them', () => {
+    const onSubmit = vi.fn()
+    render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
+
+    fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
+    fillFirstVariant('NEW-SKU-1', '15')
+
+    const labelInput = screen.getByPlaceholderText('+ метка')
+    fireEvent.change(labelInput, { target: { value: 'Limited' } })
+    fireEvent.keyDown(labelInput, { key: 'Enter' })
+    fireEvent.change(labelInput, { target: { value: 'С принтом' } })
+    fireEvent.keyDown(labelInput, { key: 'Enter' })
+
+    expect(screen.getByText('Limited')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Убрать метку Limited' }))
+
+    fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ labels: ['С принтом'] }))
   })
 
   it('submits a preset attribute value chosen from the dropdown', () => {
@@ -194,6 +217,28 @@ describe('ProductForm', () => {
     )
   })
 
+  it('blocks submit and warns when a variant repeats the same attribute key', () => {
+    const onSubmit = vi.fn()
+    render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
+
+    fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
+    fillFirstVariant('NEW-SKU-1', '15')
+
+    fireEvent.click(screen.getByRole('button', { name: /добавить атрибут/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Атрибут' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Объём' }))
+    fireEvent.change(screen.getByPlaceholderText('Объём, мл'), { target: { value: '591' } })
+
+    fireEvent.click(screen.getByRole('button', { name: /добавить атрибут/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Атрибут' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Объём' }).at(-1)!)
+
+    fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
+
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(screen.getByText(/добавлен дважды/i)).toBeInTheDocument()
+  })
+
   it('lets the admin add a custom attribute key and value not on the preset lists', () => {
     const onSubmit = vi.fn()
     render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
@@ -245,6 +290,23 @@ describe('ProductForm', () => {
     )
   })
 
+  it('submits SOLD_OUT status when Солдаут is selected for a variant', () => {
+    const onSubmit = vi.fn()
+    render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
+
+    fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
+    fillFirstVariant('NEW-SKU-1', '15')
+    fireEvent.click(screen.getByRole('button', { name: 'Солдаут' }))
+
+    fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variants: [expect.objectContaining({ status: 'SOLD_OUT' })],
+      })
+    )
+  })
+
   it('forces stock to zero and disables the stock input when Под заказ is selected', () => {
     render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
 
@@ -283,6 +345,17 @@ describe('ProductForm', () => {
 
     expect(screen.getByRole('button', { name: /сохранить/i })).toBeDisabled()
     expect(screen.getByText(/добавьте хотя бы один вариант/i)).toBeInTheDocument()
+  })
+
+  it('shows a colour-swatch section and opens the cropper when a swatch photo is picked', () => {
+    render(<ProductForm product={existingProduct} onSubmit={vi.fn()} onClose={vi.fn()} />)
+
+    expect(screen.getByText('Кружки цвета')).toBeInTheDocument()
+
+    const input = screen.getByLabelText('Фото цвета black')
+    fireEvent.change(input, { target: { files: [new File(['x'], 's.png', { type: 'image/png' })] } })
+
+    expect(screen.getByText('Кружок цвета: black')).toBeInTheDocument()
   })
 
   it('uploads a variant image and includes it in the submit payload', async () => {

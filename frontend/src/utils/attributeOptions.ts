@@ -5,10 +5,12 @@ export type AttributeOption = {
 
 export const VOLUME_ATTRIBUTE_KEY = 'volume'
 
+export const COLOR_ATTRIBUTE_KEY = 'color'
+
 export const CUSTOM_ATTRIBUTE_KEY = '__custom__'
 
 export const ATTRIBUTE_KEY_OPTIONS: AttributeOption[] = [
-  { label: 'Цвет', value: 'color' },
+  { label: 'Цвет', value: COLOR_ATTRIBUTE_KEY },
   { label: 'Размер', value: 'size' },
   { label: 'Объём', value: VOLUME_ATTRIBUTE_KEY },
   { label: '+ Другой атрибут', value: CUSTOM_ATTRIBUTE_KEY },
@@ -41,4 +43,9 @@ export const SINGLE_SELECT_FILTERS: SingleSelectFilterConfig[] = [
 
 export function formatAttributeValue(key: string, value: unknown): string {
   return key === VOLUME_ATTRIBUTE_KEY ? `${value} мл` : String(value)
+}
+
+export function attributeKeyLabel(key: string): string {
+  const match = ATTRIBUTE_KEY_OPTIONS.find((option) => option.value === key)
+  return match && match.value !== CUSTOM_ATTRIBUTE_KEY ? match.label : key
 }

@@ -1,8 +1,12 @@
+import { motion, useReducedMotion } from 'framer-motion'
 import { Link, NavLink } from 'react-router-dom'
 import Logo from './Logo'
+import Sparkle from './Sparkle'
 import useCartStore from '../store/useCartStore'
 import useFilterSheetStore from '../store/useFilterSheetStore'
 import useHideOnScroll from '../hooks/useHideOnScroll'
+
+const MotionLink = motion.create(Link)
 
 const navItems = [
   { to: '/catalog', label: 'Каталог' },
@@ -15,9 +19,21 @@ export default function NavigationBar() {
   const scrolledHidden = useHideOnScroll()
   const filterSheetOpen = useFilterSheetStore((state) => state.isOpen)
   const hidden = scrolledHidden || filterSheetOpen
+  const reduceMotion = useReducedMotion()
+
+  const springy = reduceMotion
+    ? { duration: 0.15 }
+    : { type: 'spring' as const, stiffness: 500, damping: 12, mass: 0.6 }
+  const logoTween = reduceMotion
+    ? { duration: 0.1 }
+    : { duration: 0.2, ease: [0.16, 1, 0.3, 1] as const }
 
   const desktopLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `font-grotesk text-sm font-bold transition ${isActive ? 'text-bubblegum-dark' : 'text-ink/60 hover:text-ink'}`
+    `relative font-grotesk text-sm font-bold transition after:absolute after:-bottom-1.5 after:left-0 after:h-[3px] after:w-full after:origin-left after:rounded-full after:bg-bubblegum after:transition-transform after:duration-200 after:content-[''] ${
+      isActive
+        ? 'text-bubblegum-dark after:scale-x-100'
+        : 'text-ink/60 hover:text-ink after:scale-x-0 hover:after:scale-x-100'
+    }`
 
   const tabLinkClass = ({ isActive }: { isActive: boolean }) =>
     `flex flex-1 flex-col items-center gap-1 py-3 font-grotesk text-xs font-bold transition ${
@@ -32,12 +48,48 @@ export default function NavigationBar() {
           hidden ? '-translate-y-full sm:translate-y-0' : 'translate-y-0'
         }`}
       >
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link to="/" aria-label="Adika Buyer">
-            <Logo className="h-16 w-auto" />
-          </Link>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 overflow-hidden"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, rgba(212,92,134,0.09) 1px, transparent 1px), linear-gradient(to bottom, rgba(212,92,134,0.09) 1px, transparent 1px)',
+            backgroundSize: '18px 18px',
+          }}
+        />
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <MotionLink
+            to="/"
+            aria-label="Adika Buyer"
+            className="relative shrink-0 will-change-transform"
+            whileHover={reduceMotion ? { scale: 1.02 } : { scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+            transition={logoTween}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 210 84"
+              preserveAspectRatio="none"
+              className="absolute -inset-x-4 -inset-y-2 -z-10 h-[calc(100%+1rem)] w-[calc(100%+2rem)] text-black/35"
+            >
+              <ellipse
+                cx="105"
+                cy="42"
+                rx="102"
+                ry="39"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                pathLength={100}
+                strokeDasharray="1.1 1.9"
+                strokeLinecap="round"
+              />
+            </svg>
+            <Logo className="relative h-16 w-auto" />
+          </MotionLink>
 
           <nav className="hidden items-center gap-6 sm:flex">
+            <Sparkle className="h-3.5 w-3.5 text-bubblegum-dark/70" />
             {navItems.map((item) => (
               <NavLink key={item.to} to={item.to} className={desktopLinkClass}>
                 {item.label}
@@ -45,13 +97,23 @@ export default function NavigationBar() {
             ))}
           </nav>
 
-          <button
+          <motion.button
             type="button"
             onClick={toggleCart}
-            className="rounded-pill border-2 border-black bg-silver px-4 py-2 font-grotesk text-sm font-bold tabular-nums text-ink transition hover:bg-bubblegum hover:text-white"
+            className="relative rounded-pill border-2 border-black bg-silver px-4 py-2 font-grotesk text-sm font-bold tabular-nums text-ink shadow-[3px_3px_0_0_#000] transition-[background-color,color] hover:bg-bubblegum hover:text-white"
+            whileHover={reduceMotion ? { scale: 1.03 } : { y: -3 }}
+            whileTap={{ y: 0, scale: 0.95 }}
+            transition={springy}
           >
             Корзина ({totalCount})
-          </button>
+            {totalCount > 0 && (
+              <Sparkle
+                spin
+                reduceMotion={reduceMotion}
+                className="absolute -right-2 -top-2 h-4 w-4 text-bubblegum drop-shadow-[1px_1px_0_#000]"
+              />
+            )}
+          </motion.button>
         </div>
       </header>
 

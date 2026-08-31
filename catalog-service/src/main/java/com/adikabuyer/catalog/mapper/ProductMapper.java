@@ -12,5 +12,9 @@ public interface ProductMapper {
             target = "displayPrice",
             expression = "java(com.adikabuyer.catalog.util.PriceCalculator.computeDisplayPrice(product.getBasePrice()))"
     )
+    @Mapping(
+            target = "isNew",
+            expression = "java(com.adikabuyer.catalog.util.ProductFlags.isNew(product.getCreatedAt()))"
+    )
     ProductDto toDto(Product product);
 }

@@ -14,7 +14,7 @@ export default {
         },
       },
       fontFamily: {
-        grotesk: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+        grotesk: ['"Unbounded"', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         display: ['clamp(3.5rem, 9vw, 8rem)', { lineHeight: '0.95', letterSpacing: '-0.03em' }],

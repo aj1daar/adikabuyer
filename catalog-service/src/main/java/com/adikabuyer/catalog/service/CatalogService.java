@@ -2,6 +2,7 @@ package com.adikabuyer.catalog.service;
 
 import com.adikabuyer.catalog.domain.Product;
 import com.adikabuyer.catalog.domain.Variant;
+import com.adikabuyer.catalog.domain.VariantStatus;
 import com.adikabuyer.catalog.dto.ProductDto;
 import com.adikabuyer.catalog.dto.ProductPageResponse;
 import com.adikabuyer.catalog.dto.ProductRequest;
@@ -25,7 +26,14 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,7 +45,7 @@ public class CatalogService {
 
     public ProductPageResponse getAllProducts(
             String search, String category, String color, String size, BigDecimal volumeMin, BigDecimal volumeMax,
-            int page, int pageSize
+            int page, int pageSize, boolean includeArchived
     ) {
         Pageable pageable = PageRequest.of(page, pageSize);
         Page<Product> result = productRepository.search(
@@ -47,6 +55,7 @@ public class CatalogService {
                 normalize(size),
                 volumeMin,
                 volumeMax,
+                includeArchived,
                 pageable
         );
         List<ProductDto> items = result.getContent().stream().map(productMapper::toDto).toList();
@@ -67,9 +76,17 @@ public class CatalogService {
     }
 
     public ProductDto getProductById(Long id) {
-        return productRepository.findById(id)
-                .map(productMapper::toDto)
+        Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + id));
+        if (isArchived(product)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + id);
+        }
+        return productMapper.toDto(product);
+    }
+
+    private boolean isArchived(Product product) {
+        return !product.getVariants().isEmpty()
+                && product.getVariants().stream().allMatch(variant -> variant.getStatus() == VariantStatus.SOLD_OUT);
     }
 
     public boolean isVariantAvailable(Long variantId, int requestedQuantity) {
@@ -101,12 +118,17 @@ public class CatalogService {
                 .variants(new ArrayList<>())
                 .build();
 
+        Set<String> usedSkus = new HashSet<>();
         for (VariantRequest variantRequest : variantRequests) {
-            product.getVariants().add(VariantReconciler.buildVariant(variantRequest, product, now));
+            Variant variant = VariantReconciler.buildVariant(variantRequest, product, now, skuGuard(usedSkus));
+            usedSkus.add(variant.getSku());
+            product.getVariants().add(variant);
         }
 
         product.setBasePrice(deriveBasePrice(product.getVariants()));
         product.setImageUrl(deriveImageUrl(product.getVariants()));
+        product.setColorSwatches(pruneColorSwatches(request.colorSwatches(), product.getVariants()));
+        product.setLabels(cleanLabels(request.labels()));
 
         return productMapper.toDto(saveOrConflict(product));
     }
@@ -127,12 +149,49 @@ public class CatalogService {
         product.setActive(request.active());
         product.setUpdatedAt(now);
 
-        VariantReconciler.reconcile(product, variantRequests, now);
+        VariantReconciler.reconcile(product, variantRequests, now, variantRepository::existsBySkuIgnoreCase);
 
         product.setBasePrice(deriveBasePrice(product.getVariants()));
         product.setImageUrl(deriveImageUrl(product.getVariants()));
+        product.setColorSwatches(pruneColorSwatches(request.colorSwatches(), product.getVariants()));
+        product.setLabels(cleanLabels(request.labels()));
 
         return productMapper.toDto(saveOrConflict(product));
+    }
+
+    private Map<String, String> pruneColorSwatches(Map<String, String> requested, List<Variant> variants) {
+        if (requested == null || requested.isEmpty()) {
+            return new HashMap<>();
+        }
+        Set<String> colours = variants.stream()
+                .map(variant -> variant.getAttributes().get("color"))
+                .filter(Objects::nonNull)
+                .map(String::valueOf)
+                .collect(Collectors.toSet());
+        Map<String, String> kept = new HashMap<>();
+        requested.forEach((colour, url) -> {
+            if (colours.contains(colour) && url != null && !url.isBlank()) {
+                kept.put(colour, url);
+            }
+        });
+        return kept;
+    }
+
+    private List<String> cleanLabels(List<String> requested) {
+        if (requested == null) {
+            return new ArrayList<>();
+        }
+        List<String> kept = new ArrayList<>();
+        for (String raw : requested) {
+            if (raw == null) {
+                continue;
+            }
+            String label = raw.trim();
+            if (!label.isEmpty() && !kept.contains(label)) {
+                kept.add(label);
+            }
+        }
+        return kept;
     }
 
     private void requireVariants(List<VariantRequest> variantRequests) {
@@ -160,6 +219,10 @@ public class CatalogService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + id));
         productRepository.delete(product);
+    }
+
+    private Predicate<String> skuGuard(Set<String> used) {
+        return sku -> used.contains(sku) || variantRepository.existsBySkuIgnoreCase(sku);
     }
 
     private List<VariantRequest> nullSafeVariants(ProductRequest request) {

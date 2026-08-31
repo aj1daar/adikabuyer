@@ -1,4 +1,4 @@
-export type VariantStatus = 'IN_STOCK' | 'PRE_ORDER'
+export type VariantStatus = 'IN_STOCK' | 'PRE_ORDER' | 'SOLD_OUT'
 
 export type VariantDto = {
   id: number
@@ -22,6 +22,9 @@ export type ProductDto = {
   displayPrice: number
   active: boolean
   imageUrl: string | null
+  colorSwatches?: Record<string, string>
+  labels?: string[]
+  isNew?: boolean
   variants: VariantDto[]
 }
 

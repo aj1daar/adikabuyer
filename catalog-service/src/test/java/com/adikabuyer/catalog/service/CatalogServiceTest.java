@@ -59,13 +59,13 @@ class CatalogServiceTest {
     @Test
     void getAllProducts_returnsMappedDtos_whenRepositoryHasProducts() {
         Product product = Product.builder().id(1L).name("Tumbler").basePrice(BigDecimal.TEN).active(true).build();
-        ProductDto dto = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, null, true, null, List.of());
+        ProductDto dto = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, null, true, null, null, null, false, List.of());
 
-        when(productRepository.search(null, null, null, null, null, null, PageRequest.of(0, 12)))
+        when(productRepository.search(null, null, null, null, null, null, false, PageRequest.of(0, 12)))
                 .thenReturn(new PageImpl<>(List.of(product)));
         when(productMapper.toDto(product)).thenReturn(dto);
 
-        ProductPageResponse result = catalogService.getAllProducts(null, null, null, null, null, null, 0, 12);
+        ProductPageResponse result = catalogService.getAllProducts(null, null, null, null, null, null, 0, 12, false);
 
         assertThat(result.items()).containsExactly(dto);
         assertThat(result.totalCount()).isEqualTo(1);
@@ -75,32 +75,32 @@ class CatalogServiceTest {
 
     @Test
     void getAllProducts_returnsEmptyList_whenRepositoryIsEmpty() {
-        when(productRepository.search(null, null, null, null, null, null, PageRequest.of(0, 12)))
+        when(productRepository.search(null, null, null, null, null, null, false, PageRequest.of(0, 12)))
                 .thenReturn(new PageImpl<>(List.of()));
 
-        assertThat(catalogService.getAllProducts(null, null, null, null, null, null, 0, 12).items()).isEmpty();
+        assertThat(catalogService.getAllProducts(null, null, null, null, null, null, 0, 12, false).items()).isEmpty();
     }
 
     @Test
     void getAllProducts_normalizesBlankFilters_toNull() {
-        when(productRepository.search(null, null, null, null, null, null, PageRequest.of(0, 12)))
+        when(productRepository.search(null, null, null, null, null, null, false, PageRequest.of(0, 12)))
                 .thenReturn(new PageImpl<>(List.of()));
 
-        catalogService.getAllProducts("  ", "", null, "   ", null, null, 0, 12);
+        catalogService.getAllProducts("  ", "", null, "   ", null, null, 0, 12, false);
 
-        verify(productRepository).search(null, null, null, null, null, null, PageRequest.of(0, 12));
+        verify(productRepository).search(null, null, null, null, null, null, false, PageRequest.of(0, 12));
     }
 
     @Test
     void getAllProducts_trimsAndForwardsNonBlankFilters() {
         BigDecimal volumeMin = BigDecimal.valueOf(300);
         BigDecimal volumeMax = BigDecimal.valueOf(600);
-        when(productRepository.search("tumbler", "Drinkware", "black", "M", volumeMin, volumeMax, PageRequest.of(0, 12)))
+        when(productRepository.search("tumbler", "Drinkware", "black", "M", volumeMin, volumeMax, false, PageRequest.of(0, 12)))
                 .thenReturn(new PageImpl<>(List.of()));
 
-        catalogService.getAllProducts(" tumbler ", " Drinkware ", " black ", " M ", volumeMin, volumeMax, 0, 12);
+        catalogService.getAllProducts(" tumbler ", " Drinkware ", " black ", " M ", volumeMin, volumeMax, 0, 12, false);
 
-        verify(productRepository).search("tumbler", "Drinkware", "black", "M", volumeMin, volumeMax, PageRequest.of(0, 12));
+        verify(productRepository).search("tumbler", "Drinkware", "black", "M", volumeMin, volumeMax, false, PageRequest.of(0, 12));
     }
 
     @Test
@@ -135,8 +135,36 @@ class CatalogServiceTest {
     @Test
     void getProductById_returnsDto_whenProductExists() {
         Product product = Product.builder().id(1L).name("Tumbler").basePrice(BigDecimal.TEN).active(true).build();
-        ProductDto dto = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, null, true, null, List.of());
+        ProductDto dto = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, null, true, null, null, null, false, List.of());
 
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(productMapper.toDto(product)).thenReturn(dto);
+
+        assertThat(catalogService.getProductById(1L)).isEqualTo(dto);
+    }
+
+    @Test
+    void getProductById_throwsNotFound_whenEveryVariantIsSoldOut() {
+        Product product = Product.builder().id(1L).name("Tumbler").basePrice(BigDecimal.TEN).active(true).build();
+        product.setVariants(new java.util.ArrayList<>(List.of(
+                Variant.builder().id(10L).sku("A").status(VariantStatus.SOLD_OUT).stockQuantity(0).active(true).build(),
+                Variant.builder().id(11L).sku("B").status(VariantStatus.SOLD_OUT).stockQuantity(0).active(true).build()
+        )));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+
+        assertThatThrownBy(() -> catalogService.getProductById(1L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
+    }
+
+    @Test
+    void getProductById_returnsDto_whenAtLeastOneVariantIsNotSoldOut() {
+        Product product = Product.builder().id(1L).name("Tumbler").basePrice(BigDecimal.TEN).active(true).build();
+        product.setVariants(new java.util.ArrayList<>(List.of(
+                Variant.builder().id(10L).sku("A").status(VariantStatus.SOLD_OUT).stockQuantity(0).active(true).build(),
+                Variant.builder().id(11L).sku("B").status(VariantStatus.IN_STOCK).stockQuantity(4).active(true).build()
+        )));
+        ProductDto dto = new ProductDto(1L, "Tumbler", null, null, BigDecimal.TEN, null, true, null, null, null, false, List.of());
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
         when(productMapper.toDto(product)).thenReturn(dto);
 
@@ -220,13 +248,13 @@ class CatalogServiceTest {
     }
 
     private ProductRequest buildProductRequest(List<VariantRequest> variants) {
-        return new ProductRequest("Custom Tumbler", "desc", "Drinkware", true, variants);
+        return new ProductRequest("Custom Tumbler", "desc", "Drinkware", true, null, null, variants);
     }
 
     @Test
     void createProduct_savesProductWithLinkedVariants_andReturnsMappedDto() {
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        ProductDto dto = new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, List.of());
+        ProductDto dto = new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, null, null, false, List.of());
         when(productMapper.toDto(any(Product.class))).thenReturn(dto);
 
         ProductRequest request = buildProductRequest(List.of(buildVariantRequest(null, "TUM-BLK-500", 10)));
@@ -247,6 +275,47 @@ class CatalogServiceTest {
     }
 
     @Test
+    void createProduct_keepsColorSwatchesForKnownColours_andDropsUnknownOnes() {
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(productMapper.toDto(any(Product.class))).thenReturn(
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, null, null, false, List.of())
+        );
+
+        VariantRequest black = new VariantRequest(null, null, Map.of("color", "Чёрный"), BigDecimal.TEN, 1, true,
+                List.of(), VariantStatus.IN_STOCK);
+        Map<String, String> swatches = new java.util.HashMap<>();
+        swatches.put("Чёрный", "http://cdn/black-swatch.png");
+        swatches.put("Розовый", "http://cdn/pink-swatch.png");
+        ProductRequest request = new ProductRequest("Custom Tumbler", "desc", "Drinkware", true, swatches, null, List.of(black));
+
+        catalogService.createProduct(request);
+
+        ArgumentCaptor<Product> savedCaptor = ArgumentCaptor.forClass(Product.class);
+        verify(productRepository).save(savedCaptor.capture());
+        assertThat(savedCaptor.getValue().getColorSwatches())
+                .containsEntry("Чёрный", "http://cdn/black-swatch.png")
+                .doesNotContainKey("Розовый");
+    }
+
+    @Test
+    void createProduct_trimsDedupesAndDropsBlankLabels() {
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(productMapper.toDto(any(Product.class))).thenReturn(
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, null, null, false, List.of())
+        );
+
+        VariantRequest v = buildVariantRequest(null, "SKU-L", 1);
+        ProductRequest request = new ProductRequest("Custom Tumbler", "desc", "Drinkware", true, null,
+                java.util.Arrays.asList("  Limited  ", "", "С принтом", "Limited", null), List.of(v));
+
+        catalogService.createProduct(request);
+
+        ArgumentCaptor<Product> savedCaptor = ArgumentCaptor.forClass(Product.class);
+        verify(productRepository).save(savedCaptor.capture());
+        assertThat(savedCaptor.getValue().getLabels()).containsExactly("Limited", "С принтом");
+    }
+
+    @Test
     void createProduct_throwsConflict_whenSkuAlreadyExists() {
         when(productRepository.save(any(Product.class))).thenThrow(new DataIntegrityViolationException("duplicate key"));
 
@@ -261,7 +330,7 @@ class CatalogServiceTest {
     void createProduct_derivesBasePriceAndImageFromCheapestAndFirstImagedVariant() {
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(productMapper.toDto(any(Product.class))).thenReturn(
-                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, List.of())
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, null, null, false, List.of())
         );
 
         VariantRequest cheap = new VariantRequest(null, "SKU-CHEAP", Map.of(), BigDecimal.valueOf(15), 1, true,
@@ -306,7 +375,7 @@ class CatalogServiceTest {
         when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(productMapper.toDto(any(Product.class))).thenReturn(
-                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, List.of())
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, null, null, false, List.of())
         );
 
         catalogService.updateProduct(1L, buildProductRequest(List.of(buildVariantRequest(null, "TUM-BLK-500", 10))));
@@ -336,7 +405,7 @@ class CatalogServiceTest {
         when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(productMapper.toDto(any(Product.class))).thenReturn(
-                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, List.of())
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, null, null, false, List.of())
         );
 
         catalogService.updateProduct(1L, buildProductRequest(List.of(buildVariantRequest(null, "NEW-SKU", 5))));
@@ -356,7 +425,7 @@ class CatalogServiceTest {
         when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(productMapper.toDto(any(Product.class))).thenReturn(
-                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, List.of())
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, null, null, false, List.of())
         );
 
         catalogService.updateProduct(1L, buildProductRequest(List.of(buildVariantRequest(10L, "UPDATED-SKU", 20))));
@@ -379,7 +448,7 @@ class CatalogServiceTest {
         when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(productMapper.toDto(any(Product.class))).thenReturn(
-                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, List.of())
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, null, null, false, List.of())
         );
 
         catalogService.updateProduct(1L, buildProductRequest(List.of(buildVariantRequest(10L, "KEEP", 2))));

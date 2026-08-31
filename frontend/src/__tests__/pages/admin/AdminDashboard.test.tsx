@@ -109,6 +109,33 @@ describe('AdminDashboard', () => {
     expect(screen.getByText('Предзаказ')).toBeInTheDocument()
   })
 
+  it('marks a fully sold-out product as archived and labels the status', () => {
+    mockedUseCatalog.mockReturnValue({
+      products: [
+        {
+          ...productWithVariant,
+          name: 'Sold Out Mug',
+          variants: [{ ...productWithVariant.variants[0], status: 'SOLD_OUT' }],
+        },
+      ],
+      totalCount: 1,
+      loading: false,
+      error: null,
+      refetch,
+    })
+
+    renderDashboard()
+
+    expect(screen.getByText('В архиве')).toBeInTheDocument()
+    expect(screen.getByText('Солдаут')).toBeInTheDocument()
+  })
+
+  it('asks the catalog hook to include archived products', () => {
+    renderDashboard()
+
+    expect(mockedUseCatalog).toHaveBeenCalledWith({ includeArchived: true })
+  })
+
   it('renders a placeholder row for a product with no variants', () => {
     renderDashboard()
 
@@ -167,10 +194,10 @@ describe('AdminDashboard', () => {
     fireEvent.click(screen.getByRole('button', { name: /добавить товар/i }))
     fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'Brand New' } })
     fireEvent.click(screen.getByRole('button', { name: /добавить вариант/i }))
-    fireEvent.change(screen.getByPlaceholderText('Название варианта (Розовый, Леопардовый...)'), {
+    fireEvent.change(screen.getByPlaceholderText('Артикул / SKU (необязательно)'), {
       target: { value: 'NEW-SKU' },
     })
-    fireEvent.change(screen.getByPlaceholderText('Закупочная цена'), { target: { value: '9' } })
+    fireEvent.change(screen.getByPlaceholderText('Цена для клиента, KGS'), { target: { value: '9' } })
     fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
 
     await waitFor(() => expect(mockedCreateProduct).toHaveBeenCalled())
@@ -183,7 +210,7 @@ describe('AdminDashboard', () => {
     renderDashboard()
 
     fireEvent.click(screen.getAllByRole('button', { name: /изменить/i })[0])
-    fireEvent.change(screen.getByPlaceholderText('Закупочная цена'), { target: { value: '25' } })
+    fireEvent.change(screen.getByPlaceholderText('Цена для клиента, KGS'), { target: { value: '25' } })
     fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
 
     await waitFor(() => expect(mockedUpdateProduct).toHaveBeenCalledWith(1, expect.any(Object)))

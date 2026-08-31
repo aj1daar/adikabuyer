@@ -66,14 +66,14 @@ class InventoryListenerTest {
     }
 
     @Test
-    void handleOrderPlaced_setsPreOrderStatus_whenStockReachesExactlyZero() {
+    void handleOrderPlaced_setsSoldOutStatus_whenStockReachesExactlyZero() {
         Variant variant = Variant.builder().id(1L).stockQuantity(5).status(VariantStatus.IN_STOCK).build();
         when(variantRepository.findById(1L)).thenReturn(Optional.of(variant));
 
         inventoryListener.handleOrderPlaced(buildEvent(buildItem(1L, 5)));
 
         assertThat(variant.getStockQuantity()).isZero();
-        assertThat(variant.getStatus()).isEqualTo(VariantStatus.PRE_ORDER);
+        assertThat(variant.getStatus()).isEqualTo(VariantStatus.SOLD_OUT);
     }
 
     @Test
@@ -84,6 +84,16 @@ class InventoryListenerTest {
         inventoryListener.handleOrderPlaced(buildEvent(buildItem(1L, 100)));
 
         assertThat(variant.getStockQuantity()).isZero();
+        assertThat(variant.getStatus()).isEqualTo(VariantStatus.SOLD_OUT);
+    }
+
+    @Test
+    void handleOrderPlaced_leavesPreOrderStatusUntouched_whenStockReachesZero() {
+        Variant variant = Variant.builder().id(1L).stockQuantity(2).status(VariantStatus.PRE_ORDER).build();
+        when(variantRepository.findById(1L)).thenReturn(Optional.of(variant));
+
+        inventoryListener.handleOrderPlaced(buildEvent(buildItem(1L, 2)));
+
         assertThat(variant.getStatus()).isEqualTo(VariantStatus.PRE_ORDER);
     }
 
@@ -157,6 +167,6 @@ class InventoryListenerTest {
 
         assertThat(first.getStockQuantity()).isEqualTo(8);
         assertThat(second.getStockQuantity()).isZero();
-        assertThat(second.getStatus()).isEqualTo(VariantStatus.PRE_ORDER);
+        assertThat(second.getStatus()).isEqualTo(VariantStatus.SOLD_OUT);
     }
 }

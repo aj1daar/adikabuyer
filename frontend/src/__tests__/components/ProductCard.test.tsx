@@ -108,15 +108,15 @@ describe('ProductCard', () => {
     expect(screen.queryByRole('button', { name: 'Добавить в корзину' })).not.toBeInTheDocument()
   })
 
-  it('hides the variant-count badge on mobile once 2 columns are selected', () => {
-    const productWithVariants: ProductDto = {
+  it('keeps the colour-swatch row visible even in the compact 2-column density', () => {
+    const swatchProduct: ProductDto = {
       ...product,
-      variants: [...product.variants, { ...product.variants[0], id: 2, sku: 'TUM-BLK-750' }],
+      colorSwatches: { Black: 'black-swatch.jpg' },
     }
 
-    render(<ProductCard product={productWithVariants} mobileColumns={2} />, { wrapper: MemoryRouter })
+    render(<ProductCard product={swatchProduct} mobileColumns={2} />, { wrapper: MemoryRouter })
 
-    expect(screen.getByText('Вариантов: 2')).toHaveClass('max-sm:hidden')
+    expect(screen.getByRole('button', { name: 'Black' }).parentElement).not.toHaveClass('max-sm:hidden')
   })
 
   it('puts the price and compact add-to-cart button in separate rows once compact', () => {
@@ -154,6 +154,85 @@ describe('ProductCard', () => {
     expect(useCartStore.getState().items[0].quantity).toBe(2)
     expect(screen.getByText('1')).toBeInTheDocument()
     expect(minus).toBeDisabled()
+  })
+
+  it('swaps the image, tags and price to the picked colour', () => {
+    const swatchProduct: ProductDto = {
+      ...product,
+      imageUrl: 'default.jpg',
+      colorSwatches: { Black: 'black-swatch.jpg', White: 'white-swatch.jpg' },
+      variants: [
+        {
+          ...product.variants[0],
+          id: 1,
+          attributes: { color: 'Black' },
+          imageUrls: ['black-photo.jpg'],
+          displayPrice: 25,
+        },
+        {
+          ...product.variants[0],
+          id: 2,
+          sku: 'TUM-WHT',
+          attributes: { color: 'White' },
+          imageUrls: ['white-photo.jpg'],
+          displayPrice: 40,
+        },
+      ],
+    }
+
+    render(<ProductCard product={swatchProduct} />, { wrapper: MemoryRouter })
+
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'default.jpg')
+    expect(screen.getByText('25 KGS')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'White' }))
+
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'white-photo.jpg')
+    expect(screen.getByRole('button', { name: 'White' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('40 KGS')).toBeInTheDocument()
+  })
+
+  it('collapses many colours to a "+N" that links to the product', () => {
+    const many: ProductDto = {
+      ...product,
+      colorSwatches: { A: 'a.jpg', B: 'b.jpg', C: 'c.jpg', D: 'd.jpg', E: 'e.jpg', F: 'f.jpg' },
+      variants: ['A', 'B', 'C', 'D', 'E', 'F'].map((c, i) => ({
+        ...product.variants[0],
+        id: i + 1,
+        sku: `SKU-${c}`,
+        attributes: { color: c },
+      })),
+    }
+
+    render(<ProductCard product={many} />, { wrapper: MemoryRouter })
+
+    expect(screen.getAllByRole('button').filter((b) => /^[A-F]$/.test(b.getAttribute('aria-label') ?? ''))).toHaveLength(4)
+    expect(screen.getByRole('link', { name: /ещё 2/i })).toHaveAttribute('href', '/catalog/1')
+  })
+
+  it('appends "+N" to an attribute tag when a product spans several values', () => {
+    const matrix: ProductDto = {
+      ...product,
+      colorSwatches: {},
+      variants: [
+        { ...product.variants[0], id: 1, attributes: { volume: '591' } },
+        { ...product.variants[0], id: 2, attributes: { volume: '414' } },
+        { ...product.variants[0], id: 3, attributes: { volume: '946' } },
+      ],
+    }
+
+    render(<ProductCard product={matrix} />, { wrapper: MemoryRouter })
+
+    expect(screen.getByText('591 мл +2')).toBeInTheDocument()
+  })
+
+  it('shows a "Новинка" sticker only when the backend flags the product as new', () => {
+    const { rerender } = render(<ProductCard product={product} />, { wrapper: MemoryRouter })
+    expect(screen.queryByText('Новинка')).not.toBeInTheDocument()
+
+    rerender(<ProductCard product={{ ...product, isNew: true, labels: ['Limited'] }} />)
+    expect(screen.getByText('Новинка')).toBeInTheDocument()
+    expect(screen.getByText('Limited')).toBeInTheDocument()
   })
 
   it('adds the primary variant to the cart store when the button is clicked', () => {

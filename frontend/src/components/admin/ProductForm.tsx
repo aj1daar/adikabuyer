@@ -1,20 +1,36 @@
 import { useId, useState, type ChangeEvent } from 'react'
-import type { ProductDto } from '../../types/catalog'
+import type { ProductDto, VariantStatus } from '../../types/catalog'
 import type { ProductPayload, VariantPayload } from '../../types/admin'
 import uploadMedia from '../../api/media'
-import formatPrice from '../../utils/formatPrice'
-import previewDisplayPrice from '../../utils/priceCommission'
 import {
   ATTRIBUTE_KEY_OPTIONS,
   ATTRIBUTE_VALUE_OPTIONS,
+  attributeKeyLabel,
+  COLOR_ATTRIBUTE_KEY,
   CUSTOM_ATTRIBUTE_KEY,
   VOLUME_ATTRIBUTE_KEY,
 } from '../../utils/attributeOptions'
 import OptionDropdown from '../OptionDropdown'
+import CircleCropper from './CircleCropper'
 
 const KNOWN_ATTRIBUTE_KEYS = ATTRIBUTE_KEY_OPTIONS.map((option) => option.value).filter(
   (value) => value !== CUSTOM_ATTRIBUTE_KEY
 )
+
+function findDuplicateAttribute(rows: AttributeRow[]): string | null {
+  const seen = new Set<string>()
+  for (const row of rows) {
+    const key = row.key.trim()
+    if (key === '') {
+      continue
+    }
+    if (seen.has(key)) {
+      return key
+    }
+    seen.add(key)
+  }
+  return null
+}
 
 type AttributeRow = {
   key: string
@@ -30,8 +46,14 @@ type VariantDraft = {
   active: boolean
   imageUrls: string[]
   attributes: AttributeRow[]
-  status: 'IN_STOCK' | 'PRE_ORDER'
+  status: VariantStatus
 }
+
+const STATUS_TOGGLE: { value: VariantStatus; label: string }[] = [
+  { value: 'IN_STOCK', label: 'В наличии' },
+  { value: 'PRE_ORDER', label: 'Под заказ' },
+  { value: 'SOLD_OUT', label: 'Солдаут' },
+]
 
 type ProductFormProps = {
   product?: ProductDto
@@ -70,9 +92,49 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   const [description, setDescription] = useState(product?.description ?? '')
   const [category, setCategory] = useState(product?.category ?? '')
   const [active, setActive] = useState(product?.active ?? true)
+  const [labels, setLabels] = useState<string[]>(product?.labels ?? [])
+  const [labelDraft, setLabelDraft] = useState('')
   const [variants, setVariants] = useState<VariantDraft[]>(toVariantDraft(product))
   const [uploadingVariantIndex, setUploadingVariantIndex] = useState<number | null>(null)
   const [variantUploadError, setVariantUploadError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [colorSwatches, setColorSwatches] = useState<Record<string, string>>(product?.colorSwatches ?? {})
+  const [cropper, setCropper] = useState<{ color: string; file: File } | null>(null)
+  const [swatchUploading, setSwatchUploading] = useState(false)
+
+  const colorValues = Array.from(
+    new Set(
+      variants
+        .flatMap((variant) => variant.attributes)
+        .filter((attribute) => attribute.key === COLOR_ATTRIBUTE_KEY && attribute.value.trim() !== '')
+        .map((attribute) => attribute.value)
+    )
+  )
+
+  const handleSwatchFileSelected = (color: string, event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (file) {
+      setCropper({ color, file })
+    }
+  }
+
+  const handleCropperConfirm = async (blob: Blob) => {
+    if (!cropper) {
+      return
+    }
+    setSwatchUploading(true)
+    setVariantUploadError(null)
+    try {
+      const response = await uploadMedia(new File([blob], 'swatch.png', { type: 'image/png' }))
+      setColorSwatches((current) => ({ ...current, [cropper.color]: response.url }))
+      setCropper(null)
+    } catch (err) {
+      setVariantUploadError(err instanceof Error ? err.message : 'Не удалось загрузить кружок.')
+    } finally {
+      setSwatchUploading(false)
+    }
+  }
 
   const handleVariantImageSelected = async (
     variantIndex: number,
@@ -96,6 +158,14 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
     } finally {
       setUploadingVariantIndex(null)
     }
+  }
+
+  const addLabel = () => {
+    const value = labelDraft.trim()
+    if (value && !labels.includes(value)) {
+      setLabels([...labels, value])
+    }
+    setLabelDraft('')
   }
 
   const addVariant = () => {
@@ -138,6 +208,18 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   }
 
   const handleSubmit = () => {
+    for (let i = 0; i < variants.length; i += 1) {
+      const duplicateKey = findDuplicateAttribute(variants[i].attributes)
+      if (duplicateKey) {
+        setFormError(
+          `Вариант ${i + 1}: атрибут «${attributeKeyLabel(duplicateKey)}» добавлен дважды. ` +
+            'Разные значения (объёмы, цвета) — это отдельные варианты: нажмите «Добавить вариант».'
+        )
+        return
+      }
+    }
+    setFormError(null)
+
     const variantPayloads: VariantPayload[] = variants.map((variant) => ({
       id: variant.id,
       sku: variant.sku,
@@ -157,6 +239,10 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
       description: description.trim() === '' ? null : description,
       category: category.trim() === '' ? null : category,
       active,
+      colorSwatches: Object.fromEntries(
+        Object.entries(colorSwatches).filter(([color]) => colorValues.includes(color))
+      ),
+      labels,
       variants: variantPayloads,
     }
 
@@ -167,7 +253,8 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
     (variant) => variant.priceOverride.trim() !== '' && !Number.isNaN(Number(variant.priceOverride))
   )
 
-  const canSubmit = name.trim() !== '' && hasPricedVariant && uploadingVariantIndex === null
+  const canSubmit =
+    name.trim() !== '' && hasPricedVariant && uploadingVariantIndex === null && !swatchUploading
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4">
@@ -203,6 +290,45 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               placeholder="Категория"
               className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
             />
+
+            <div className="flex flex-col gap-2">
+              <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
+                Метки (Limited, С принтом…)
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                {labels.map((label) => (
+                  <span
+                    key={label}
+                    className="flex items-center gap-1 rounded-pill border-2 border-black bg-bubblegum-light px-2.5 py-0.5 font-grotesk text-xs font-bold text-ink"
+                  >
+                    {label}
+                    <button
+                      type="button"
+                      onClick={() => setLabels(labels.filter((item) => item !== label))}
+                      aria-label={`Убрать метку ${label}`}
+                      className="font-bold text-ink/50 hover:text-bubblegum-dark"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                <input
+                  type="text"
+                  value={labelDraft}
+                  onChange={(event) => setLabelDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ',') {
+                      event.preventDefault()
+                      addLabel()
+                    }
+                  }}
+                  onBlur={addLabel}
+                  placeholder="+ метка"
+                  className="w-28 rounded-pill border-2 border-dashed border-black/40 px-3 py-1 font-grotesk text-sm text-ink outline-none focus:border-solid focus:border-bubblegum-dark"
+                />
+              </div>
+            </div>
+
             <label className="flex items-center gap-2 text-sm text-ink">
               <input
                 type="checkbox"
@@ -227,6 +353,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
             <p className="mt-2 text-xs text-red-500">Добавьте хотя бы один вариант — цена и фото задаются только на уровне варианта.</p>
           )}
           {variantUploadError && <p className="mt-2 text-xs text-red-500">{variantUploadError}</p>}
+          {formError && <p className="mt-2 text-xs text-red-500">{formError}</p>}
 
           {variants.map((variant, variantIndex) => (
             <div key={variantIndex} className="mt-4 rounded-2xl border-2 border-black p-4">
@@ -246,23 +373,16 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   type="text"
                   value={variant.sku}
                   onChange={(event) => updateVariant(variantIndex, { sku: event.target.value })}
-                  placeholder="Название варианта (Розовый, Леопардовый...)"
+                  placeholder="Артикул / SKU (необязательно)"
                   className="rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                 />
-                <div className="flex flex-col gap-1">
-                  <input
-                    type="number"
-                    value={variant.priceOverride}
-                    onChange={(event) => updateVariant(variantIndex, { priceOverride: event.target.value })}
-                    placeholder="Закупочная цена"
-                    className="w-full rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
-                  />
-                  {variant.priceOverride.trim() !== '' && !Number.isNaN(Number(variant.priceOverride)) && (
-                    <p className="px-3 text-xs text-ink/50">
-                      Клиенту: {formatPrice(previewDisplayPrice(Number(variant.priceOverride)))}
-                    </p>
-                  )}
-                </div>
+                <input
+                  type="number"
+                  value={variant.priceOverride}
+                  onChange={(event) => updateVariant(variantIndex, { priceOverride: event.target.value })}
+                  placeholder="Цена для клиента, KGS"
+                  className="w-full rounded-pill border-2 border-black px-3 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+                />
                 <input
                   type="number"
                   value={variant.stockQuantity}
@@ -280,27 +400,25 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   Активен
                 </label>
                 <div className="col-span-2 flex overflow-hidden rounded-pill border-2 border-black">
-                  <button
-                    type="button"
-                    aria-pressed={variant.status === 'IN_STOCK'}
-                    onClick={() => setVariantStatus(variantIndex, 'IN_STOCK')}
-                    className={`flex-1 px-3 py-2 font-grotesk text-sm font-bold transition ${
-                      variant.status === 'IN_STOCK' ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'
-                    }`}
-                  >
-                    В наличии
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={variant.status === 'PRE_ORDER'}
-                    onClick={() => setVariantStatus(variantIndex, 'PRE_ORDER')}
-                    className={`flex-1 border-l-2 border-black px-3 py-2 font-grotesk text-sm font-bold transition ${
-                      variant.status === 'PRE_ORDER' ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'
-                    }`}
-                  >
-                    Под заказ
-                  </button>
+                  {STATUS_TOGGLE.map((option, optionIndex) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={variant.status === option.value}
+                      onClick={() => setVariantStatus(variantIndex, option.value)}
+                      className={`flex-1 px-3 py-2 font-grotesk text-sm font-bold transition ${
+                        optionIndex > 0 ? 'border-l-2 border-black' : ''
+                      } ${variant.status === option.value ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'}`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
                 </div>
+                {variant.status === 'SOLD_OUT' && (
+                  <p className="col-span-2 text-xs text-ink/50">
+                    Солдаут скрывает вариант из каталога. Если все варианты в солдауте — товар уходит в архив.
+                  </p>
+                )}
               </div>
 
               <div className="mt-3">
@@ -452,7 +570,68 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               </div>
             </div>
           ))}
+
+          {colorValues.length > 0 && (
+            <div className="mt-6">
+              <h3 className="font-grotesk text-base font-bold text-ink">Кружки цвета</h3>
+              <p className="mt-1 text-xs text-ink/50">
+                Отдельное круглое фото для каждого цвета — показывается в каталоге и на странице товара.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-4">
+                {colorValues.map((color) => (
+                  <div key={color} className="flex w-20 flex-col items-center gap-1">
+                    <label
+                      className="relative flex h-16 w-16 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-black bg-silver transition hover:border-bubblegum-dark aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                      aria-disabled={swatchUploading}
+                    >
+                      {colorSwatches[color] ? (
+                        <img src={colorSwatches[color]} alt={color} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="font-grotesk text-xl font-bold text-ink/30">+</span>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        aria-label={`Фото цвета ${color}`}
+                        disabled={swatchUploading}
+                        onChange={(event) => handleSwatchFileSelected(color, event)}
+                        className="hidden"
+                      />
+                    </label>
+                    <span className="truncate text-center font-grotesk text-xs font-bold text-ink" title={color}>
+                      {color}
+                    </span>
+                    {colorSwatches[color] && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setColorSwatches((current) => {
+                            const next = { ...current }
+                            delete next[color]
+                            return next
+                          })
+                        }
+                        className="font-grotesk text-xs font-bold text-ink/40 hover:text-bubblegum-dark"
+                      >
+                        Убрать
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+
+        {cropper && (
+          <CircleCropper
+            file={cropper.file}
+            title={`Кружок цвета: ${cropper.color}`}
+            busy={swatchUploading}
+            onCancel={() => setCropper(null)}
+            onConfirm={handleCropperConfirm}
+          />
+        )}
 
         <div className="border-t-2 border-black px-6 py-4">
           <button

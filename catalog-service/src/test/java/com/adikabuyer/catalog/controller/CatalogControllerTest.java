@@ -45,8 +45,8 @@ class CatalogControllerTest {
 
     @Test
     void getAllProducts_returns200WithProductList() throws Exception {
-        ProductDto product = new ProductDto(1L, "Tumbler", "desc", "Drinkware", BigDecimal.TEN, null, true, null, List.of());
-        when(catalogService.getAllProducts(null, null, null, null, null, null, 0, 1000))
+        ProductDto product = new ProductDto(1L, "Tumbler", "desc", "Drinkware", BigDecimal.TEN, null, true, null, null, null, false, List.of());
+        when(catalogService.getAllProducts(null, null, null, null, null, null, 0, 1000, false))
                 .thenReturn(new ProductPageResponse(List.of(product), 1, 0, 1000));
 
         mockMvc.perform(get("/api/catalog/products"))
@@ -58,7 +58,7 @@ class CatalogControllerTest {
 
     @Test
     void getAllProducts_returns200WithEmptyArray_whenCatalogIsEmpty() throws Exception {
-        when(catalogService.getAllProducts(null, null, null, null, null, null, 0, 1000))
+        when(catalogService.getAllProducts(null, null, null, null, null, null, 0, 1000, false))
                 .thenReturn(new ProductPageResponse(List.of(), 0, 0, 1000));
 
         mockMvc.perform(get("/api/catalog/products"))
@@ -70,7 +70,7 @@ class CatalogControllerTest {
     @Test
     void getAllProducts_forwardsQueryParamsToService() throws Exception {
         when(catalogService.getAllProducts(
-                "tumbler", "Drinkware", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600), 1, 12
+                "tumbler", "Drinkware", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600), 1, 12, false
         )).thenReturn(new ProductPageResponse(List.of(), 0, 1, 12));
 
         mockMvc.perform(get("/api/catalog/products")
@@ -85,8 +85,19 @@ class CatalogControllerTest {
                 .andExpect(status().isOk());
 
         verify(catalogService).getAllProducts(
-                "tumbler", "Drinkware", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600), 1, 12
+                "tumbler", "Drinkware", "black", "M", BigDecimal.valueOf(300), BigDecimal.valueOf(600), 1, 12, false
         );
+    }
+
+    @Test
+    void getAllProducts_forwardsIncludeArchivedFlag() throws Exception {
+        when(catalogService.getAllProducts(null, null, null, null, null, null, 0, 1000, true))
+                .thenReturn(new ProductPageResponse(List.of(), 0, 0, 1000));
+
+        mockMvc.perform(get("/api/catalog/products").param("includeArchived", "true"))
+                .andExpect(status().isOk());
+
+        verify(catalogService).getAllProducts(null, null, null, null, null, null, 0, 1000, true);
     }
 
     @Test
@@ -118,7 +129,7 @@ class CatalogControllerTest {
 
     @Test
     void getProductById_returns200_whenProductExists() throws Exception {
-        ProductDto product = new ProductDto(1L, "Tumbler", "desc", "Drinkware", BigDecimal.TEN, null, true, null, List.of());
+        ProductDto product = new ProductDto(1L, "Tumbler", "desc", "Drinkware", BigDecimal.TEN, null, true, null, null, null, false, List.of());
         when(catalogService.getProductById(1L)).thenReturn(product);
 
         mockMvc.perform(get("/api/catalog/products/1"))
@@ -205,7 +216,7 @@ class CatalogControllerTest {
 
     @Test
     void createProduct_returns201WithCreatedProduct() throws Exception {
-        ProductDto created = new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, List.of());
+        ProductDto created = new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, null, null, false, List.of());
         when(catalogService.createProduct(any())).thenReturn(created);
 
         mockMvc.perform(post("/api/catalog/products").contentType("application/json").content(validProductJson()))
@@ -265,7 +276,7 @@ class CatalogControllerTest {
 
     @Test
     void updateProduct_returns200WithUpdatedProduct() throws Exception {
-        ProductDto updated = new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, List.of());
+        ProductDto updated = new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, null, null, false, List.of());
         when(catalogService.updateProduct(eq(1L), any())).thenReturn(updated);
 
         mockMvc.perform(put("/api/catalog/products/1").contentType("application/json").content(validProductJson()))
