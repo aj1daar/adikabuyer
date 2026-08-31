@@ -8,16 +8,24 @@ type CircleCropperProps = {
   onConfirm: (blob: Blob) => void
 }
 
+type Point = { x: number; y: number }
+
 const VIEW = 260
 const OUTPUT = 512
+const MIN_ZOOM = 1
+const MAX_ZOOM = 3
 
-/** Mobile-friendly circular photo cropper: drag to pan, slider to zoom, exports a round PNG. */
+const clampZoom = (value: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value))
+
+/** Mobile-friendly circular photo cropper: drag to pan, pinch or slider to zoom, exports a round PNG. */
 export default function CircleCropper({ file, title = 'Кружок цвета', busy, onCancel, onConfirm }: CircleCropperProps) {
   const [url, setUrl] = useState<string | null>(null)
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null)
   const [zoom, setZoom] = useState(1)
-  const [offset, setOffset] = useState({ x: 0, y: 0 })
-  const drag = useRef<{ pointerX: number; pointerY: number; startX: number; startY: number } | null>(null)
+  const [offset, setOffset] = useState<Point>({ x: 0, y: 0 })
+  const pointers = useRef<Map<number, Point>>(new Map())
+  const drag = useRef<{ pointer: Point; offset: Point } | null>(null)
+  const pinch = useRef<{ distance: number; zoom: number; mid: Point; offset: Point } | null>(null)
   const imageRef = useRef<HTMLImageElement | null>(null)
 
   useEffect(() => {
@@ -47,28 +55,76 @@ export default function CircleCropper({ file, title = 'Кружок цвета',
     setOffset((current) => clamp(current))
   }, [clamp])
 
+  const twoPointers = (): [Point, Point] | null => {
+    const values = [...pointers.current.values()]
+    return values.length >= 2 ? [values[0], values[1]] : null
+  }
+
+  const beginGesture = () => {
+    const pair = twoPointers()
+    if (pair) {
+      const [a, b] = pair
+      pinch.current = {
+        distance: Math.hypot(a.x - b.x, a.y - b.y),
+        zoom,
+        mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+        offset,
+      }
+      drag.current = null
+      return
+    }
+    const only = [...pointers.current.values()][0]
+    if (only) {
+      pinch.current = null
+      drag.current = { pointer: only, offset }
+    }
+  }
+
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    event.currentTarget.setPointerCapture(event.pointerId)
-    drag.current = { pointerX: event.clientX, pointerY: event.clientY, startX: offset.x, startY: offset.y }
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    beginGesture()
   }
 
   const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!drag.current) {
+    if (!pointers.current.has(event.pointerId)) {
       return
     }
-    setOffset(
-      clamp({
-        x: drag.current.startX + (event.clientX - drag.current.pointerX),
-        y: drag.current.startY + (event.clientY - drag.current.pointerY),
-      })
-    )
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+
+    const pair = twoPointers()
+    if (pair && pinch.current) {
+      const [a, b] = pair
+      const distance = Math.hypot(a.x - b.x, a.y - b.y)
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+      setZoom(clampZoom((pinch.current.zoom * distance) / pinch.current.distance))
+      setOffset(
+        clamp({
+          x: pinch.current.offset.x + (mid.x - pinch.current.mid.x),
+          y: pinch.current.offset.y + (mid.y - pinch.current.mid.y),
+        })
+      )
+      return
+    }
+
+    if (drag.current) {
+      setOffset(
+        clamp({
+          x: drag.current.offset.x + (event.clientX - drag.current.pointer.x),
+          y: drag.current.offset.y + (event.clientY - drag.current.pointer.y),
+        })
+      )
+    }
   }
 
-  const endDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    drag.current = null
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+  const endPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
+    pointers.current.delete(event.pointerId)
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
+    pinch.current = null
+    drag.current = null
+    beginGesture()
   }
 
   const confirm = () => {
@@ -108,8 +164,8 @@ export default function CircleCropper({ file, title = 'Кружок цвета',
           style={{ width: VIEW, height: VIEW }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
+          onPointerUp={endPointer}
+          onPointerCancel={endPointer}
         >
           {url && (
             <img
@@ -139,7 +195,7 @@ export default function CircleCropper({ file, title = 'Кружок цвета',
             max={3}
             step={0.01}
             value={zoom}
-            onChange={(event) => setZoom(Number(event.target.value))}
+            onChange={(event) => setZoom(clampZoom(Number(event.target.value)))}
             className="h-2 flex-1 cursor-pointer accent-bubblegum-dark"
             aria-label="Приблизить"
           />

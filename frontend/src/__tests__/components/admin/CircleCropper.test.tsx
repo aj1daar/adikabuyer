@@ -26,4 +26,20 @@ describe('CircleCropper', () => {
 
     expect(screen.getByRole('button', { name: /загрузка/i })).toBeDisabled()
   })
+
+  it('zooms in when two pointers spread apart (pinch)', () => {
+    const { container } = render(
+      <CircleCropper file={file} onCancel={vi.fn()} onConfirm={vi.fn()} />
+    )
+    const surface = container.querySelector('.touch-none') as HTMLElement
+    const slider = screen.getByRole('slider', { name: /приблизить/i }) as HTMLInputElement
+
+    expect(Number(slider.value)).toBe(1)
+
+    fireEvent.pointerDown(surface, { pointerId: 1, clientX: 120, clientY: 130 })
+    fireEvent.pointerDown(surface, { pointerId: 2, clientX: 140, clientY: 130 })
+    fireEvent.pointerMove(surface, { pointerId: 2, clientX: 200, clientY: 130 })
+
+    expect(Number(slider.value)).toBeGreaterThan(1)
+  })
 })
