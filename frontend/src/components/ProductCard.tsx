@@ -152,15 +152,16 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
         )}
 
         {swatchColors.length > 0 && (
-          <div className={`flex flex-wrap gap-2 ${hideTagsAndVariantsOnMobile ? 'max-sm:hidden' : ''}`}>
+          <div className="flex flex-wrap gap-2 max-sm:gap-1.5">
             {swatchColors.map((color) => (
               <button
                 key={color}
                 type="button"
                 onClick={() => setActiveColor((current) => (current === color ? null : color))}
                 aria-label={color}
+                title={color}
                 aria-pressed={activeColor === color}
-                className={`h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 transition ${
+                className={`h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 transition active:scale-90 max-sm:h-7 max-sm:w-7 ${
                   activeColor === color
                     ? 'border-bubblegum-dark shadow-[2px_2px_0_0_#E8799F]'
                     : 'border-black hover:border-bubblegum-dark'

@@ -108,7 +108,7 @@ describe('ProductCard', () => {
     expect(screen.queryByRole('button', { name: 'Добавить в корзину' })).not.toBeInTheDocument()
   })
 
-  it('hides the colour-swatch row on mobile once 2 columns are selected', () => {
+  it('keeps the colour-swatch row visible even in the compact 2-column density', () => {
     const swatchProduct: ProductDto = {
       ...product,
       colorSwatches: { Black: 'black-swatch.jpg' },
@@ -116,7 +116,7 @@ describe('ProductCard', () => {
 
     render(<ProductCard product={swatchProduct} mobileColumns={2} />, { wrapper: MemoryRouter })
 
-    expect(screen.getByRole('button', { name: 'Black' }).parentElement).toHaveClass('max-sm:hidden')
+    expect(screen.getByRole('button', { name: 'Black' }).parentElement).not.toHaveClass('max-sm:hidden')
   })
 
   it('puts the price and compact add-to-cart button in separate rows once compact', () => {
