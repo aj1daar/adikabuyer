@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
+import ScribbleNote from './ScribbleNote'
 
 export default function HeroSection() {
   const reduceMotion = useReducedMotion()
@@ -28,7 +29,21 @@ export default function HeroSection() {
             и свяжемся с вами как можно скорее.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:justify-start">
+          <div className="relative flex flex-wrap items-center justify-center gap-4 sm:justify-start">
+            <ScribbleNote
+              text="жми сюда 🔥"
+              className="left-3 top-full mt-1"
+              rotate={-6}
+              direction="up"
+              reduceMotion={reduceMotion}
+            />
+            <ScribbleNote
+              text="а тут инфа 👀"
+              className="left-full top-1/2 ml-3 -translate-y-1/2"
+              rotate={7}
+              arrowClassName="h-8 w-11 -scale-x-100"
+              reduceMotion={reduceMotion}
+            />
             <Link
               to="/catalog"
               className="rounded-pill border-2 border-black bg-ink px-8 py-3 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F]"
@@ -55,6 +70,13 @@ export default function HeroSection() {
           whileHover={{ scale: 1.05, rotate: -3 }}
           whileTap={{ scale: 0.96 }}
         >
+          <ScribbleNote
+            text="залетай к нам ✨"
+            className="-top-11 left-1/2 -translate-x-1/2"
+            rotate={-4}
+            arrowClassName="h-9 w-12"
+            reduceMotion={reduceMotion}
+          />
           <motion.div
             aria-hidden="true"
             className="absolute -inset-4 rounded-full bg-gradient-to-br from-bubblegum via-bubblegum-light to-silver blur-2xl opacity-70"
