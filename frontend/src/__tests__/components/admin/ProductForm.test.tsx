@@ -122,6 +122,7 @@ describe('ProductForm', () => {
       category: null,
       active: true,
       colorSwatches: {},
+      labels: [],
       variants: [
         {
           id: undefined,
@@ -135,6 +136,27 @@ describe('ProductForm', () => {
         },
       ],
     })
+  })
+
+  it('adds product labels as removable chips and submits them', () => {
+    const onSubmit = vi.fn()
+    render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
+
+    fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'New Product' } })
+    fillFirstVariant('NEW-SKU-1', '15')
+
+    const labelInput = screen.getByPlaceholderText('+ метка')
+    fireEvent.change(labelInput, { target: { value: 'Limited' } })
+    fireEvent.keyDown(labelInput, { key: 'Enter' })
+    fireEvent.change(labelInput, { target: { value: 'С принтом' } })
+    fireEvent.keyDown(labelInput, { key: 'Enter' })
+
+    expect(screen.getByText('Limited')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Убрать метку Limited' }))
+
+    fireEvent.click(screen.getByRole('button', { name: /сохранить/i }))
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ labels: ['С принтом'] }))
   })
 
   it('submits a preset attribute value chosen from the dropdown', () => {

@@ -183,15 +183,47 @@ describe('ProductCard', () => {
     render(<ProductCard product={swatchProduct} />, { wrapper: MemoryRouter })
 
     expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'default.jpg')
-    expect(screen.getByText('Black')).toBeInTheDocument()
     expect(screen.getByText('25 KGS')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'White' }))
 
     expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'white-photo.jpg')
-    expect(screen.getByText('White')).toBeInTheDocument()
-    expect(screen.queryByText('Black')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'White' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByText('40 KGS')).toBeInTheDocument()
+  })
+
+  it('collapses many colours to a "+N" that links to the product', () => {
+    const many: ProductDto = {
+      ...product,
+      colorSwatches: { A: 'a.jpg', B: 'b.jpg', C: 'c.jpg', D: 'd.jpg', E: 'e.jpg', F: 'f.jpg' },
+      variants: ['A', 'B', 'C', 'D', 'E', 'F'].map((c, i) => ({
+        ...product.variants[0],
+        id: i + 1,
+        sku: `SKU-${c}`,
+        attributes: { color: c },
+      })),
+    }
+
+    render(<ProductCard product={many} />, { wrapper: MemoryRouter })
+
+    expect(screen.getAllByRole('button').filter((b) => /^[A-F]$/.test(b.getAttribute('aria-label') ?? ''))).toHaveLength(4)
+    expect(screen.getByRole('link', { name: /ещё 2/i })).toHaveAttribute('href', '/catalog/1')
+  })
+
+  it('appends "+N" to an attribute tag when a product spans several values', () => {
+    const matrix: ProductDto = {
+      ...product,
+      colorSwatches: {},
+      variants: [
+        { ...product.variants[0], id: 1, attributes: { volume: '591' } },
+        { ...product.variants[0], id: 2, attributes: { volume: '414' } },
+        { ...product.variants[0], id: 3, attributes: { volume: '946' } },
+      ],
+    }
+
+    render(<ProductCard product={matrix} />, { wrapper: MemoryRouter })
+
+    expect(screen.getByText('591 мл +2')).toBeInTheDocument()
   })
 
   it('adds the primary variant to the cart store when the button is clicked', () => {

@@ -7,6 +7,7 @@ import useCardTransitionStore from '../store/useCardTransitionStore'
 import { resolveVariantGallery } from '../utils/variantImage'
 import usePageTitle from '../hooks/usePageTitle'
 import formatPrice from '../utils/formatPrice'
+import ProductLabels from '../components/ProductLabels'
 import type { ProductDto, VariantDto } from '../types/catalog'
 import { attributeKeyLabel, COLOR_ATTRIBUTE_KEY, formatAttributeValue } from '../utils/attributeOptions'
 import {
@@ -185,11 +186,14 @@ export default function ProductPage() {
               </div>
 
               <div className="flex flex-col gap-5">
-                {product.category && (
-                  <span className="w-fit rounded-pill border-2 border-black bg-gradient-to-r from-bubblegum to-bubblegum-light px-4 py-1 font-grotesk text-xs font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]">
-                    {product.category}
-                  </span>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  {product.category && (
+                    <span className="w-fit rounded-pill border-2 border-black bg-gradient-to-r from-bubblegum to-bubblegum-light px-4 py-1 font-grotesk text-xs font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]">
+                      {product.category}
+                    </span>
+                  )}
+                  <ProductLabels labels={product.labels} size="page" />
+                </div>
 
                 <h1 className="font-grotesk text-4xl font-bold text-ink sm:text-5xl">{product.name}</h1>
 

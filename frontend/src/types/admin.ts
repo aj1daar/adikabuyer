@@ -18,5 +18,6 @@ export type ProductPayload = {
   category: string | null
   active: boolean
   colorSwatches: Record<string, string>
+  labels: string[]
   variants: VariantPayload[]
 }

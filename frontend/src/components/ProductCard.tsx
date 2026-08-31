@@ -4,8 +4,11 @@ import type { ProductDto } from '../types/catalog'
 import useCartStore from '../store/useCartStore'
 import useCardTransitionStore from '../store/useCardTransitionStore'
 import formatPrice from '../utils/formatPrice'
-import { formatAttributeValue } from '../utils/attributeOptions'
+import { COLOR_ATTRIBUTE_KEY, formatAttributeValue } from '../utils/attributeOptions'
 import type { MobileColumns } from './MobileColumnsToggle'
+import ProductLabels from './ProductLabels'
+
+const MAX_SWATCHES = 4
 
 type ProductCardProps = {
   product: ProductDto
@@ -36,6 +39,13 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
   )
   const colorSwatches = product.colorSwatches ?? {}
   const swatchColors = Object.keys(colorSwatches).filter((color) => sellableColors.has(color))
+  const visibleSwatches = swatchColors.slice(0, MAX_SWATCHES)
+  const hiddenSwatchCount = swatchColors.length - visibleSwatches.length
+
+  const distinctValueCount = (key: string) =>
+    new Set(
+      sellableVariants.map((variant) => String(variant.attributes[key] ?? '')).filter((value) => value !== '')
+    ).size
 
   const activeVariant = activeColor
     ? sellableVariants.find((variant) => String(variant.attributes.color ?? '') === activeColor)
@@ -48,7 +58,12 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     sellableVariants.find((variant) => variant.imageUrls.length > 0)?.imageUrls[0] ||
     null
   const attributeTags = shownVariant
-    ? Object.entries(shownVariant.attributes).map(([key, value]) => formatAttributeValue(key, value))
+    ? Object.entries(shownVariant.attributes)
+        .filter(([key]) => !(key === COLOR_ATTRIBUTE_KEY && swatchColors.length > 0))
+        .map(([key, value]) => {
+          const more = distinctValueCount(key) - 1
+          return `${formatAttributeValue(key, value)}${more > 0 ? ` +${more}` : ''}`
+        })
     : []
   // no colour picked → the product's "from" (cheapest) price; picked → that colour's price
   const shownPrice = activeVariant?.displayPrice ?? product.displayPrice
@@ -88,8 +103,10 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     <div
       ref={cardRef}
       onClickCapture={handleCardClick}
-      className="flex flex-col overflow-hidden rounded-3xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000] transition select-none hover:-translate-y-1 hover:shadow-[8px_8px_0_0_#E8799F] active:scale-[0.98]"
+      className="relative flex flex-col overflow-hidden rounded-3xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000] transition select-none hover:-translate-y-1 hover:shadow-[8px_8px_0_0_#E8799F] active:scale-[0.98]"
     >
+      <ProductLabels labels={product.labels} className="absolute left-3 top-3 z-10" />
+
       <Link
         to={`/catalog/${product.id}`}
         className="flex aspect-[4/5] items-center justify-center overflow-hidden border-b-2 border-black bg-silver"
@@ -154,8 +171,8 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
         )}
 
         {swatchColors.length > 0 && (
-          <div className="flex flex-wrap gap-2 max-sm:gap-1.5">
-            {swatchColors.map((color) => (
+          <div className="flex flex-wrap items-center gap-2 max-sm:gap-1.5">
+            {visibleSwatches.map((color) => (
               <button
                 key={color}
                 type="button"
@@ -172,6 +189,15 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
                 <img src={colorSwatches[color]} alt="" className="h-full w-full object-cover" />
               </button>
             ))}
+            {hiddenSwatchCount > 0 && (
+              <Link
+                to={`/catalog/${product.id}`}
+                aria-label={`Ещё ${hiddenSwatchCount} цвет(а/ов)`}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-silver font-grotesk text-xs font-bold text-ink transition hover:border-bubblegum-dark hover:bg-bubblegum hover:text-white max-sm:h-7 max-sm:w-7 max-sm:text-[10px]"
+              >
+                +{hiddenSwatchCount}
+              </Link>
+            )}
           </div>
         )}
 

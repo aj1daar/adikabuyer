@@ -23,6 +23,7 @@ export type ProductDto = {
   active: boolean
   imageUrl: string | null
   colorSwatches?: Record<string, string>
+  labels?: string[]
   variants: VariantDto[]
 }
 

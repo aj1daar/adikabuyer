@@ -92,6 +92,8 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   const [description, setDescription] = useState(product?.description ?? '')
   const [category, setCategory] = useState(product?.category ?? '')
   const [active, setActive] = useState(product?.active ?? true)
+  const [labels, setLabels] = useState<string[]>(product?.labels ?? [])
+  const [labelDraft, setLabelDraft] = useState('')
   const [variants, setVariants] = useState<VariantDraft[]>(toVariantDraft(product))
   const [uploadingVariantIndex, setUploadingVariantIndex] = useState<number | null>(null)
   const [variantUploadError, setVariantUploadError] = useState<string | null>(null)
@@ -156,6 +158,14 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
     } finally {
       setUploadingVariantIndex(null)
     }
+  }
+
+  const addLabel = () => {
+    const value = labelDraft.trim()
+    if (value && !labels.includes(value)) {
+      setLabels([...labels, value])
+    }
+    setLabelDraft('')
   }
 
   const addVariant = () => {
@@ -232,6 +242,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
       colorSwatches: Object.fromEntries(
         Object.entries(colorSwatches).filter(([color]) => colorValues.includes(color))
       ),
+      labels,
       variants: variantPayloads,
     }
 
@@ -279,6 +290,45 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               placeholder="Категория"
               className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
             />
+
+            <div className="flex flex-col gap-2">
+              <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
+                Метки (Limited, С принтом…)
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                {labels.map((label) => (
+                  <span
+                    key={label}
+                    className="flex items-center gap-1 rounded-pill border-2 border-black bg-bubblegum-light px-2.5 py-0.5 font-grotesk text-xs font-bold text-ink"
+                  >
+                    {label}
+                    <button
+                      type="button"
+                      onClick={() => setLabels(labels.filter((item) => item !== label))}
+                      aria-label={`Убрать метку ${label}`}
+                      className="font-bold text-ink/50 hover:text-bubblegum-dark"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                <input
+                  type="text"
+                  value={labelDraft}
+                  onChange={(event) => setLabelDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ',') {
+                      event.preventDefault()
+                      addLabel()
+                    }
+                  }}
+                  onBlur={addLabel}
+                  placeholder="+ метка"
+                  className="w-28 rounded-pill border-2 border-dashed border-black/40 px-3 py-1 font-grotesk text-sm text-ink outline-none focus:border-solid focus:border-bubblegum-dark"
+                />
+              </div>
+            </div>
+
             <label className="flex items-center gap-2 text-sm text-ink">
               <input
                 type="checkbox"
