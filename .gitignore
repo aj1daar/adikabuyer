@@ -2,3 +2,6 @@
 .env.prod
 .env.*.local
 .vscode/
+
+# local dev-only compose overlay (full backend in Docker, frontend on host)
+docker-compose.dev-full.yml
