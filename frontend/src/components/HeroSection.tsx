@@ -2,8 +2,16 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import ScribbleNote from './ScribbleNote'
 
+const MotionLink = motion.create(Link)
+
 export default function HeroSection() {
   const reduceMotion = useReducedMotion()
+
+  const ctaHover = reduceMotion ? { scale: 1.03 } : { y: -5 }
+  const ctaTap = { y: 0, scale: 0.95 }
+  const ctaSpring = reduceMotion
+    ? { duration: 0.15 }
+    : { type: 'spring' as const, stiffness: 500, damping: 11, mass: 0.6 }
 
   return (
     <section className="relative flex items-center overflow-hidden py-16 sm:h-[calc(100dvh-10rem)] sm:py-0">
@@ -39,23 +47,30 @@ export default function HeroSection() {
             />
             <ScribbleNote
               text="а тут инфа 👀"
-              className="left-full top-1/2 ml-1 -translate-y-1/2"
+              className="left-full top-1/2 ml-2 -translate-y-1/2"
               rotate={5}
               direction="left"
+              gap="gap-2.5"
               reduceMotion={reduceMotion}
             />
-            <Link
+            <MotionLink
               to="/catalog"
-              className="rounded-pill border-2 border-black bg-ink px-8 py-3 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F]"
+              className="rounded-pill border-2 border-black bg-ink px-8 py-3 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition-[background-color,box-shadow] hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F]"
+              whileHover={ctaHover}
+              whileTap={ctaTap}
+              transition={ctaSpring}
             >
               Смотреть каталог
-            </Link>
-            <Link
+            </MotionLink>
+            <MotionLink
               to="/about"
-              className="rounded-pill border-2 border-black bg-white px-8 py-3 font-grotesk text-sm font-bold text-ink transition hover:bg-bubblegum hover:text-white"
+              className="rounded-pill border-2 border-black bg-white px-8 py-3 font-grotesk text-sm font-bold text-ink transition-[background-color,color] hover:bg-bubblegum hover:text-white"
+              whileHover={ctaHover}
+              whileTap={ctaTap}
+              transition={ctaSpring}
             >
               Подробнее
-            </Link>
+            </MotionLink>
           </div>
         </div>
 

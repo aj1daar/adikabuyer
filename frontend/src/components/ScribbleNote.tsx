@@ -10,6 +10,8 @@ type ScribbleNoteProps = {
   rotate?: number
   /** which way the arrow points, toward the target */
   direction?: Direction
+  /** flex gap utility between the text and the arrow */
+  gap?: string
   reduceMotion?: boolean | null
 }
 
@@ -29,14 +31,14 @@ function Arrow({ rotate }: { rotate: number }) {
       viewBox="0 0 40 52"
       fill="none"
       aria-hidden="true"
-      className="h-10 w-8 shrink-0 text-ink"
+      className="h-10 w-8 shrink-0 text-black/25"
       style={{ transform: `rotate(${rotate}deg)` }}
     >
-      <path d="M20 4C10 15 30 26 20 42" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round" />
+      <path d="M20 4C10 15 30 26 20 42" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" />
       <path
         d="M12 34L20 45L28 34"
         stroke="currentColor"
-        strokeWidth="4.5"
+        strokeWidth="2.75"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -50,12 +52,13 @@ export default function ScribbleNote({
   className,
   rotate = 0,
   direction = 'down',
+  gap = 'gap-0.5',
   reduceMotion,
 }: ScribbleNoteProps) {
   return (
     <div aria-hidden="true" className={`pointer-events-none absolute z-10 hidden select-none sm:block ${className ?? ''}`}>
       <motion.div
-        className={`flex items-center gap-0.5 ${LAYOUT[direction]}`}
+        className={`flex items-center ${gap} ${LAYOUT[direction]}`}
         style={{ rotate }}
         animate={reduceMotion ? undefined : { rotate: [rotate - 1.5, rotate + 1.5, rotate - 1.5] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
