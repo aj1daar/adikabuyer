@@ -128,6 +128,7 @@ public class CatalogService {
         product.setBasePrice(deriveBasePrice(product.getVariants()));
         product.setImageUrl(deriveImageUrl(product.getVariants()));
         product.setColorSwatches(pruneColorSwatches(request.colorSwatches(), product.getVariants()));
+        product.setLabels(cleanLabels(request.labels()));
 
         return productMapper.toDto(saveOrConflict(product));
     }
@@ -153,6 +154,7 @@ public class CatalogService {
         product.setBasePrice(deriveBasePrice(product.getVariants()));
         product.setImageUrl(deriveImageUrl(product.getVariants()));
         product.setColorSwatches(pruneColorSwatches(request.colorSwatches(), product.getVariants()));
+        product.setLabels(cleanLabels(request.labels()));
 
         return productMapper.toDto(saveOrConflict(product));
     }
@@ -172,6 +174,23 @@ public class CatalogService {
                 kept.put(colour, url);
             }
         });
+        return kept;
+    }
+
+    private List<String> cleanLabels(List<String> requested) {
+        if (requested == null) {
+            return new ArrayList<>();
+        }
+        List<String> kept = new ArrayList<>();
+        for (String raw : requested) {
+            if (raw == null) {
+                continue;
+            }
+            String label = raw.trim();
+            if (!label.isEmpty() && !kept.contains(label)) {
+                kept.add(label);
+            }
+        }
         return kept;
     }
 

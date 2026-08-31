@@ -13,6 +13,7 @@ public record ProductRequest(
         @Size(max = 100) String category,
         boolean active,
         @Size(max = 50) Map<String, @Size(max = 500) String> colorSwatches,
+        @Size(max = 8) List<@Size(max = 40) String> labels,
         @Valid @Size(max = 100) List<VariantRequest> variants
 ) {
 }

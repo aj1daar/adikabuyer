@@ -54,6 +54,11 @@ public class Product {
     @Column(name = "color_swatches", nullable = false)
     private Map<String, String> colorSwatches = new HashMap<>();
 
+    @Builder.Default
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(nullable = false)
+    private List<String> labels = new ArrayList<>();
+
     @Column(nullable = false)
     private boolean active;
 
