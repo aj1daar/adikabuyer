@@ -7,6 +7,7 @@ import previewDisplayPrice from '../../utils/priceCommission'
 import {
   ATTRIBUTE_KEY_OPTIONS,
   ATTRIBUTE_VALUE_OPTIONS,
+  attributeKeyLabel,
   CUSTOM_ATTRIBUTE_KEY,
   VOLUME_ATTRIBUTE_KEY,
 } from '../../utils/attributeOptions'
@@ -15,10 +16,6 @@ import OptionDropdown from '../OptionDropdown'
 const KNOWN_ATTRIBUTE_KEYS = ATTRIBUTE_KEY_OPTIONS.map((option) => option.value).filter(
   (value) => value !== CUSTOM_ATTRIBUTE_KEY
 )
-
-function attributeKeyLabel(key: string): string {
-  return ATTRIBUTE_KEY_OPTIONS.find((option) => option.value === key)?.label ?? key
-}
 
 function findDuplicateAttribute(rows: AttributeRow[]): string | null {
   const seen = new Set<string>()

@@ -8,7 +8,13 @@ import { resolveVariantGallery } from '../utils/variantImage'
 import usePageTitle from '../hooks/usePageTitle'
 import formatPrice from '../utils/formatPrice'
 import type { ProductDto, VariantDto } from '../types/catalog'
-import { formatAttributeValue } from '../utils/attributeOptions'
+import { attributeKeyLabel, formatAttributeValue } from '../utils/attributeOptions'
+import {
+  attributeKeys,
+  attributeValues,
+  isCombinationAvailable,
+  selectVariant,
+} from '../utils/variantSelection'
 
 function variantLabel(variant: VariantDto, index: number): string {
   if (!variant.sku.startsWith('DEFAULT-')) {
@@ -16,10 +22,6 @@ function variantLabel(variant: VariantDto, index: number): string {
   }
   const values = Object.entries(variant.attributes).map(([key, value]) => formatAttributeValue(key, value))
   return values.length > 0 ? values.join(' · ') : `Вариант ${index + 1}`
-}
-
-function variantAttributeTags(variant: VariantDto): string[] {
-  return Object.entries(variant.attributes).map(([key, value]) => formatAttributeValue(key, value))
 }
 
 export default function ProductPage() {
@@ -88,9 +90,21 @@ export default function ProductPage() {
   const imageUrl = gallery[Math.min(photoIndex, gallery.length - 1)] ?? null
   const price = selectedVariant?.displayPrice ?? product?.displayPrice ?? 0
 
-  const selectVariant = (variantId: number) => {
+  const chooseVariant = (variantId: number) => {
     setSelectedVariantId(variantId)
     setPhotoIndex(0)
+  }
+
+  const keys = product ? attributeKeys(product.variants) : []
+
+  const chooseAttribute = (key: string, value: string) => {
+    if (!product) {
+      return
+    }
+    const next = selectVariant(product.variants, selectedVariant, key, value)
+    if (next) {
+      chooseVariant(next.id)
+    }
   }
 
   const initials = (product?.name ?? '')
@@ -184,7 +198,44 @@ export default function ProductPage() {
 
                 <p className="font-grotesk text-3xl font-bold text-ink">{formatPrice(price)}</p>
 
-                {product.variants.length > 1 && (
+                {product.variants.length > 1 && keys.length > 0 &&
+                  keys.map((key) => (
+                    <div key={key} className="flex flex-col gap-2">
+                      <span className="font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
+                        {attributeKeyLabel(key)}
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {attributeValues(product.variants, key).map((value) => {
+                          const selected = String(selectedVariant?.attributes[key] ?? '') === value
+                          const available = isCombinationAvailable(
+                            product.variants,
+                            selectedVariant,
+                            key,
+                            value
+                          )
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => chooseAttribute(key, value)}
+                              aria-pressed={selected}
+                              className={`min-h-[44px] rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
+                                selected
+                                  ? 'bg-ink text-white shadow-[3px_3px_0_0_#E8799F]'
+                                  : available
+                                    ? 'bg-white text-ink hover:bg-bubblegum hover:text-white'
+                                    : 'bg-white text-ink/40 line-through hover:bg-bubblegum hover:text-white hover:no-underline'
+                              }`}
+                            >
+                              {formatAttributeValue(key, value)}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+
+                {product.variants.length > 1 && keys.length === 0 && (
                   <div className="flex flex-col gap-2">
                     <span className="font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
                       Вариант
@@ -194,9 +245,9 @@ export default function ProductPage() {
                         <button
                           key={variant.id}
                           type="button"
-                          onClick={() => selectVariant(variant.id)}
+                          onClick={() => chooseVariant(variant.id)}
                           aria-pressed={variant.id === selectedVariantId}
-                          className={`rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
+                          className={`min-h-[44px] rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
                             variant.id === selectedVariantId
                               ? 'bg-ink text-white shadow-[3px_3px_0_0_#E8799F]'
                               : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
@@ -206,19 +257,6 @@ export default function ProductPage() {
                         </button>
                       ))}
                     </div>
-                  </div>
-                )}
-
-                {selectedVariant && variantAttributeTags(selectedVariant).length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {variantAttributeTags(selectedVariant).map((tag, index) => (
-                      <span
-                        key={index}
-                        className="rounded-pill border-2 border-black bg-silver px-2 py-0.5 font-grotesk text-xs font-bold text-ink"
-                      >
-                        {tag}
-                      </span>
-                    ))}
                   </div>
                 )}
 

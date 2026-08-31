@@ -66,7 +66,7 @@ beforeEach(() => {
 })
 
 describe('ProductPage', () => {
-  it('loads the product and shows name, price, and variant pills', async () => {
+  it('loads the product and shows name, price, and one clickable row per attribute', async () => {
     mockedGet.mockResolvedValue({ data: product })
 
     renderPage()
@@ -74,20 +74,21 @@ describe('ProductPage', () => {
     expect(await screen.findByText('Custom Tumbler')).toBeInTheDocument()
     expect(mockedGet).toHaveBeenCalledWith('/products/7', expect.anything())
     expect(screen.getByText('25 KGS')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'TUM-BLK' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'TUM-WHT' })).toBeInTheDocument()
+    expect(screen.getByText('Цвет')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Black' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'White' })).toBeInTheDocument()
   })
 
-  it('switches image, price, and status when another variant is selected', async () => {
+  it('switches image, price, and status when another attribute value is selected', async () => {
     mockedGet.mockResolvedValue({ data: product })
 
     renderPage()
 
-    fireEvent.click(await screen.findByRole('button', { name: 'TUM-WHT' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'White' }))
 
     expect(screen.getByText('30 KGS')).toBeInTheDocument()
     expect(screen.getByText('Под заказ')).toBeInTheDocument()
-    expect(screen.getByText('White')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'White' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'black.jpg')
   })
 
@@ -96,7 +97,7 @@ describe('ProductPage', () => {
 
     renderPage()
 
-    fireEvent.click(await screen.findByRole('button', { name: 'TUM-WHT' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'White' }))
     fireEvent.click(screen.getByRole('button', { name: 'Увеличить количество' }))
     fireEvent.click(screen.getByRole('button', { name: 'В корзину' }))
 
@@ -127,19 +128,44 @@ describe('ProductPage', () => {
     await waitFor(() => expect(screen.getByText('boom')).toBeInTheDocument())
   })
 
-  it('falls back to attribute values for legacy auto-generated variant names', async () => {
-    const legacyProduct: ProductDto = {
+  it('falls back to a flat variant list when variants carry no attributes', async () => {
+    const noAttributeProduct: ProductDto = {
       ...product,
       variants: [
-        { ...product.variants[0], sku: 'DEFAULT-ABC123' },
-        { ...product.variants[1], sku: 'DEFAULT-XYZ789' },
+        { ...product.variants[0], attributes: {} },
+        { ...product.variants[1], attributes: {} },
       ],
     }
-    mockedGet.mockResolvedValue({ data: legacyProduct })
+    mockedGet.mockResolvedValue({ data: noAttributeProduct })
 
     renderPage()
 
-    expect(await screen.findByRole('button', { name: 'Black' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'White' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'TUM-BLK' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'TUM-WHT' })).toBeInTheDocument()
+  })
+
+  it('keeps the rest of the selection when a compatible value is picked, snaps it otherwise', async () => {
+    const matrixProduct: ProductDto = {
+      ...product,
+      variants: [
+        { ...product.variants[0], id: 11, sku: 'DEFAULT-A', attributes: { color: 'Black', volume: '591' }, imageUrls: ['a.jpg'] },
+        { ...product.variants[0], id: 12, sku: 'DEFAULT-B', attributes: { color: 'Black', volume: '414' }, imageUrls: ['b.jpg'] },
+        { ...product.variants[0], id: 13, sku: 'DEFAULT-C', attributes: { color: 'White', volume: '591' }, imageUrls: ['c.jpg'] },
+      ],
+    }
+    mockedGet.mockResolvedValue({ data: matrixProduct })
+
+    renderPage()
+
+    // start: Black / 591
+    fireEvent.click(await screen.findByRole('button', { name: '414 мл' }))
+    expect(screen.getByRole('button', { name: 'Black' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: '414 мл' })).toHaveAttribute('aria-pressed', 'true')
+
+    // White has no 414 -> snaps volume back to 591
+    fireEvent.click(screen.getByRole('button', { name: 'White' }))
+    expect(screen.getByRole('button', { name: 'White' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: '591 мл' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'c.jpg')
   })
 })
