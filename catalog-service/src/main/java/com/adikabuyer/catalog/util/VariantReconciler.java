@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public final class VariantReconciler {
 
@@ -47,7 +48,7 @@ public final class VariantReconciler {
     public static Variant buildVariant(VariantRequest request, Product product, Instant now) {
         return Variant.builder()
                 .product(product)
-                .sku(request.sku())
+                .sku(resolveSku(request.sku(), null))
                 .attributes(request.attributes() != null ? request.attributes() : new HashMap<>())
                 .priceOverride(request.priceOverride())
                 .stockQuantity(resolveStockQuantity(request))
@@ -60,7 +61,7 @@ public final class VariantReconciler {
     }
 
     private static void applyVariantRequest(Variant variant, VariantRequest request, Instant now) {
-        variant.setSku(request.sku());
+        variant.setSku(resolveSku(request.sku(), variant.getSku()));
         variant.setAttributes(request.attributes() != null ? request.attributes() : new HashMap<>());
         variant.setPriceOverride(request.priceOverride());
         variant.setStockQuantity(resolveStockQuantity(request));
@@ -68,6 +69,16 @@ public final class VariantReconciler {
         variant.setImageUrls(request.imageUrls() != null ? new ArrayList<>(request.imageUrls()) : new ArrayList<>());
         variant.setStatus(request.statusOrDefault());
         variant.setUpdatedAt(now);
+    }
+
+    private static String resolveSku(String requested, String existing) {
+        if (requested != null && !requested.isBlank()) {
+            return requested.trim();
+        }
+        if (existing != null && !existing.isBlank()) {
+            return existing;
+        }
+        return "DEFAULT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
     private static Integer resolveStockQuantity(VariantRequest request) {

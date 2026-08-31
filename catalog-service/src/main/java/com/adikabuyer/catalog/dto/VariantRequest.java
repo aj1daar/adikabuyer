@@ -1,7 +1,6 @@
 package com.adikabuyer.catalog.dto;
 
 import com.adikabuyer.catalog.domain.VariantStatus;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -13,7 +12,7 @@ import java.util.Map;
 
 public record VariantRequest(
         Long id,
-        @NotBlank @Size(max = 100) String sku,
+        @Size(max = 100) String sku,
         Map<String, Object> attributes,
         @NotNull @Positive BigDecimal priceOverride,
         @NotNull @PositiveOrZero Integer stockQuantity,
