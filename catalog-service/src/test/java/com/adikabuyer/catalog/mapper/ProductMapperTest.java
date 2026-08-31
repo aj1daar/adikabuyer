@@ -38,6 +38,7 @@ class ProductMapperTest {
                 .imageUrl("http://localhost:9000/adikabuyer-media/photo.png")
                 .colorSwatches(Map.of("black", "http://localhost:9000/adikabuyer-media/black-swatch.png"))
                 .labels(List.of("Limited", "С принтом"))
+                .brand("Stanley")
                 .build();
         Variant variant = Variant.builder()
                 .id(10L)
@@ -59,6 +60,7 @@ class ProductMapperTest {
         assertThat(dto.imageUrl()).isEqualTo("http://localhost:9000/adikabuyer-media/photo.png");
         assertThat(dto.colorSwatches()).containsEntry("black", "http://localhost:9000/adikabuyer-media/black-swatch.png");
         assertThat(dto.labels()).containsExactly("Limited", "С принтом");
+        assertThat(dto.brand()).isEqualTo("Stanley");
         assertThat(dto.displayPrice()).isEqualByComparingTo("2000");
         assertThat(dto.variants().get(0).displayPrice()).isEqualByComparingTo("2000");
     }

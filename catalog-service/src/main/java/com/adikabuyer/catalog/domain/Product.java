@@ -43,6 +43,8 @@ public class Product {
 
     private String category;
 
+    private String brand;
+
     @Column(name = "base_price", nullable = false)
     private BigDecimal basePrice;
 

@@ -112,6 +112,7 @@ public class CatalogService {
                 .name(request.name())
                 .description(request.description())
                 .category(request.category())
+                .brand(normalize(request.brand()))
                 .active(request.active())
                 .createdAt(now)
                 .updatedAt(now)
@@ -146,6 +147,7 @@ public class CatalogService {
         product.setName(request.name());
         product.setDescription(request.description());
         product.setCategory(request.category());
+        product.setBrand(normalize(request.brand()));
         product.setActive(request.active());
         product.setUpdatedAt(now);
 
