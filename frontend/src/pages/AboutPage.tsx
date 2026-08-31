@@ -19,16 +19,18 @@ const steps: Step[] = [
     title: 'Оформи заказ',
     description: 'Добавь в корзину, укажи имя, телефон и город.',
     clouds: [
-      { text: 'имя · телефон · город', className: 'right-full top-1 mr-4 -rotate-2' },
-      { text: 'оплата при получении', className: 'right-full bottom-1 mr-3 rotate-3' },
+      { text: 'имя · телефон · город', className: 'right-full top-0 mr-3 -rotate-2' },
+      { text: 'оплата при оформлении', className: 'right-full top-1/2 mr-6 -translate-y-1/2 rotate-2' },
+      { text: 'мы с вами свяжемся', className: 'right-full bottom-0 mr-3 -rotate-3' },
     ],
   },
   {
     title: 'Получи заказ',
     description: 'Соберём под тебя и согласуем доставку.',
     clouds: [
-      { text: 'напишем в telegram', className: 'right-full top-1 mr-3 rotate-2' },
-      { text: 'трек-номер по запросу', className: 'right-full bottom-1 mr-5 -rotate-3' },
+      { text: 'доставка по Бишкеку', className: 'right-full top-0 mr-3 rotate-2' },
+      { text: 'по всему КР — с доплатой', className: 'right-full top-1/2 mr-5 -translate-y-1/2 -rotate-2' },
+      { text: 'через Яндекс Доставку', className: 'right-full bottom-0 mr-3 rotate-3' },
     ],
   },
 ]
