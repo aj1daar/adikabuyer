@@ -10,7 +10,7 @@ describe('ScribbleNote', () => {
     const root = container.firstElementChild as HTMLElement
     expect(root).toHaveAttribute('aria-hidden', 'true')
     expect(root.className).toContain('pointer-events-none')
-    expect(root.className).toContain('absolute')
+    expect(root.className).toContain('sm:block')
   })
 
   it('rotates the arrow to point the requested way', () => {
