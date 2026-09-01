@@ -46,7 +46,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
 
   const sellableVariants = product.variants.filter((variant) => variant.status !== 'SOLD_OUT')
   const sellableColors = new Set(
-    sellableVariants.map((variant) => String(variant.attributes.color ?? ''))
+    sellableVariants.map((variant) => String(variant.attributes[COLOR_ATTRIBUTE_KEY] ?? ''))
   )
   const colorSwatches = product.colorSwatches ?? {}
   const swatchColors = Object.keys(colorSwatches).filter((color) => sellableColors.has(color))
@@ -60,7 +60,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     ).size
 
   const activeVariant = activeColor
-    ? sellableVariants.find((variant) => String(variant.attributes.color ?? '') === activeColor)
+    ? sellableVariants.find((variant) => String(variant.attributes[COLOR_ATTRIBUTE_KEY] ?? '') === activeColor)
     : undefined
   const shownVariant = activeVariant ?? sellableVariants[0]
 
