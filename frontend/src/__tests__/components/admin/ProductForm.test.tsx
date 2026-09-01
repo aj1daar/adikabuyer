@@ -189,6 +189,30 @@ describe('ProductForm', () => {
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ labels: ['С принтом'] }))
   })
 
+  it('caps labels at 8 and hides the input once the cap is reached', () => {
+    render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
+
+    const labelInput = screen.getByPlaceholderText('+ метка')
+    for (let i = 0; i < 8; i += 1) {
+      fireEvent.change(labelInput, { target: { value: `Метка ${i}` } })
+      fireEvent.keyDown(labelInput, { key: 'Enter' })
+    }
+
+    expect(screen.getByText('Метки (Limited, С принтом…) (8/8)')).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('+ метка')).not.toBeInTheDocument()
+  })
+
+  it('truncates an overlong label to 40 characters', () => {
+    render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
+
+    const labelInput = screen.getByPlaceholderText('+ метка')
+    const overlong = 'a'.repeat(60)
+    fireEvent.change(labelInput, { target: { value: overlong } })
+    fireEvent.keyDown(labelInput, { key: 'Enter' })
+
+    expect(screen.getByText('a'.repeat(40))).toBeInTheDocument()
+  })
+
   it('submits a freely typed colour value', () => {
     const onSubmit = vi.fn()
     render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
