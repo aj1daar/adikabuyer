@@ -59,14 +59,17 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     product.imageUrl ||
     sellableVariants.find((variant) => variant.imageUrls.length > 0)?.imageUrls[0] ||
     null
+  const tagKeys = (attributes: Record<string, unknown>) =>
+    Object.entries(attributes).filter(([key]) => !(key === COLOR_ATTRIBUTE_KEY && swatchColors.length > 0))
   const attributeTags = shownVariant
-    ? Object.entries(shownVariant.attributes)
-        .filter(([key]) => !(key === COLOR_ATTRIBUTE_KEY && swatchColors.length > 0))
-        .map(([key, value]) => {
-          const more = distinctValueCount(key) - 1
-          return `${formatAttributeValue(key, value)}${more > 0 ? ` +${more}` : ''}`
-        })
+    ? tagKeys(shownVariant.attributes).map(([key, value]) => {
+        const more = distinctValueCount(key) - 1
+        return `${formatAttributeValue(key, value)}${more > 0 ? ` +${more}` : ''}`
+      })
     : []
+  // reserve the tag row whenever any variant could show one, so picking a colour
+  // (which swaps the shown variant) never grows or shrinks the card
+  const reserveTagRow = sellableVariants.some((variant) => tagKeys(variant.attributes).length > 0)
   // no colour picked → the product's "from" (cheapest) price; picked → that colour's price
   const shownPrice = activeVariant?.displayPrice ?? product.displayPrice
 
@@ -172,12 +175,16 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
           </p>
         )}
 
-        {attributeTags.length > 0 && (
-          <div className={`flex flex-wrap gap-1 ${hideTagsAndVariantsOnMobile ? 'max-sm:hidden' : ''}`}>
+        {reserveTagRow && (
+          <div
+            className={`flex h-[26px] shrink-0 items-center gap-1 overflow-hidden ${
+              hideTagsAndVariantsOnMobile ? 'max-sm:hidden' : ''
+            }`}
+          >
             {attributeTags.map((tag, index) => (
               <span
                 key={index}
-                className="rounded-pill border-2 border-black bg-silver px-2 py-0.5 font-grotesk text-xs font-bold text-ink"
+                className="shrink-0 whitespace-nowrap rounded-pill border-2 border-black bg-silver px-2 py-0.5 font-grotesk text-xs font-bold text-ink"
               >
                 {tag}
               </span>
