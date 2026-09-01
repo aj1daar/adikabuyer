@@ -38,7 +38,7 @@ export default function HeroSection() {
             и свяжемся с вами как можно скорее.
           </p>
 
-          <div className="relative flex flex-wrap items-start justify-center gap-x-4 gap-y-3 sm:items-center sm:justify-start">
+          <div className="relative flex flex-wrap items-start justify-center gap-x-4 gap-y-6 sm:items-center sm:justify-start sm:gap-y-4">
             <ScribbleNote
               text="жми сюда 🔥"
               className="left-8 top-full"
@@ -54,11 +54,14 @@ export default function HeroSection() {
               gap="gap-2.5"
               reduceMotion={reduceMotion}
             />
-            <div className="flex flex-col items-center gap-1.5 sm:contents">
-              <HeroBubbles bubbles={[{ text: 'жми сюда 🔥', rotate: -4 }]} />
+            <div className="relative sm:contents">
+              <HeroBubbles
+                overlay
+                bubbles={[{ text: 'жми сюда 🔥', rotate: -6, className: 'right-1 -top-2' }]}
+              />
               <MotionLink
                 to="/catalog"
-                className="rounded-pill border-2 border-black bg-ink px-8 py-3 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition-[background-color,box-shadow] hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F]"
+                className="block rounded-pill border-2 border-black bg-ink px-8 py-3 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition-[background-color,box-shadow] hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F]"
                 whileHover={ctaHover}
                 whileTap={ctaTap}
                 transition={ctaSpring}
@@ -66,11 +69,14 @@ export default function HeroSection() {
                 Смотреть каталог
               </MotionLink>
             </div>
-            <div className="flex flex-col items-center gap-1.5 sm:contents">
-              <HeroBubbles bubbles={[{ text: 'а тут инфа 👀', tone: 'pink', rotate: 3 }]} />
+            <div className="relative sm:contents">
+              <HeroBubbles
+                overlay
+                bubbles={[{ text: 'а тут инфа 👀', tone: 'pink', rotate: 5, className: 'left-1 -top-2' }]}
+              />
               <MotionLink
                 to="/about"
-                className="rounded-pill border-2 border-black bg-white px-8 py-3 font-grotesk text-sm font-bold text-ink transition-[background-color,color] hover:bg-bubblegum hover:text-white"
+                className="block rounded-pill border-2 border-black bg-white px-8 py-3 font-grotesk text-sm font-bold text-ink transition-[background-color,color] hover:bg-bubblegum hover:text-white"
                 whileHover={ctaHover}
                 whileTap={ctaTap}
                 transition={ctaSpring}
@@ -81,14 +87,12 @@ export default function HeroSection() {
           </div>
         </div>
 
-        <HeroBubbles className="-mb-2 sm:hidden" bubbles={[{ text: 'залетай к нам ✨', rotate: -2 }]} />
-
         <motion.a
           href="https://www.instagram.com/adika.buyer/"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Adika Buyer в Instagram"
-          className="relative mt-2 block h-56 w-56 shrink-0 sm:mt-0 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
+          className="relative mt-8 block h-56 w-56 shrink-0 sm:mt-0 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
           animate={reduceMotion ? undefined : { y: [0, -14, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
           whileHover={{ scale: 1.05, rotate: -3 }}
@@ -100,6 +104,10 @@ export default function HeroSection() {
             rotate={-4}
             direction="down"
             reduceMotion={reduceMotion}
+          />
+          <HeroBubbles
+            overlay
+            bubbles={[{ text: 'залетай к нам ✨', rotate: -4, className: '-top-2 right-3' }]}
           />
           <motion.div
             aria-hidden="true"
