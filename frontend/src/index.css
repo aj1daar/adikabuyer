@@ -16,27 +16,33 @@
     @apply bg-white text-ink antialiased;
   }
 
-  /* Neo-Y2K scrollbars (Chromium / Safari) — silver rail, black pill thumb.
-     iOS Safari keeps its own overlay bars; these are the desktop look. */
+  /* Neo-Y2K scrollbars (Chromium / Safari) — silver rail with a thick black edge,
+     chunky black pill thumb, bubblegum on grab. iOS keeps its own overlay bars. */
   ::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
+    width: 16px;
+    height: 16px;
   }
 
   ::-webkit-scrollbar-track {
     background: #f1f1f3;
-    border-left: 2px solid #0a0a0a;
+    border-left: 3px solid #0a0a0a;
   }
 
   ::-webkit-scrollbar-track:horizontal {
     border-left: 0;
-    border-top: 2px solid #0a0a0a;
+    border-top: 3px solid #0a0a0a;
   }
 
   ::-webkit-scrollbar-thumb {
+    min-height: 48px;
     background: #0a0a0a;
     border: 3px solid #f1f1f3;
     border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:horizontal {
+    min-height: 0;
+    min-width: 48px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
