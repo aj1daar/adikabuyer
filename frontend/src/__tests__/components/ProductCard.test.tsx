@@ -1,9 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import ProductCard from '../../components/ProductCard'
 import useCartStore from '../../store/useCartStore'
+import useIsMobileViewport from '../../hooks/useIsMobileViewport'
 import type { ProductDto } from '../../types/catalog'
+
+vi.mock('../../hooks/useIsMobileViewport', () => ({ default: vi.fn(() => false) }))
+const mockedIsMobile = vi.mocked(useIsMobileViewport)
 
 const product: ProductDto = {
   id: 1,
@@ -32,6 +36,7 @@ const product: ProductDto = {
 
 beforeEach(() => {
   useCartStore.setState({ items: [], isOpen: false })
+  mockedIsMobile.mockReturnValue(false)
 })
 
 describe('ProductCard', () => {
@@ -208,6 +213,36 @@ describe('ProductCard', () => {
 
     expect(screen.getAllByRole('button').filter((b) => /^[A-F]$/.test(b.getAttribute('aria-label') ?? ''))).toHaveLength(4)
     expect(screen.getByRole('link', { name: /ещё 2/i })).toHaveAttribute('href', '/catalog/1')
+  })
+
+  it('caps swatches at three on mobile', () => {
+    mockedIsMobile.mockReturnValue(true)
+    const many: ProductDto = {
+      ...product,
+      colorSwatches: { A: 'a.jpg', B: 'b.jpg', C: 'c.jpg', D: 'd.jpg', E: 'e.jpg' },
+      variants: ['A', 'B', 'C', 'D', 'E'].map((c, i) => ({
+        ...product.variants[0],
+        id: i + 1,
+        sku: `SKU-${c}`,
+        attributes: { color: c },
+      })),
+    }
+
+    render(<ProductCard product={many} mobileColumns={2} />, { wrapper: MemoryRouter })
+
+    expect(
+      screen.getAllByRole('button').filter((b) => /^[A-E]$/.test(b.getAttribute('aria-label') ?? ''))
+    ).toHaveLength(3)
+    expect(screen.getByRole('link', { name: /ещё 2/i })).toBeInTheDocument()
+  })
+
+  it('hides the swatch row entirely in the 3-column mobile view', () => {
+    mockedIsMobile.mockReturnValue(true)
+    const swatched: ProductDto = { ...product, colorSwatches: { Black: 'b.jpg' } }
+
+    render(<ProductCard product={swatched} mobileColumns={3} />, { wrapper: MemoryRouter })
+
+    expect(screen.queryByRole('button', { name: 'Black' })).not.toBeInTheDocument()
   })
 
   it('appends "+N" to an attribute tag when a product spans several values', () => {
