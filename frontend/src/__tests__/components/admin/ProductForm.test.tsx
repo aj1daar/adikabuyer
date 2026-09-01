@@ -100,6 +100,36 @@ describe('ProductForm', () => {
     expect(screen.getByText('Вариант 1')).toBeInTheDocument()
   })
 
+  it('collapses loaded variants to a name + price line and expands one on click', () => {
+    const twoVariants: ProductDto = {
+      ...existingProduct,
+      variants: [
+        existingProduct.variants[0],
+        { ...existingProduct.variants[0], id: 11, sku: 'TUM-WHT-500', priceOverride: 30 },
+      ],
+    }
+    render(<ProductForm product={twoVariants} onSubmit={vi.fn()} onClose={vi.fn()} />)
+
+    expect(screen.queryByDisplayValue('TUM-BLK-500')).not.toBeInTheDocument()
+    expect(screen.getByText(/TUM-WHT-500 · 30 KGS/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Вариант 1' }))
+    expect(screen.getByDisplayValue('TUM-BLK-500')).toBeInTheDocument()
+  })
+
+  it('caps a variant at five attributes', () => {
+    render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
+
+    fillFirstVariant('NEW-SKU-1', '15')
+    const addAttr = screen.getByRole('button', { name: /добавить атрибут/i })
+    for (let i = 0; i < 7; i += 1) {
+      fireEvent.click(addAttr)
+    }
+
+    expect(screen.getByText('Атрибуты (5/5)')).toBeInTheDocument()
+    expect(addAttr).toBeDisabled()
+  })
+
   it('submits a correctly shaped payload with parsed numbers and filtered attributes', () => {
     const onSubmit = vi.fn()
     render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)
@@ -355,10 +385,10 @@ describe('ProductForm', () => {
     expect(screen.getByText(/добавьте хотя бы один вариант/i)).toBeInTheDocument()
   })
 
-  it('shows a colour-swatch section and opens the cropper when a swatch photo is picked', () => {
+  it('shows a per-variant colour swatch and opens the cropper when a photo is picked', () => {
     render(<ProductForm product={existingProduct} onSubmit={vi.fn()} onClose={vi.fn()} />)
 
-    expect(screen.getByText('Кружки цвета')).toBeInTheDocument()
+    expect(screen.getByText('Кружок цвета «black»')).toBeInTheDocument()
 
     const input = screen.getByLabelText('Фото цвета black')
     fireEvent.change(input, { target: { files: [new File(['x'], 's.png', { type: 'image/png' })] } })

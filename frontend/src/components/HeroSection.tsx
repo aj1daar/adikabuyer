@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import ScribbleNote from './ScribbleNote'
+import HeroBubbles from './HeroBubbles'
 
 const MotionLink = motion.create(Link)
 
@@ -37,7 +38,7 @@ export default function HeroSection() {
             и свяжемся с вами как можно скорее.
           </p>
 
-          <div className="relative flex flex-wrap items-center justify-center gap-4 sm:justify-start">
+          <div className="relative flex flex-wrap items-start justify-center gap-x-4 gap-y-6 sm:items-center sm:justify-start sm:gap-y-4">
             <ScribbleNote
               text="жми сюда 🔥"
               className="left-8 top-full"
@@ -53,24 +54,36 @@ export default function HeroSection() {
               gap="gap-2.5"
               reduceMotion={reduceMotion}
             />
-            <MotionLink
-              to="/catalog"
-              className="rounded-pill border-2 border-black bg-ink px-8 py-3 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition-[background-color,box-shadow] hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F]"
-              whileHover={ctaHover}
-              whileTap={ctaTap}
-              transition={ctaSpring}
-            >
-              Смотреть каталог
-            </MotionLink>
-            <MotionLink
-              to="/about"
-              className="rounded-pill border-2 border-black bg-white px-8 py-3 font-grotesk text-sm font-bold text-ink transition-[background-color,color] hover:bg-bubblegum hover:text-white"
-              whileHover={ctaHover}
-              whileTap={ctaTap}
-              transition={ctaSpring}
-            >
-              Подробнее
-            </MotionLink>
+            <div className="relative sm:contents">
+              <HeroBubbles
+                overlay
+                bubbles={[{ text: 'жми сюда 🔥', rotate: -6, className: 'right-1 -top-2' }]}
+              />
+              <MotionLink
+                to="/catalog"
+                className="block rounded-pill border-2 border-black bg-ink px-8 py-3 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition-[background-color,box-shadow] hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F]"
+                whileHover={ctaHover}
+                whileTap={ctaTap}
+                transition={ctaSpring}
+              >
+                Смотреть каталог
+              </MotionLink>
+            </div>
+            <div className="relative sm:contents">
+              <HeroBubbles
+                overlay
+                bubbles={[{ text: 'а тут инфа 👀', tone: 'pink', rotate: 5, className: 'left-1 -top-2' }]}
+              />
+              <MotionLink
+                to="/about"
+                className="block rounded-pill border-2 border-black bg-white px-8 py-3 font-grotesk text-sm font-bold text-ink transition-[background-color,color] hover:bg-bubblegum hover:text-white"
+                whileHover={ctaHover}
+                whileTap={ctaTap}
+                transition={ctaSpring}
+              >
+                Подробнее
+              </MotionLink>
+            </div>
           </div>
         </div>
 
@@ -91,6 +104,10 @@ export default function HeroSection() {
             rotate={-4}
             direction="down"
             reduceMotion={reduceMotion}
+          />
+          <HeroBubbles
+            overlay
+            bubbles={[{ text: 'залетай к нам ✨', rotate: -4, className: '-top-2 right-3' }]}
           />
           <motion.div
             aria-hidden="true"

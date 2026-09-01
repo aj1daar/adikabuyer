@@ -46,16 +46,37 @@ type VariantDraft = {
   imageUrls: string[]
   attributes: AttributeRow[]
   status: VariantStatus
+  collapsed: boolean
 }
 
 /** A sold-out variant carries no stock and is never orderable. */
 const isStockless = (status: VariantStatus) => status === 'PRE_ORDER' || status === 'SOLD_OUT'
+
+/** Colour, size, volume + a couple of descriptive tags is already plenty. */
+const MAX_ATTRIBUTES_PER_VARIANT = 5
 
 const STATUS_TOGGLE: { value: VariantStatus; label: string }[] = [
   { value: 'IN_STOCK', label: 'В наличии' },
   { value: 'PRE_ORDER', label: 'Под заказ' },
   { value: 'SOLD_OUT', label: 'Солдаут' },
 ]
+
+const STATUS_SHORT: Record<VariantStatus, string> = {
+  IN_STOCK: 'В наличии',
+  PRE_ORDER: 'Под заказ',
+  SOLD_OUT: 'Солдаут',
+}
+
+/** One-line label for a collapsed variant: SKU, else its attribute values, else its number. */
+function variantSummary(variant: VariantDraft, index: number): string {
+  if (variant.sku.trim() !== '') {
+    return variant.sku.trim()
+  }
+  const values = variant.attributes
+    .map((attribute) => attribute.value.trim())
+    .filter((value) => value !== '')
+  return values.length > 0 ? values.join(' · ') : `Вариант ${index + 1}`
+}
 
 type ProductFormProps = {
   product?: ProductDto
@@ -84,6 +105,7 @@ function toVariantDraft(product?: ProductDto): VariantDraft[] {
     imageUrls: [...variant.imageUrls],
     attributes: toAttributeRows(variant.attributes),
     status: variant.status,
+    collapsed: product.variants.length > 1,
   }))
 }
 
@@ -105,14 +127,23 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   const [cropper, setCropper] = useState<{ color: string; file: File } | null>(null)
   const [swatchUploading, setSwatchUploading] = useState(false)
 
+  const variantColor = (variant: VariantDraft) =>
+    variant.attributes.find((attribute) => attribute.key === COLOR_ATTRIBUTE_KEY)?.value.trim() ?? ''
+
   const colorValues = Array.from(
-    new Set(
-      variants
-        .flatMap((variant) => variant.attributes)
-        .filter((attribute) => attribute.key === COLOR_ATTRIBUTE_KEY && attribute.value.trim() !== '')
-        .map((attribute) => attribute.value)
-    )
+    new Set(variants.map(variantColor).filter((color) => color !== ''))
   )
+
+  const variantsWithColor = (color: string) =>
+    variants.filter((variant) => variantColor(variant) === color).length
+
+  const removeSwatch = (color: string) => {
+    setColorSwatches((current) => {
+      const next = { ...current }
+      delete next[color]
+      return next
+    })
+  }
 
   const handleSwatchFileSelected = (color: string, event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -173,13 +204,21 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
 
   const addVariant = () => {
     setVariants([
-      ...variants,
-      { sku: '', priceOverride: '', stockQuantity: '0', imageUrls: [], attributes: [], status: 'IN_STOCK' },
+      ...variants.map((variant) => ({ ...variant, collapsed: true })),
+      { sku: '', priceOverride: '', stockQuantity: '0', imageUrls: [], attributes: [], status: 'IN_STOCK', collapsed: false },
     ])
   }
 
   const removeVariant = (index: number) => {
     setVariants(variants.filter((_, i) => i !== index))
+  }
+
+  const toggleVariantCollapsed = (index: number) => {
+    updateVariant(index, { collapsed: !variants[index].collapsed })
+  }
+
+  const setAllVariantsCollapsed = (collapsed: boolean) => {
+    setVariants(variants.map((variant) => ({ ...variant, collapsed })))
   }
 
   const updateVariant = (index: number, patch: Partial<VariantDraft>) => {
@@ -191,6 +230,9 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   }
 
   const addAttribute = (variantIndex: number) => {
+    if (variants[variantIndex].attributes.length >= MAX_ATTRIBUTES_PER_VARIANT) {
+      return
+    }
     updateVariant(variantIndex, {
       attributes: [...variants[variantIndex].attributes, { key: '', value: '', customKey: false }],
     })
@@ -350,66 +392,26 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
             </label>
           </div>
 
-          {colorValues.length > 0 && (
-            <div className="mt-6">
-              <h3 className="font-grotesk text-base font-bold text-ink">Кружки цвета</h3>
-              <p className="mt-1 text-xs text-ink/50">
-                Отдельное круглое фото для каждого цвета — показывается в каталоге и на странице товара.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-4">
-                {colorValues.map((color) => (
-                  <div key={color} className="flex w-20 flex-col items-center gap-1">
-                    <label
-                      className="relative flex h-16 w-16 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-black bg-silver transition hover:border-bubblegum-dark aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-                      aria-disabled={swatchUploading}
-                    >
-                      {colorSwatches[color] ? (
-                        <img src={colorSwatches[color]} alt={color} className="h-full w-full object-cover" />
-                      ) : (
-                        <span className="font-grotesk text-xl font-bold text-ink/30">+</span>
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        aria-label={`Фото цвета ${color}`}
-                        disabled={swatchUploading}
-                        onChange={(event) => handleSwatchFileSelected(color, event)}
-                        className="hidden"
-                      />
-                    </label>
-                    <span className="truncate text-center font-grotesk text-xs font-bold text-ink" title={color}>
-                      {color}
-                    </span>
-                    {colorSwatches[color] && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setColorSwatches((current) => {
-                            const next = { ...current }
-                            delete next[color]
-                            return next
-                          })
-                        }
-                        className="font-grotesk text-xs font-bold text-ink/40 hover:text-bubblegum-dark"
-                      >
-                        Убрать
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-6 flex items-center justify-between">
+          <div className="mt-6 flex items-center justify-between gap-2">
             <h3 className="font-grotesk text-base font-bold text-ink">Варианты</h3>
-            <button
-              type="button"
-              onClick={addVariant}
-              className="rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink hover:bg-bubblegum hover:text-white"
-            >
-              Добавить вариант
-            </button>
+            <div className="flex items-center gap-2">
+              {variants.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setAllVariantsCollapsed(!variants.every((variant) => variant.collapsed))}
+                  className="font-grotesk text-xs font-bold text-bubblegum-dark hover:underline"
+                >
+                  {variants.every((variant) => variant.collapsed) ? 'Развернуть все' : 'Свернуть все'}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={addVariant}
+                className="rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink hover:bg-bubblegum hover:text-white"
+              >
+                Добавить вариант
+              </button>
+            </div>
           </div>
           {variants.length === 0 && (
             <p className="mt-2 text-xs text-red-500">Добавьте хотя бы один вариант — цена и фото задаются только на уровне варианта.</p>
@@ -418,19 +420,49 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
           {formError && <p className="mt-2 text-xs text-red-500">{formError}</p>}
 
           {variants.map((variant, variantIndex) => (
-            <div key={variantIndex} className="mt-4 rounded-2xl border-2 border-black p-4">
-              <div className="flex items-center justify-between">
-                <span className="font-grotesk text-sm font-bold text-ink">Вариант {variantIndex + 1}</span>
+            <div key={variantIndex} className="mt-4 overflow-hidden rounded-2xl border-2 border-black">
+              <div className="flex items-center gap-2 p-4">
+                <button
+                  type="button"
+                  onClick={() => toggleVariantCollapsed(variantIndex)}
+                  aria-expanded={!variant.collapsed}
+                  aria-label={`Вариант ${variantIndex + 1}`}
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                >
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`h-4 w-4 shrink-0 text-ink/50 transition-transform ${variant.collapsed ? '' : 'rotate-180'}`}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                  <span className="shrink-0 font-grotesk text-sm font-bold text-ink">Вариант {variantIndex + 1}</span>
+                  {variant.collapsed && (
+                    <span className="truncate font-grotesk text-xs font-bold text-ink/50">
+                      {variantSummary(variant, variantIndex)}
+                      {variant.priceOverride.trim() !== '' ? ` · ${variant.priceOverride} KGS` : ''}
+                      {` · ${STATUS_SHORT[variant.status]}`}
+                    </span>
+                  )}
+                </button>
                 <button
                   type="button"
                   onClick={() => removeVariant(variantIndex)}
-                  className="font-grotesk text-xs font-bold text-ink/40 hover:text-bubblegum-dark"
+                  className="shrink-0 font-grotesk text-xs font-bold text-ink/40 hover:text-bubblegum-dark"
                 >
                   Удалить вариант
                 </button>
               </div>
 
-              <div className="mt-3 grid grid-cols-2 gap-3">
+              {!variant.collapsed && (
+              <div className="border-t-2 border-black p-4">
+
+              <div className="grid grid-cols-2 gap-3">
                 <input
                   type="text"
                   value={variant.sku}
@@ -522,11 +554,14 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
 
               <div className="mt-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">Атрибуты</span>
+                  <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
+                    Атрибуты ({variant.attributes.length}/{MAX_ATTRIBUTES_PER_VARIANT})
+                  </span>
                   <button
                     type="button"
                     onClick={() => addAttribute(variantIndex)}
-                    className="font-grotesk text-xs font-bold text-bubblegum-dark hover:underline"
+                    disabled={variant.attributes.length >= MAX_ATTRIBUTES_PER_VARIANT}
+                    className="font-grotesk text-xs font-bold text-bubblegum-dark hover:underline disabled:cursor-not-allowed disabled:text-ink/30 disabled:no-underline"
                   >
                     Добавить атрибут
                   </button>
@@ -641,6 +676,55 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   )
                 })}
               </div>
+
+              {variantColor(variant) !== '' && (
+                <div className="mt-3">
+                  <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
+                    Кружок цвета «{variantColor(variant)}»
+                  </span>
+                  <div className="mt-2 flex items-center gap-3">
+                    <label
+                      className="relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-black bg-silver transition hover:border-bubblegum-dark aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                      aria-disabled={swatchUploading}
+                    >
+                      {colorSwatches[variantColor(variant)] ? (
+                        <img
+                          src={colorSwatches[variantColor(variant)]}
+                          alt={variantColor(variant)}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="font-grotesk text-xl font-bold text-ink/30">+</span>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        aria-label={`Фото цвета ${variantColor(variant)}`}
+                        disabled={swatchUploading}
+                        onChange={(event) => handleSwatchFileSelected(variantColor(variant), event)}
+                        className="hidden"
+                      />
+                    </label>
+                    <div className="flex flex-col gap-1 text-xs text-ink/50">
+                      <span>Круглое фото цвета — показывается в каталоге и на странице товара.</span>
+                      {variantsWithColor(variantColor(variant)) > 1 && (
+                        <span>Общий для всех вариантов цвета «{variantColor(variant)}».</span>
+                      )}
+                      {colorSwatches[variantColor(variant)] && (
+                        <button
+                          type="button"
+                          onClick={() => removeSwatch(variantColor(variant))}
+                          className="w-fit font-grotesk font-bold text-ink/40 hover:text-bubblegum-dark"
+                        >
+                          Убрать
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              </div>
+              )}
             </div>
           ))}
         </div>

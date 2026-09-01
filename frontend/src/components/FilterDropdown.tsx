@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import FilterActions from './FilterActions'
 
 type FilterDropdownOption = {
   label: string
@@ -76,7 +77,7 @@ export default function FilterDropdown({ label, options, value, onApply }: Filte
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full z-30 mt-2 flex max-h-80 w-64 max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000]">
+        <div className="absolute left-0 top-full z-30 mt-2 flex max-h-80 w-72 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000]">
           <div className="flex-1 overflow-y-auto p-2">
             {options.map((option) => {
               const isSelected = draft === option.value
@@ -96,22 +97,7 @@ export default function FilterDropdown({ label, options, value, onApply }: Filte
             })}
           </div>
 
-          <div className="flex items-center justify-between gap-2 border-t-2 border-black p-3">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="shrink-0 whitespace-nowrap rounded-pill px-3 py-2 font-grotesk text-sm font-bold text-ink/50 transition hover:text-ink"
-            >
-              Сбросить
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="shrink-0 whitespace-nowrap rounded-pill border-2 border-black bg-ink px-4 py-2 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark"
-            >
-              Сохранить
-            </button>
-          </div>
+          <FilterActions onReset={handleReset} onApply={handleSave} />
         </div>
       )}
     </div>

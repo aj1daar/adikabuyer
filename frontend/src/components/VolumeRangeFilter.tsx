@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import FilterActions from './FilterActions'
 
 type VolumeRangeFilterProps = {
   min: string
@@ -96,22 +97,7 @@ export default function VolumeRangeFilter({ min, max, onApply }: VolumeRangeFilt
             <span className="shrink-0 font-grotesk text-xs font-bold text-ink/50">мл</span>
           </div>
 
-          <div className="flex items-center justify-between gap-2 border-t-2 border-black p-3">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="shrink-0 whitespace-nowrap rounded-pill px-3 py-2 font-grotesk text-sm font-bold text-ink/50 transition hover:text-ink"
-            >
-              Сбросить
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="shrink-0 whitespace-nowrap rounded-pill border-2 border-black bg-ink px-4 py-2 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark"
-            >
-              Сохранить
-            </button>
-          </div>
+          <FilterActions onReset={handleReset} onApply={handleSave} />
         </div>
       )}
     </div>

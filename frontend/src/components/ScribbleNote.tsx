@@ -46,7 +46,8 @@ function Arrow({ rotate }: { rotate: number }) {
   )
 }
 
-/** GenZ hand-drawn callout: a bold pink line plus a scribbled arrow aimed at a nearby CTA. Desktop only. */
+/** GenZ hand-drawn callout: a bold pink line plus a scribbled arrow aimed at a nearby CTA. Desktop only —
+ *  the mobile hero uses `HeroBubbles` instead so the callouts never overlap in a stacked layout. */
 export default function ScribbleNote({
   text,
   className,
@@ -56,7 +57,10 @@ export default function ScribbleNote({
   reduceMotion,
 }: ScribbleNoteProps) {
   return (
-    <div aria-hidden="true" className={`pointer-events-none absolute z-10 hidden select-none sm:block ${className ?? ''}`}>
+    <div
+      aria-hidden="true"
+      className={`pointer-events-none absolute z-10 hidden select-none sm:block ${className ?? ''}`}
+    >
       <motion.div
         className={`flex items-center ${gap} ${LAYOUT[direction]}`}
         style={{ rotate }}
