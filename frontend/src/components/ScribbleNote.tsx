@@ -32,7 +32,7 @@ function Arrow({ rotate }: { rotate: number }) {
       fill="none"
       aria-hidden="true"
       /* opacity on the <svg> flattens the group, so the two strokes don't darken where they meet */
-      className="h-10 w-8 shrink-0 text-ink opacity-30"
+      className="h-8 w-6 shrink-0 text-ink opacity-30 sm:h-10 sm:w-8"
       style={{ transform: `rotate(${rotate}deg)` }}
     >
       <path
@@ -46,7 +46,7 @@ function Arrow({ rotate }: { rotate: number }) {
   )
 }
 
-/** GenZ hand-drawn callout: a bold pink line plus a scribbled arrow aimed at a nearby CTA. Desktop only. */
+/** GenZ hand-drawn callout: a bold pink line plus a scribbled arrow aimed at a nearby CTA. */
 export default function ScribbleNote({
   text,
   className,
@@ -56,14 +56,14 @@ export default function ScribbleNote({
   reduceMotion,
 }: ScribbleNoteProps) {
   return (
-    <div aria-hidden="true" className={`pointer-events-none absolute z-10 hidden select-none sm:block ${className ?? ''}`}>
+    <div aria-hidden="true" className={`pointer-events-none absolute z-10 select-none ${className ?? ''}`}>
       <motion.div
         className={`flex items-center ${gap} ${LAYOUT[direction]}`}
         style={{ rotate }}
         animate={reduceMotion ? undefined : { rotate: [rotate - 1.5, rotate + 1.5, rotate - 1.5] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <span className="whitespace-nowrap font-grotesk text-lg font-extrabold lowercase text-bubblegum-dark drop-shadow-[2px_2px_0_rgba(10,10,10,0.18)]">
+        <span className="whitespace-nowrap font-grotesk text-base font-extrabold lowercase text-bubblegum-dark drop-shadow-[2px_2px_0_rgba(10,10,10,0.18)] sm:text-lg">
           {text}
         </span>
         <Arrow rotate={ARROW_ROTATE[direction]} />

@@ -19,7 +19,7 @@ export default function HeroSection() {
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: 'easeOut' }}
-        className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center gap-5 text-center sm:flex-row sm:justify-between sm:gap-10 sm:text-left"
+        className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center gap-14 text-center sm:flex-row sm:justify-between sm:gap-10 sm:text-left"
       >
         <div className="flex flex-col items-center gap-5 sm:items-start">
           <span className="rounded-pill border-2 border-black bg-gradient-to-r from-bubblegum to-bubblegum-light px-5 py-1.5 font-grotesk text-sm font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]">
@@ -40,14 +40,14 @@ export default function HeroSection() {
           <div className="relative flex flex-wrap items-center justify-center gap-4 sm:justify-start">
             <ScribbleNote
               text="жми сюда 🔥"
-              className="left-8 top-full"
+              className="left-4 top-full mt-0.5 sm:left-8 sm:mt-0"
               rotate={-5}
               direction="up"
               reduceMotion={reduceMotion}
             />
             <ScribbleNote
               text="а тут инфа 👀"
-              className="left-full top-1/2 ml-2 mt-3 -translate-y-1/2"
+              className="hidden left-full top-1/2 ml-2 mt-3 -translate-y-1/2 sm:block"
               rotate={5}
               direction="left"
               gap="gap-2.5"
@@ -79,7 +79,7 @@ export default function HeroSection() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Adika Buyer в Instagram"
-          className="relative mt-8 block h-56 w-56 shrink-0 sm:mt-0 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
+          className="relative mt-12 block h-56 w-56 shrink-0 sm:mt-0 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
           animate={reduceMotion ? undefined : { y: [0, -14, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
           whileHover={{ scale: 1.05, rotate: -3 }}
@@ -87,7 +87,7 @@ export default function HeroSection() {
         >
           <ScribbleNote
             text="залетай к нам ✨"
-            className="bottom-full left-1/2 mb-4 -translate-x-1/2"
+            className="bottom-full left-1/2 mb-1 -translate-x-1/2 sm:mb-4"
             rotate={-4}
             direction="down"
             reduceMotion={reduceMotion}
