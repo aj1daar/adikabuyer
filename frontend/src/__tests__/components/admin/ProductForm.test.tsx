@@ -368,10 +368,10 @@ describe('ProductForm', () => {
     expect(screen.getByText(/добавьте хотя бы один вариант/i)).toBeInTheDocument()
   })
 
-  it('shows a colour-swatch section and opens the cropper when a swatch photo is picked', () => {
+  it('shows a per-variant colour swatch and opens the cropper when a photo is picked', () => {
     render(<ProductForm product={existingProduct} onSubmit={vi.fn()} onClose={vi.fn()} />)
 
-    expect(screen.getByText('Кружки цвета')).toBeInTheDocument()
+    expect(screen.getByText('Кружок цвета «black»')).toBeInTheDocument()
 
     const input = screen.getByLabelText('Фото цвета black')
     fireEvent.change(input, { target: { files: [new File(['x'], 's.png', { type: 'image/png' })] } })
