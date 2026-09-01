@@ -13,7 +13,7 @@ import java.util.Map;
 public record VariantRequest(
         Long id,
         @Size(max = 100) String sku,
-        Map<String, Object> attributes,
+        @Size(max = 5) Map<String, Object> attributes,
         @NotNull @Positive BigDecimal priceOverride,
         @NotNull @PositiveOrZero Integer stockQuantity,
         boolean active,

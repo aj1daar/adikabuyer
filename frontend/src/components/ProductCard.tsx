@@ -4,11 +4,13 @@ import type { ProductDto } from '../types/catalog'
 import useCartStore from '../store/useCartStore'
 import useCardTransitionStore from '../store/useCardTransitionStore'
 import formatPrice from '../utils/formatPrice'
+import truncate from '../utils/truncate'
 import { COLOR_ATTRIBUTE_KEY, formatAttributeValue } from '../utils/attributeOptions'
 import type { MobileColumns } from './MobileColumnsToggle'
 import ProductLabels from './ProductLabels'
 
 const MAX_SWATCHES = 4
+const MAX_DESCRIPTION_CHARS = 160
 
 type ProductCardProps = {
   product: ProductDto
@@ -166,7 +168,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
           <p
             className={`line-clamp-2 text-sm text-ink/60 ${hideDescriptionOnMobile ? 'max-sm:hidden' : ''}`}
           >
-            {product.description}
+            {truncate(product.description, MAX_DESCRIPTION_CHARS)}
           </p>
         )}
 

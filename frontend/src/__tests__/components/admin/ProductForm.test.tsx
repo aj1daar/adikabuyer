@@ -100,6 +100,19 @@ describe('ProductForm', () => {
     expect(screen.getByText('Вариант 1')).toBeInTheDocument()
   })
 
+  it('caps a variant at five attributes', () => {
+    render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
+
+    fillFirstVariant('NEW-SKU-1', '15')
+    const addAttr = screen.getByRole('button', { name: /добавить атрибут/i })
+    for (let i = 0; i < 7; i += 1) {
+      fireEvent.click(addAttr)
+    }
+
+    expect(screen.getByText('Атрибуты (5/5)')).toBeInTheDocument()
+    expect(addAttr).toBeDisabled()
+  })
+
   it('submits a correctly shaped payload with parsed numbers and filtered attributes', () => {
     const onSubmit = vi.fn()
     render(<ProductForm onSubmit={onSubmit} onClose={vi.fn()} />)

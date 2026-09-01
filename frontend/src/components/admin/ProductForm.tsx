@@ -51,6 +51,9 @@ type VariantDraft = {
 /** A sold-out variant carries no stock and is never orderable. */
 const isStockless = (status: VariantStatus) => status === 'PRE_ORDER' || status === 'SOLD_OUT'
 
+/** Colour, size, volume + a couple of descriptive tags is already plenty. */
+const MAX_ATTRIBUTES_PER_VARIANT = 5
+
 const STATUS_TOGGLE: { value: VariantStatus; label: string }[] = [
   { value: 'IN_STOCK', label: 'В наличии' },
   { value: 'PRE_ORDER', label: 'Под заказ' },
@@ -191,6 +194,9 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   }
 
   const addAttribute = (variantIndex: number) => {
+    if (variants[variantIndex].attributes.length >= MAX_ATTRIBUTES_PER_VARIANT) {
+      return
+    }
     updateVariant(variantIndex, {
       attributes: [...variants[variantIndex].attributes, { key: '', value: '', customKey: false }],
     })
@@ -522,11 +528,14 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
 
               <div className="mt-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">Атрибуты</span>
+                  <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
+                    Атрибуты ({variant.attributes.length}/{MAX_ATTRIBUTES_PER_VARIANT})
+                  </span>
                   <button
                     type="button"
                     onClick={() => addAttribute(variantIndex)}
-                    className="font-grotesk text-xs font-bold text-bubblegum-dark hover:underline"
+                    disabled={variant.attributes.length >= MAX_ATTRIBUTES_PER_VARIANT}
+                    className="font-grotesk text-xs font-bold text-bubblegum-dark hover:underline disabled:cursor-not-allowed disabled:text-ink/30 disabled:no-underline"
                   >
                     Добавить атрибут
                   </button>
