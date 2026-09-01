@@ -84,10 +84,11 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
   const shownPrice = activeVariant?.displayPrice ?? product.displayPrice
 
   // "Новинка" rides in front of the admin's own labels; the backend sets isNew
-  // for two weeks after a product is added.
-  const cardLabels = product.isNew
-    ? ['Новинка', ...(product.labels ?? [])]
-    : product.labels
+  // for two weeks after a product is added (skip it if the admin already typed one).
+  const cardLabels =
+    product.isNew && !(product.labels ?? []).includes('Новинка')
+      ? ['Новинка', ...(product.labels ?? [])]
+      : product.labels
 
   const handleAddToCart = () => {
     if (!shownVariant) {

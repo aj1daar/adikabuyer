@@ -20,7 +20,7 @@ export default function ProductLabels({ labels, className, size = 'card' }: Prod
     <div className={`pointer-events-none flex gap-1.5 ${layout} ${className ?? ''}`}>
       {labels.map((label, index) => (
         <span
-          key={label}
+          key={`${label}-${index}`}
           className={`whitespace-nowrap rounded-pill border-2 border-black font-grotesk font-bold uppercase tracking-wide ${sizing} ${
             index % 2 === 0 ? '-rotate-2' : 'rotate-2'
           } ${index === 0 ? 'bg-ink text-white' : 'bg-bubblegum text-ink'}`}

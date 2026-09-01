@@ -277,6 +277,14 @@ describe('ProductCard', () => {
     expect(screen.getByText('Limited')).toBeInTheDocument()
   })
 
+  it('does not add a second "Новинка" sticker when the admin already typed one', () => {
+    render(<ProductCard product={{ ...product, isNew: true, labels: ['Новинка', 'Limited'] }} />, {
+      wrapper: MemoryRouter,
+    })
+
+    expect(screen.getAllByText('Новинка')).toHaveLength(1)
+  })
+
   it('adds the primary variant to the cart store when the button is clicked', () => {
     render(<ProductCard product={product} />, { wrapper: MemoryRouter })
 
