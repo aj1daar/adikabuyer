@@ -194,7 +194,7 @@ export default function DotField({ dots, reduceMotion }: DotFieldProps) {
       ref={canvasRef}
       aria-hidden="true"
       // translateZ keeps the canvas on its own compositor layer so iOS/Android
-      // Safari keep repainting it instead of freezing the backdrop after scroll
+      // Safari keeps repainting it instead of freezing the backdrop after scroll
       style={{ transform: 'translateZ(0)', willChange: 'transform' }}
       className="pointer-events-none absolute inset-0"
     />

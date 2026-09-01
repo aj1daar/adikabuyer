@@ -426,7 +426,6 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   type="button"
                   onClick={() => toggleVariantCollapsed(variantIndex)}
                   aria-expanded={!variant.collapsed}
-                  aria-label={`Вариант ${variantIndex + 1}`}
                   className="flex min-w-0 flex-1 items-center gap-2 text-left"
                 >
                   <svg

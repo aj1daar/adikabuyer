@@ -42,7 +42,7 @@ export default function HeroBubbles({ bubbles, className, overlay }: HeroBubbles
       <>
         {bubbles.map((bubble, index) => (
           <motion.span
-            key={bubble.text}
+            key={`${bubble.text}-${index}`}
             aria-hidden="true"
             {...anim(index)}
             style={{ rotate: bubble.rotate ?? 0 }}
@@ -58,7 +58,7 @@ export default function HeroBubbles({ bubbles, className, overlay }: HeroBubbles
   return (
     <div aria-hidden="true" className={`flex flex-wrap justify-center gap-2 sm:hidden ${className ?? ''}`}>
       {bubbles.map((bubble, index) => (
-        <Fragment key={bubble.text}>
+        <Fragment key={`${bubble.text}-${index}`}>
           <motion.span {...anim(index)} style={{ rotate: bubble.rotate ?? 0 }} className={chipClass(bubble)}>
             {bubble.text}
           </motion.span>

@@ -113,7 +113,7 @@ describe('ProductForm', () => {
     expect(screen.queryByDisplayValue('TUM-BLK-500')).not.toBeInTheDocument()
     expect(screen.getByText(/TUM-WHT-500 · 30 KGS/)).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Вариант 1' }))
+    fireEvent.click(screen.getByRole('button', { name: /Вариант 1/ }))
     expect(screen.getByDisplayValue('TUM-BLK-500')).toBeInTheDocument()
   })
 
