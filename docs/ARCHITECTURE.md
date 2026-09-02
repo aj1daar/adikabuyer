@@ -8,9 +8,9 @@
 | `api-gateway` | 8080 | Spring Cloud Gateway, routes `/api/catalog/**` and `/api/orders/**`, handles CORS |
 | `catalog-service` | 8081 | Products, variants, inventory, media upload, auth |
 | `order-service` | 8082 | Checkout, order persistence, Telegram notifications, publishes order events |
-| `postgres-db` | 5433 (host) | Hosts both `adikabuyer` (catalog) and `adikabuyer_orders` (orders), each with its own Flyway history |
-| `rabbitmq` | 5672 / 15672 | Order-placed event bus |
-| `minio` | 9000 / 9001 | Local S3 stand-in for product media |
+| `postgres-db` | 5433 (host, dev only) | Hosts both `adikabuyer` (catalog) and `adikabuyer_orders` (orders), each with its own Flyway history. Prod publishes no host port. |
+| `rabbitmq` | 5672 / 15672 (dev only) | Order-placed event bus. Prod: broker port unpublished, management UI bound to `127.0.0.1`. |
+| `minio` | 9000 / 9001 (dev), `127.0.0.1` only in prod | Local S3 stand-in for product media |
 
 In dev, `postgres-db`, `rabbitmq`, and `api-gateway` run in Docker; `catalog-service`, `order-service`, and the frontend run on the host, reached via `host.docker.internal`. `docker-compose.prod.yml` containerizes everything instead.
 
@@ -76,6 +76,6 @@ Both backend services return `{status, error, message, path, timestamp, fieldErr
 
 ## Prod compose hardening
 
-`docker-compose.prod.yml` runs the full stack in containers with a Caddy reverse proxy in front (`Caddyfile`) — it's the only container with published ports, TLS via Let's Encrypt for a real `DOMAIN` or a self-signed cert for `localhost`. `api-gateway` isn't reachable directly. All infra passwords and the JWT secret are required env vars (`:?` in compose) — missing any of them refuses to start rather than falling back to a default. `catalog-service` runs with `SPRING_PROFILES_ACTIVE=prod`, which strips the dev-fallback secret values entirely, so a missing secret fails at Spring context startup with a clear placeholder-resolution error instead of silently booting insecure. Every container has a `mem_limit` above its JVM `-Xmx` and a `HEALTHCHECK`.
+`docker-compose.prod.yml` runs the full stack in containers with a Caddy reverse proxy in front (`Caddyfile`) — Caddy is the only container with a public port (80/443), TLS via Let's Encrypt for a real `DOMAIN` or a self-signed cert for `localhost`. `api-gateway`, `catalog-service` and `order-service` publish no host ports at all. `postgres-db` and the RabbitMQ broker port (5672) publish nothing — the app containers reach them by service name over the `adikabuyer-network` bridge. The RabbitMQ management UI (15672) and MinIO (9000/9001) are bound to `127.0.0.1` only, so they are reachable for debugging via an SSH tunnel but never from the internet. All infra passwords and the JWT secret are required env vars (`:?` in compose) — missing any of them refuses to start rather than falling back to a default. Both `catalog-service` and `order-service` run with `SPRING_PROFILES_ACTIVE=prod`; the `application-prod.yml` profile turns `APP_JWT_SECRET` / `APP_SECURITY_ADMIN_PASSWORD_HASH` into hard `:?` placeholders, so a missing secret fails at Spring context startup with a clear error instead of silently booting on the insecure dev fallback baked into `application.yml`. Every container has a `mem_limit` above its JVM `-Xmx` and a `HEALTHCHECK`.
 
 Live at `https://adikabuyer.kg` on a Hetzner VPS, deployed via `.github/workflows/deploy.yml` on every push to `main`.

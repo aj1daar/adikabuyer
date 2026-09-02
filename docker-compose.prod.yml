@@ -8,8 +8,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-adikabuyer}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
       POSTGRES_DB: ${POSTGRES_DB:-adikabuyer}
-    ports:
-      - "5433:5432"
+    # No host port: only the app containers reach Postgres, over the bridge network.
+    # For debugging on the host: docker compose -f docker-compose.prod.yml exec postgres-db psql -U "$POSTGRES_USER"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./postgres-init:/docker-entrypoint-initdb.d:ro
@@ -24,9 +24,11 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-adikabuyer}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD must be set}
+    # No host ports: the broker (5672) is reached by the app containers over the bridge
+    # network; the management UI (15672) is bound to loopback only, reach it via
+    # `ssh -L 15672:localhost:15672 <server>`.
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "127.0.0.1:15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     networks:
@@ -41,9 +43,12 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-adikabuyer}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set}
     command: server /data --console-address ":9001"
+    # Public media is served through Caddy (handle_path /media/*), which reaches MinIO
+    # over the bridge network. Host ports are bound to loopback only — for `mc` / the
+    # console, tunnel in: `ssh -L 9000:localhost:9000 -L 9001:localhost:9001 <server>`.
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     volumes:
       - minio-data:/data
     networks:
