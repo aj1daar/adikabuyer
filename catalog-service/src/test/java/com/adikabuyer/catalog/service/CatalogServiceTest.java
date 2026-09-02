@@ -388,6 +388,52 @@ class CatalogServiceTest {
     }
 
     @Test
+    void updateProduct_keepsExistingSwatchesAndLabels_whenRequestOmitsThem() {
+        Product existing = Product.builder().id(1L).name("Custom Tumbler").basePrice(BigDecimal.TEN).active(true)
+                .colorSwatches(new java.util.HashMap<>(Map.of("black", "http://swatch/black.png")))
+                .labels(new java.util.ArrayList<>(List.of("Limited")))
+                .build();
+        existing.setVariants(new java.util.ArrayList<>());
+        when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(productMapper.toDto(any(Product.class))).thenReturn(
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, null, null, false, null, List.of())
+        );
+
+        ProductRequest request = new ProductRequest(
+                "Custom Tumbler", "desc", "Drinkware", true, null, null, null,
+                List.of(buildVariantRequest(null, "TUM-BLK-500", 10))
+        );
+        catalogService.updateProduct(1L, request);
+
+        assertThat(existing.getColorSwatches()).containsEntry("black", "http://swatch/black.png");
+        assertThat(existing.getLabels()).containsExactly("Limited");
+    }
+
+    @Test
+    void updateProduct_clearsSwatchesAndLabels_whenRequestSendsThemEmpty() {
+        Product existing = Product.builder().id(1L).name("Custom Tumbler").basePrice(BigDecimal.TEN).active(true)
+                .colorSwatches(new java.util.HashMap<>(Map.of("black", "http://swatch/black.png")))
+                .labels(new java.util.ArrayList<>(List.of("Limited")))
+                .build();
+        existing.setVariants(new java.util.ArrayList<>());
+        when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(productMapper.toDto(any(Product.class))).thenReturn(
+                new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(25), null, true, null, null, null, false, null, List.of())
+        );
+
+        ProductRequest request = new ProductRequest(
+                "Custom Tumbler", "desc", "Drinkware", true, Map.of(), List.of(), null,
+                List.of(buildVariantRequest(null, "TUM-BLK-500", 10))
+        );
+        catalogService.updateProduct(1L, request);
+
+        assertThat(existing.getColorSwatches()).isEmpty();
+        assertThat(existing.getLabels()).isEmpty();
+    }
+
+    @Test
     void updateProduct_throwsBadRequest_whenVariantListIsEmpty() {
         Product existing = Product.builder().id(1L).name("Custom Tumbler").basePrice(BigDecimal.TEN).active(true).build();
         existing.setVariants(new java.util.ArrayList<>());

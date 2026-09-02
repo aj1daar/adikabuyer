@@ -155,8 +155,14 @@ public class CatalogService {
 
         product.setBasePrice(deriveBasePrice(product.getVariants()));
         product.setImageUrl(deriveImageUrl(product.getVariants()));
-        product.setColorSwatches(pruneColorSwatches(request.colorSwatches(), product.getVariants()));
-        product.setLabels(cleanLabels(request.labels()));
+        // null means "not sent" — leave the existing value alone; an explicit empty
+        // map/list is how a caller clears it.
+        if (request.colorSwatches() != null) {
+            product.setColorSwatches(pruneColorSwatches(request.colorSwatches(), product.getVariants()));
+        }
+        if (request.labels() != null) {
+            product.setLabels(cleanLabels(request.labels()));
+        }
 
         return productMapper.toDto(saveOrConflict(product));
     }

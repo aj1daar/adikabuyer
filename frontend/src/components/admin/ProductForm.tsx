@@ -55,6 +55,11 @@ const isStockless = (status: VariantStatus) => status === 'PRE_ORDER' || status 
 /** Colour, size, volume + a couple of descriptive tags is already plenty. */
 const MAX_ATTRIBUTES_PER_VARIANT = 5
 
+// Mirrors ProductRequest's @Size constraints so the form fails a submit with a
+// clear inline reason instead of a bare 400 from the backend.
+const MAX_LABELS = 8
+const MAX_LABEL_CHARS = 40
+
 const STATUS_TOGGLE: { value: VariantStatus; label: string }[] = [
   { value: 'IN_STOCK', label: 'В наличии' },
   { value: 'PRE_ORDER', label: 'Под заказ' },
@@ -195,8 +200,8 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   }
 
   const addLabel = () => {
-    const value = labelDraft.trim()
-    if (value && !labels.includes(value)) {
+    const value = labelDraft.trim().slice(0, MAX_LABEL_CHARS)
+    if (value && !labels.includes(value) && labels.length < MAX_LABELS) {
       setLabels([...labels, value])
     }
     setLabelDraft('')
@@ -346,7 +351,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
 
             <div className="flex flex-col gap-2">
               <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
-                Метки (Limited, С принтом…)
+                Метки (Limited, С принтом…) ({labels.length}/{MAX_LABELS})
               </span>
               <div className="flex flex-wrap items-center gap-2">
                 {labels.map((label) => (
@@ -365,20 +370,23 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                     </button>
                   </span>
                 ))}
-                <input
-                  type="text"
-                  value={labelDraft}
-                  onChange={(event) => setLabelDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ',') {
-                      event.preventDefault()
-                      addLabel()
-                    }
-                  }}
-                  onBlur={addLabel}
-                  placeholder="+ метка"
-                  className="w-28 rounded-pill border-2 border-dashed border-black/40 px-3 py-1 font-grotesk text-sm text-ink outline-none focus:border-solid focus:border-bubblegum-dark"
-                />
+                {labels.length < MAX_LABELS && (
+                  <input
+                    type="text"
+                    value={labelDraft}
+                    onChange={(event) => setLabelDraft(event.target.value.slice(0, MAX_LABEL_CHARS))}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ',') {
+                        event.preventDefault()
+                        addLabel()
+                      }
+                    }}
+                    onBlur={addLabel}
+                    maxLength={MAX_LABEL_CHARS}
+                    placeholder="+ метка"
+                    className="w-28 rounded-pill border-2 border-dashed border-black/40 px-3 py-1 font-grotesk text-sm text-ink outline-none focus:border-solid focus:border-bubblegum-dark"
+                  />
+                )}
               </div>
             </div>
 
@@ -426,7 +434,6 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   type="button"
                   onClick={() => toggleVariantCollapsed(variantIndex)}
                   aria-expanded={!variant.collapsed}
-                  aria-label={`Вариант ${variantIndex + 1}`}
                   className="flex min-w-0 flex-1 items-center gap-2 text-left"
                 >
                   <svg

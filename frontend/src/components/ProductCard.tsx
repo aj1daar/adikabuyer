@@ -46,7 +46,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
 
   const sellableVariants = product.variants.filter((variant) => variant.status !== 'SOLD_OUT')
   const sellableColors = new Set(
-    sellableVariants.map((variant) => String(variant.attributes.color ?? ''))
+    sellableVariants.map((variant) => String(variant.attributes[COLOR_ATTRIBUTE_KEY] ?? ''))
   )
   const colorSwatches = product.colorSwatches ?? {}
   const swatchColors = Object.keys(colorSwatches).filter((color) => sellableColors.has(color))
@@ -60,7 +60,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     ).size
 
   const activeVariant = activeColor
-    ? sellableVariants.find((variant) => String(variant.attributes.color ?? '') === activeColor)
+    ? sellableVariants.find((variant) => String(variant.attributes[COLOR_ATTRIBUTE_KEY] ?? '') === activeColor)
     : undefined
   const shownVariant = activeVariant ?? sellableVariants[0]
 
@@ -84,10 +84,11 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
   const shownPrice = activeVariant?.displayPrice ?? product.displayPrice
 
   // "Новинка" rides in front of the admin's own labels; the backend sets isNew
-  // for two weeks after a product is added.
-  const cardLabels = product.isNew
-    ? ['Новинка', ...(product.labels ?? [])]
-    : product.labels
+  // for two weeks after a product is added (skip it if the admin already typed one).
+  const cardLabels =
+    product.isNew && !(product.labels ?? []).includes('Новинка')
+      ? ['Новинка', ...(product.labels ?? [])]
+      : product.labels
 
   const handleAddToCart = () => {
     if (!shownVariant) {
@@ -126,7 +127,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
       onClickCapture={handleCardClick}
       className="relative flex flex-col overflow-hidden rounded-3xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000] transition select-none hover:-translate-y-1 hover:shadow-[8px_8px_0_0_#E8799F] active:scale-[0.98]"
     >
-      <ProductLabels labels={cardLabels} className="absolute left-3 top-3 z-10" />
+      <ProductLabels labels={cardLabels} max={3} className="absolute left-3 top-3 z-10 max-sm:left-2 max-sm:top-2" />
 
       <Link
         to={`/catalog/${product.id}`}
