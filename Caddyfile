@@ -1,6 +1,19 @@
 {$DOMAIN:localhost} {
     encode gzip
 
+    header {
+        # HSTS (Caddy also sets this automatically on TLS; explicit for includeSubDomains).
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+        Permissions-Policy "camera=(), microphone=(), geolocation=(), browsing-topics=()"
+        # SPA is fully same-origin (hashed /assets/*.js + *.css, /api, /media). 'unsafe-inline'
+        # for style-src only, needed by framer-motion and inline style props; script stays strict.
+        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+        -Server
+    }
+
     handle /api/* {
         reverse_proxy api-gateway:8080 {
             # Overwrite client-supplied forwarding headers with the real TCP peer.
@@ -14,6 +27,10 @@
     }
 
     handle_path /media/* {
+        # Force download rather than inline render — neutralises any non-image object
+        # that predates upload validation (e.g. an SVG stored before magic-byte checks).
+        # <img> subresource loads ignore Content-Disposition, so product images still show.
+        header Content-Disposition attachment
         reverse_proxy minio:9000
     }
 
