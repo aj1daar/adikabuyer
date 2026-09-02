@@ -23,7 +23,7 @@ cd order-service && mvn clean package -DskipTests && java -jar target/order-serv
 cd frontend && npm install && npm run dev
 ```
 
-Open `http://localhost:5173`. Admin login: `admin` / `admin123`.
+Open `http://localhost:5173`. Dev admin login: `admin` / `devpassword` (dev-only fallback in `application.yml`; production requires `APP_JWT_SECRET` and `APP_SECURITY_ADMIN_PASSWORD_HASH`).
 
 First run only: `docker compose up -d` creates `adikabuyer_orders` automatically via `postgres-init/`. If the Postgres volume already existed before that script was added, create it once by hand: `docker exec adikabuyer-postgres psql -U adikabuyer -d adikabuyer -c "CREATE DATABASE adikabuyer_orders"`.
 

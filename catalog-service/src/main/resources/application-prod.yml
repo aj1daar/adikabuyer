@@ -4,6 +4,6 @@ spring:
 
 app:
   jwt:
-    secret: ${APP_JWT_SECRET}
+    secret: ${APP_JWT_SECRET:?APP_JWT_SECRET must be set in production}
   security:
-    admin-password-hash: ${APP_SECURITY_ADMIN_PASSWORD_HASH}
+    admin-password-hash: ${APP_SECURITY_ADMIN_PASSWORD_HASH:?APP_SECURITY_ADMIN_PASSWORD_HASH must be set in production}

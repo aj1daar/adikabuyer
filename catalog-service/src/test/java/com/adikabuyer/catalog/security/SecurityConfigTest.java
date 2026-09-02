@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "app.jwt.secret=test-secret-key-that-is-at-least-32-bytes-long",
         "app.jwt.expiration-ms=3600000",
         "app.security.admin-username=admin",
-        "app.security.admin-password-hash=$2a$10$lCNeUqJeSoXyb6k4Mh6lLe.hWP9dJ0aVqFVwp9GyjjN0B4s3KJV32"
+        "app.security.admin-password-hash=$2a$10$9BguCDSXLntTaKP7osWD..AgeTJ5gZs69qeWqqgizXeppyOjuEgoO"
 })
 class SecurityConfigTest {
 
@@ -104,7 +104,7 @@ class SecurityConfigTest {
     void login_returnsToken_whenCredentialsAreCorrect() throws Exception {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"admin\",\"password\":\"admin123\"}"))
+                        .content("{\"username\":\"admin\",\"password\":\"devpassword\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty())
                 .andExpect(jsonPath("$.tokenType").value("Bearer"));
@@ -128,7 +128,7 @@ class SecurityConfigTest {
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"admin\",\"password\":\"admin123\"}"))
+                        .content("{\"username\":\"admin\",\"password\":\"devpassword\"}"))
                 .andExpect(status().isTooManyRequests());
     }
 
@@ -147,7 +147,7 @@ class SecurityConfigTest {
     void login_returns401_whenUsernameIsUnknown() throws Exception {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"hacker\",\"password\":\"admin123\"}"))
+                        .content("{\"username\":\"hacker\",\"password\":\"devpassword\"}"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -155,7 +155,7 @@ class SecurityConfigTest {
     void login_returns400_whenUsernameIsBlank() throws Exception {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"\",\"password\":\"admin123\"}"))
+                        .content("{\"username\":\"\",\"password\":\"devpassword\"}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -163,7 +163,7 @@ class SecurityConfigTest {
     void issuedToken_grantsAccessToWriteEndpoint_endToEnd() throws Exception {
         String loginResponse = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"admin\",\"password\":\"admin123\"}"))
+                        .content("{\"username\":\"admin\",\"password\":\"devpassword\"}"))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();

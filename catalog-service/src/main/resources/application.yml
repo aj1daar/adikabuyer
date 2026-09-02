@@ -56,8 +56,12 @@ app:
     dead-letter-queue: order.queue.dlq
     dead-letter-routing-key: order.new.dlq
   jwt:
-    secret: "3f8a1c9d4b7e2f6a8c1d5e9f3a7b2c6d8e1f4a9c3b7d2e6f8a1c4d9e3b7f2a6c"
+    # Dev-only fallback. Real value MUST come from APP_JWT_SECRET (enforced in prod by
+    # docker-compose.prod.yml `:?` and application-prod.yml). Never deploy the fallback.
+    secret: ${APP_JWT_SECRET:dev-only-insecure-jwt-secret-not-for-production-000000000000}
     expiration-ms: 3600000
   security:
-    admin-username: admin
-    admin-password-hash: "$2a$10$lCNeUqJeSoXyb6k4Mh6lLe.hWP9dJ0aVqFVwp9GyjjN0B4s3KJV32"
+    admin-username: ${APP_SECURITY_ADMIN_USERNAME:admin}
+    # Dev-only fallback: bcrypt hash of "devpassword". Real value MUST come from
+    # APP_SECURITY_ADMIN_PASSWORD_HASH in prod.
+    admin-password-hash: ${APP_SECURITY_ADMIN_PASSWORD_HASH:$2a$10$9BguCDSXLntTaKP7osWD..AgeTJ5gZs69qeWqqgizXeppyOjuEgoO}

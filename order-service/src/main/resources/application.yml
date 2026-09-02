@@ -36,7 +36,9 @@ app:
     default-fee: 500
     bishkek-fee: 250
   jwt:
-    secret: "3f8a1c9d4b7e2f6a8c1d5e9f3a7b2c6d8e1f4a9c3b7d2e6f8a1c4d9e3b7f2a6c"
+    # Dev-only fallback; must match catalog-service. Real value comes from APP_JWT_SECRET
+    # (enforced in prod by docker-compose.prod.yml `:?`). Never deploy the fallback.
+    secret: ${APP_JWT_SECRET:dev-only-insecure-jwt-secret-not-for-production-000000000000}
   telegram:
     bot-token: ${TELEGRAM_BOT_TOKEN:}
     registration-password: ${TELEGRAM_REGISTRATION_PASSWORD:}
