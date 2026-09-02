@@ -34,6 +34,15 @@ class LoginRateLimiterTest {
     }
 
     @Test
+    void isAllowed_returnsFalse_onGlobalCap_evenAcrossManyDistinctKeys() {
+        for (int i = 0; i < 20; i++) {
+            assertThat(rateLimiter.isAllowed("10.0.0." + i)).isTrue();
+        }
+
+        assertThat(rateLimiter.isAllowed("10.0.1.1")).isFalse();
+    }
+
+    @Test
     void evictExpiredWindows_doesNotThrow_whenMapIsEmpty() {
         assertThat(rateLimiter).isNotNull();
         rateLimiter.evictExpiredWindows();

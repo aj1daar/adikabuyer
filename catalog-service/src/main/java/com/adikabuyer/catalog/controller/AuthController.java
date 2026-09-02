@@ -42,6 +42,10 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        // With server.forward-headers-strategy=framework, getRemoteAddr() resolves from
+        // X-Forwarded-For. Caddy (the only ingress) overwrites that header with the real
+        // peer, so a client can't rotate it to sidestep the per-IP limit; the global
+        // limit in LoginRateLimiter is the backstop if that assumption ever breaks.
         String clientKey = httpRequest.getRemoteAddr();
         if (!loginRateLimiter.isAllowed(clientKey)) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many login attempts. Please try again later.");

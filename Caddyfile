@@ -2,7 +2,15 @@
     encode gzip
 
     handle /api/* {
-        reverse_proxy api-gateway:8080
+        reverse_proxy api-gateway:8080 {
+            # Overwrite client-supplied forwarding headers with the real TCP peer.
+            # Caddy is the only ingress (gateway/services publish no host ports), so
+            # this is the single trusted hop — downstream can treat X-Forwarded-For
+            # as authoritative for rate limiting.
+            header_up X-Forwarded-For {http.request.remote.host}
+            header_up -Forwarded
+            header_up -X-Forwarded-Host
+        }
     }
 
     handle_path /media/* {
