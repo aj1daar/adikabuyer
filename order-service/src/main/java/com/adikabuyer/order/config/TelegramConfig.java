@@ -12,12 +12,12 @@ import java.time.Duration;
 public class TelegramConfig {
 
     @Bean
-    public RestClient telegramRestClient(RestClient.Builder restClientBuilder, TelegramProperties telegramProperties) {
+    public RestClient telegramRestClient(TelegramProperties telegramProperties) {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(Duration.ofSeconds(10));
         requestFactory.setReadTimeout(Duration.ofSeconds(40));
 
-        return restClientBuilder
+        return RestClient.builder()
                 .baseUrl("https://api.telegram.org/bot" + telegramProperties.getBotToken())
                 .requestFactory(requestFactory)
                 .build();

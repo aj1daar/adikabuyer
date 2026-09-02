@@ -4,7 +4,7 @@ Custom-order catalog for a small drinkware/apparel shop — customers pick a pro
 
 ## Stack
 
-React, TypeScript, Vite, Tailwind, Spring Boot (catalog-service, order-service, api-gateway), PostgreSQL + Flyway, RabbitMQ, MinIO, Docker Compose.
+React, TypeScript, Vite, Tailwind, Spring Boot 4 / Java 21 (catalog-service, order-service, api-gateway on Spring Cloud Gateway), PostgreSQL + Flyway, RabbitMQ, MinIO, Docker Compose.
 
 catalog-service and order-service each own a separate Postgres database (`adikabuyer` and `adikabuyer_orders`) on the same instance, with independent Flyway migration histories. Both share the same `APP_JWT_SECRET`, so an admin token issued by catalog-service's `/api/auth/login` is also valid for order-service's admin-only `GET /api/orders`.
 

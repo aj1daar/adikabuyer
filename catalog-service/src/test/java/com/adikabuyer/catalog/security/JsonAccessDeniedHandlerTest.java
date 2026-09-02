@@ -1,7 +1,6 @@
 package com.adikabuyer.catalog.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.json.JsonMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -14,7 +13,7 @@ import static org.mockito.Mockito.when;
 class JsonAccessDeniedHandlerTest {
 
     private final JsonAccessDeniedHandler accessDeniedHandler =
-            new JsonAccessDeniedHandler(new ObjectMapper().registerModule(new JavaTimeModule()));
+            new JsonAccessDeniedHandler(new JsonMapper());
 
     @Test
     void handle_writesJsonEnvelopeWith403() throws Exception {

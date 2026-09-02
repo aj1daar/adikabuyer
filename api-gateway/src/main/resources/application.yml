@@ -6,33 +6,35 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowedOrigins: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - PATCH
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
-            allowCredentials: true
-      routes:
-        - id: catalog-service
-          uri: ${CATALOG_SERVICE_URL:http://localhost:8081}
-          predicates:
-            - Path=/api/catalog/**
-        - id: catalog-service-auth
-          uri: ${CATALOG_SERVICE_URL:http://localhost:8081}
-          predicates:
-            - Path=/api/auth/**
-        - id: catalog-service-media
-          uri: ${CATALOG_SERVICE_URL:http://localhost:8081}
-          predicates:
-            - Path=/api/media/**
-        - id: order-service
-          uri: ${ORDER_SERVICE_URL:http://localhost:8082}
-          predicates:
-            - Path=/api/orders/**
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders: "*"
+                allowCredentials: true
+          routes:
+            - id: catalog-service
+              uri: ${CATALOG_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/catalog/**
+            - id: catalog-service-auth
+              uri: ${CATALOG_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/auth/**
+            - id: catalog-service-media
+              uri: ${CATALOG_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/media/**
+            - id: order-service
+              uri: ${ORDER_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/orders/**

@@ -13,7 +13,7 @@ class TelegramConfigTest {
         TelegramProperties properties = new TelegramProperties();
         properties.setBotToken("abc123");
 
-        RestClient restClient = new TelegramConfig().telegramRestClient(RestClient.builder(), properties);
+        RestClient restClient = new TelegramConfig().telegramRestClient(properties);
 
         assertThat(restClient).isNotNull();
     }

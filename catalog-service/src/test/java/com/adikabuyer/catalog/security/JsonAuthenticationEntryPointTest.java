@@ -1,7 +1,6 @@
 package com.adikabuyer.catalog.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.json.JsonMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -14,7 +13,7 @@ import static org.mockito.Mockito.when;
 class JsonAuthenticationEntryPointTest {
 
     private final JsonAuthenticationEntryPoint entryPoint =
-            new JsonAuthenticationEntryPoint(new ObjectMapper().registerModule(new JavaTimeModule()));
+            new JsonAuthenticationEntryPoint(new JsonMapper());
 
     @Test
     void commence_writesJsonEnvelopeWith401() throws Exception {

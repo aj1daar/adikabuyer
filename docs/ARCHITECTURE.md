@@ -79,3 +79,14 @@ Both backend services return `{status, error, message, path, timestamp, fieldErr
 `docker-compose.prod.yml` runs the full stack in containers with a Caddy reverse proxy in front (`Caddyfile`) — Caddy is the only container with a public port (80/443), TLS via Let's Encrypt for a real `DOMAIN` or a self-signed cert for `localhost`. `api-gateway`, `catalog-service` and `order-service` publish no host ports at all. `postgres-db` and the RabbitMQ broker port (5672) publish nothing — the app containers reach them by service name over the `adikabuyer-network` bridge. The RabbitMQ management UI (15672) and MinIO (9000/9001) are bound to `127.0.0.1` only, so they are reachable for debugging via an SSH tunnel but never from the internet. All infra passwords and the JWT secret are required env vars (`:?` in compose) — missing any of them refuses to start rather than falling back to a default. Both `catalog-service` and `order-service` run with `SPRING_PROFILES_ACTIVE=prod`; the `application-prod.yml` profile turns `APP_JWT_SECRET` / `APP_SECURITY_ADMIN_PASSWORD_HASH` into hard `:?` placeholders, so a missing secret fails at Spring context startup with a clear error instead of silently booting on the insecure dev fallback baked into `application.yml`. Every container has a `mem_limit` above its JVM `-Xmx` and a `HEALTHCHECK`.
 
 Live at `https://adikabuyer.kg` on a Hetzner VPS, deployed via `.github/workflows/deploy.yml` on every push to `main`.
+
+## Framework baseline
+
+All three services are on **Spring Boot 4.1** / Java 21; `api-gateway` adds **Spring Cloud 2025.1** (`spring-cloud-starter-gateway-server-webflux`). Things that bit during the 3.3 → 4.1 jump, for future reference:
+
+- Test slices split into their own starters — `@WebMvcTest` needs `spring-boot-starter-webmvc-test`, and `@MockBean`/`@SpyBean` are gone (use `@MockitoBean`/`@MockitoSpyBean` from `org.springframework.test.context.bean.override.mockito`).
+- Auto-config packages moved: `org.springframework.boot.autoconfigure.security.servlet.*` → `org.springframework.boot.security.autoconfigure.*` (and similarly per module).
+- Jackson 3: databind is `tools.jackson.databind.*` (annotations stay `com.fasterxml.jackson.annotation.*`); `java.time` support is built in, no `JavaTimeModule`.
+- Spring Cloud Gateway reactive config moved under `spring.cloud.gateway.server.webflux.{routes,globalcors}`.
+- `RestClient.Builder` is not auto-configured for a plain Spring MVC app; `TelegramConfig` calls `RestClient.builder()` directly.
+- `api-gateway` gained a `contextLoads` `@SpringBootTest` so a broken route/CORS binding or an incompatible Spring Cloud version fails in CI rather than on the box.

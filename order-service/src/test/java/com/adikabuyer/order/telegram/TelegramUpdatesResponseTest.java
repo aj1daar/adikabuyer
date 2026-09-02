@@ -1,13 +1,13 @@
 package com.adikabuyer.order.telegram;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class TelegramUpdatesResponseTest {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final JsonMapper objectMapper = new JsonMapper();
 
     @Test
     void deserializesTelegramGetUpdatesResponseShape() throws Exception {

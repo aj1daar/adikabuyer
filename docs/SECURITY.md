@@ -14,6 +14,7 @@ what got fixed, and what is a known limitation with the reasoning for leaving it
 | Response headers | Caddy sends CSP (`script-src 'self'`, `frame-ancestors 'none'`, …), `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, explicit HSTS with `includeSubDomains`; drops `Server`. |
 | Auth logging | Failed logins (with sanitised username + client IP), successful logins, and rate-limit rejections are logged. `LoginRequest` now bounds field sizes (username ≤ 100, password ≤ 72 — bcrypt's limit). |
 | Dependency visibility | `.github/dependabot.yml` (maven/npm/docker/actions, weekly) + a Trivy `fs` scan and `npm audit --audit-level=high` in CI. |
+| Framework upgrade | Spring Boot 3.3.4 → **4.1.1**, Spring Cloud 2023.0.3 → **2025.1.3** (both were past OSS support). jjwt 0.13.0, AWS SDK 2.54.10, MapStruct 1.6.3, JaCoCo 0.8.15. Jackson 3, Jakarta EE 11, Spring Security 7, Hibernate 7, Tomcat 11. Smoke-tested: full `docker-compose.prod.yml` stack boots healthy, catalog/auth/rate-limit verified end-to-end through Caddy. |
 
 ## Deployer checklist (one-time, on the server)
 
@@ -28,14 +29,13 @@ what got fixed, and what is a known limitation with the reasoning for leaving it
 
 ## Known limitations (accepted, with reasoning)
 
-- **Dependency stack is old.** Spring Boot 3.3.4 (Sept 2024), Spring Cloud 2023.0.3 — both long past
-  OSS support. The jump to a supported line is Spring Boot 4.1 / Spring Cloud 2025.1.x, which is a
-  major migration (Jakarta EE 11, Spring Framework 7, Spring Security 7, the
-  `spring-cloud-starter-gateway` → `spring-cloud-starter-gateway-server-webflux` rename). It needs its
-  own branch driven by OpenRewrite (`org.openrewrite.java.spring.boot4.UpgradeSpringBoot_4_0` then
-  `_4_1`) plus a full smoke test against real Postgres/RabbitMQ/MinIO — not a line-edit. Interim
-  mitigation: the CI Trivy scan + Dependabot now surface any exploitable CVE, and the app tier is only
-  reachable through Caddy (no host ports).
+- **Spring Boot 4 migration notes.** Done, but a few things to know: `@MockBean` → `@MockitoBean`
+  in tests; `@WebMvcTest` now needs `spring-boot-starter-webmvc-test`; the security auto-config
+  classes moved to `org.springframework.boot.security.autoconfigure.*`; Jackson 3 lives under
+  `tools.jackson.*` (annotations stay `com.fasterxml.jackson.annotation.*`); the gateway's
+  `spring.cloud.gateway.{routes,globalcors}` moved under `spring.cloud.gateway.server.webflux.*`;
+  `RestClient.Builder` is no longer auto-configured for a plain MVC app, so `TelegramConfig` builds
+  its client with `RestClient.builder()` directly. `docs/ARCHITECTURE.md` has the running detail.
 - **Checkout trusts client-supplied prices.** `OrderService.checkout` totals the cart from
   `CartItemDto.unitPrice` without re-pricing against the catalog. Bounded by manual Telegram
   fulfilment and no online payment — a human sees every order before it ships. Proper fix
