@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -45,7 +46,7 @@ class S3StorageServiceTest {
 
     @Test
     void uploadFile_returnsPublicUrlContainingBucketBaseAndGeneratedKey() {
-        MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", "content".getBytes());
+        MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", pngBytes(10, 10));
 
         String url = s3StorageService.uploadFile(file);
 
@@ -55,7 +56,7 @@ class S3StorageServiceTest {
 
     @Test
     void uploadFile_sendsContentTypeAndBucketToS3() {
-        MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", "content".getBytes());
+        MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", pngBytes(10, 10));
 
         s3StorageService.uploadFile(file);
 
@@ -68,8 +69,39 @@ class S3StorageServiceTest {
     }
 
     @Test
+    void uploadFile_derivesStoredContentTypeFromBytes_notFromClientHeader() {
+        MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/svg+xml", pngBytes(10, 10));
+
+        s3StorageService.uploadFile(file);
+
+        ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        verify(s3Client).putObject(requestCaptor.capture(), any(RequestBody.class));
+        assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/png");
+    }
+
+    @Test
+    void uploadFile_rejectsSvg_asBadRequest() {
+        byte[] svg = "<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script></svg>".getBytes();
+        MockMultipartFile file = new MockMultipartFile("file", "x.svg", "image/png", svg);
+
+        assertThatThrownBy(() -> s3StorageService.uploadFile(file))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("not a supported image");
+        verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+    }
+
+    @Test
+    void uploadFile_rejectsArbitraryBytes_asBadRequest() {
+        MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", "not an image".getBytes());
+
+        assertThatThrownBy(() -> s3StorageService.uploadFile(file))
+                .isInstanceOf(ResponseStatusException.class);
+        verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+    }
+
+    @Test
     void uploadFile_sanitizesHostileFilename() {
-        MockMultipartFile file = new MockMultipartFile("file", "../../etc/passwd; rm -rf.png", "image/png", "content".getBytes());
+        MockMultipartFile file = new MockMultipartFile("file", "../../etc/passwd; rm -rf.png", "image/png", pngBytes(10, 10));
 
         String url = s3StorageService.uploadFile(file);
 
@@ -78,7 +110,7 @@ class S3StorageServiceTest {
 
     @Test
     void uploadFile_usesFallbackName_whenOriginalFilenameIsNull() {
-        MockMultipartFile file = new MockMultipartFile("file", null, "image/png", "content".getBytes());
+        MockMultipartFile file = new MockMultipartFile("file", null, "image/png", pngBytes(10, 10));
 
         String url = s3StorageService.uploadFile(file);
 

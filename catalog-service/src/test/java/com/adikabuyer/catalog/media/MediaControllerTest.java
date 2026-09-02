@@ -94,6 +94,17 @@ class MediaControllerTest {
     }
 
     @Test
+    void upload_returns400_whenContentTypeIsSvg() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "x.svg", "image/svg+xml", "<svg xmlns=\"http://www.w3.org/2000/svg\"><script/></svg>".getBytes());
+
+        mockMvc.perform(multipart("/api/media/upload").file(file).header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(s3StorageService);
+    }
+
+    @Test
     void upload_returns400WithStandardEnvelope_whenFileExceedsMaxUploadSize() throws Exception {
         when(s3StorageService.uploadFile(any())).thenThrow(
                 new org.springframework.web.multipart.MaxUploadSizeExceededException(5_000_000)

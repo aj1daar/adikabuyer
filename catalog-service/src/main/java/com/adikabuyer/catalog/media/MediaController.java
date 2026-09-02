@@ -9,10 +9,18 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Set;
+
 @RestController
 @RequestMapping("/api/media")
 @RequiredArgsConstructor
 public class MediaController {
+
+    // Fast pre-check on the declared type. The real guarantee is S3StorageService,
+    // which validates the actual file bytes — the declared content type is
+    // attacker-controlled and e.g. "image/svg+xml" would otherwise be a stored-XSS vector.
+    private static final Set<String> ACCEPTED_CONTENT_TYPES =
+            Set.of("image/jpeg", "image/png", "image/gif", "image/webp");
 
     private final S3StorageService s3StorageService;
 
@@ -23,8 +31,8 @@ public class MediaController {
         }
 
         String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only image uploads are supported");
+        if (contentType == null || !ACCEPTED_CONTENT_TYPES.contains(contentType.toLowerCase())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only JPEG, PNG, GIF or WebP images are supported");
         }
 
         return new MediaUploadResponse(s3StorageService.uploadFile(file));
