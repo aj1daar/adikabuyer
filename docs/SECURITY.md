@@ -29,13 +29,15 @@ what got fixed, and what is a known limitation with the reasoning for leaving it
 
 ## Known limitations (accepted, with reasoning)
 
-- **Spring Boot 4 migration notes.** Done, but a few things to know: `@MockBean` → `@MockitoBean`
-  in tests; `@WebMvcTest` now needs `spring-boot-starter-webmvc-test`; the security auto-config
-  classes moved to `org.springframework.boot.security.autoconfigure.*`; Jackson 3 lives under
-  `tools.jackson.*` (annotations stay `com.fasterxml.jackson.annotation.*`); the gateway's
-  `spring.cloud.gateway.{routes,globalcors}` moved under `spring.cloud.gateway.server.webflux.*`;
-  `RestClient.Builder` is no longer auto-configured for a plain MVC app, so `TelegramConfig` builds
-  its client with `RestClient.builder()` directly. `docs/ARCHITECTURE.md` has the running detail.
+- **Spring Boot 4 migration notes.** Done and smoke-tested end-to-end (fresh `docker-compose.prod.yml`
+  volumes: Flyway, product CRUD, media upload, checkout, RabbitMQ inventory deduction all verified).
+  Gotchas that bit: `@MockBean` → `@MockitoBean`; `@WebMvcTest` needs `spring-boot-starter-webmvc-test`;
+  Flyway autoconfig needs `spring-boot-starter-flyway` (raw `flyway-core` no longer triggers it — it
+  silently doesn't run); security auto-config moved to `org.springframework.boot.security.autoconfigure.*`;
+  Jackson 3 is `tools.jackson.*`; Spring AMQP still ships a Jackson 2 converter that can't serialize
+  `Instant` — use `new JacksonJsonMessageConverter()`; the gateway's `spring.cloud.gateway.{routes,globalcors}`
+  moved under `.server.webflux.*`; `RestClient.Builder` isn't auto-configured for a plain MVC app.
+  `docs/ARCHITECTURE.md` has the full list.
 - **Checkout trusts client-supplied prices.** `OrderService.checkout` totals the cart from
   `CartItemDto.unitPrice` without re-pricing against the catalog. Bounded by manual Telegram
   fulfilment and no online payment — a human sees every order before it ships. Proper fix

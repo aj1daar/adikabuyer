@@ -6,7 +6,7 @@ import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,6 +90,6 @@ class RabbitMQConfigTest {
 
     @Test
     void jsonMessageConverter_isJacksonBased() {
-        assertThat(rabbitMQConfig.jsonMessageConverter()).isInstanceOf(Jackson2JsonMessageConverter.class);
+        assertThat(rabbitMQConfig.jsonMessageConverter()).isInstanceOf(JacksonJsonMessageConverter.class);
     }
 }

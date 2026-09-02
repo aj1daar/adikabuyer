@@ -89,4 +89,9 @@ All three services are on **Spring Boot 4.1** / Java 21; `api-gateway` adds **Sp
 - Jackson 3: databind is `tools.jackson.databind.*` (annotations stay `com.fasterxml.jackson.annotation.*`); `java.time` support is built in, no `JavaTimeModule`.
 - Spring Cloud Gateway reactive config moved under `spring.cloud.gateway.server.webflux.{routes,globalcors}`.
 - `RestClient.Builder` is not auto-configured for a plain Spring MVC app; `TelegramConfig` calls `RestClient.builder()` directly.
-- `api-gateway` gained a `contextLoads` `@SpringBootTest` so a broken route/CORS binding or an incompatible Spring Cloud version fails in CI rather than on the box.
+- **Flyway** auto-configuration moved to its own module — `org.flywaydb:flyway-core` on the classpath is no longer enough, you need `org.springframework.boot:spring-boot-starter-flyway` (plus `flyway-database-postgresql`). Without it Flyway silently never runs and Hibernate `ddl-auto: validate` fails on a fresh database.
+- Spring AMQP 4.1 defaults to a **Jackson 2** message converter whose ObjectMapper has no `java.time` handler — `new Jackson2JsonMessageConverter()` throws on an `Instant` field. Both services use `new JacksonJsonMessageConverter()` (Jackson 3) instead.
+- `@Valid` directly on a `List<X>` is deprecated (Hibernate Validator 9, `HV000271`) — moved to `List<@Valid X>`.
+- `api-gateway` gained a `contextLoads` `@SpringBootTest`; the whole stack (`docker-compose.prod.yml`, fresh volumes) was smoke-tested — Flyway migrations, product CRUD, media upload, checkout, and RabbitMQ inventory deduction all verified end-to-end through Caddy.
+
+order-service's `RabbitMQConfig` no longer declares `order.queue` / its binding — it's a producer, the queue (with its dead-letter args) is catalog-service's. Declaring it from both sides with different arguments caused `PRECONDITION_FAILED` on a fresh broker.

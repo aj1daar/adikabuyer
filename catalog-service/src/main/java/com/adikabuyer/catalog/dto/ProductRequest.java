@@ -15,6 +15,6 @@ public record ProductRequest(
         @Size(max = 50) Map<String, @Size(max = 500) String> colorSwatches,
         @Size(max = 8) List<@Size(max = 40) String> labels,
         @Size(max = 120) String brand,
-        @Valid @Size(max = 100) List<VariantRequest> variants
+        @Size(max = 100) List<@Valid VariantRequest> variants
 ) {
 }

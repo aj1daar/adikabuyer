@@ -11,6 +11,6 @@ public record CartDto(
         @NotBlank @Size(max = 200) String customerName,
         @NotBlank @Size(max = 30) String customerPhone,
         @NotBlank @Size(max = 100) String region,
-        @NotEmpty @Size(max = 50) @Valid List<CartItemDto> items
+        @NotEmpty @Size(max = 50) List<@Valid CartItemDto> items
 ) {
 }

@@ -1,26 +1,23 @@
 package com.adikabuyer.order.config;
 
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * order-service is only a <em>producer</em> — it publishes to the exchange with a routing
+ * key. The {@code order.queue} declaration (and its dead-letter arguments) is owned by
+ * catalog-service, the consumer. Declaring the queue here too — with different arguments —
+ * causes a {@code PRECONDITION_FAILED} on a fresh broker, so we don't.
+ */
 @Configuration
 public class RabbitMQConfig {
 
     @Value("${app.rabbitmq.exchange}")
     private String exchangeName;
-
-    @Value("${app.rabbitmq.queue}")
-    private String queueName;
-
-    @Value("${app.rabbitmq.routing-key}")
-    private String routingKey;
 
     @Bean
     public TopicExchange orderExchange() {
@@ -28,17 +25,7 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue orderQueue() {
-        return new Queue(queueName, true);
-    }
-
-    @Bean
-    public Binding orderBinding(Queue orderQueue, TopicExchange orderExchange) {
-        return BindingBuilder.bind(orderQueue).to(orderExchange).with(routingKey);
-    }
-
-    @Bean
     public MessageConverter jsonMessageConverter() {
-        return new Jackson2JsonMessageConverter();
+        return new JacksonJsonMessageConverter();
     }
 }
