@@ -48,7 +48,9 @@ what got fixed, and what is a known limitation with the reasoning for leaving it
 - **Non-revocable JWT, no refresh token, no MFA.** Single-admin simplicity; 1h expiry caps exposure.
 - **In-memory rate limiter.** Fine for one instance; needs shared state (Redis) or a gateway/Caddy
   limiter before scaling out.
-- **`minio:latest` and `appleboy/ssh-action@v1.2.0`** are tag-pinned, not digest-pinned.
+- **`postgres`, `rabbitmq`, `caddy`** base images are pinned to a major/minor tag, not a digest
+  (MinIO is digest-pinned; `appleboy/ssh-action` is SHA-pinned). Dependabot's docker ecosystem
+  watches them.
 - **No log aggregation / alerting.** Logs go to stdout → Docker; no retention policy or off-box shipping.
 - **No data-at-rest encryption** for Postgres/MinIO volumes.
 
