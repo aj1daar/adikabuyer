@@ -87,7 +87,7 @@ jobs:
           MINIO_ROOT_USER=adikabuyer
           MINIO_ROOT_PASSWORD=ci-only-minio-password
           S3_BUCKET=adikabuyer-media
-          S3_PUBLIC_URL_BASE=http://localhost:9000/adikabuyer-media
+          S3_PUBLIC_URL_BASE=https://localhost/media/adikabuyer-media
           APP_JWT_SECRET=ci-only-jwt-secret-not-used-anywhere-real-0000000000000000000
           APP_SECURITY_ADMIN_USERNAME=admin
           APP_SECURITY_ADMIN_PASSWORD_HASH=$$2a$$10$$9BguCDSXLntTaKP7osWD..AgeTJ5gZs69qeWqqgizXeppyOjuEgoO

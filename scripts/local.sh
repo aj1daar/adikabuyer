@@ -37,7 +37,8 @@ RABBITMQ_PASSWORD=local-dev-rabbit
 MINIO_ROOT_USER=adikabuyer
 MINIO_ROOT_PASSWORD=local-dev-minio-123
 S3_BUCKET=adikabuyer-media
-S3_PUBLIC_URL_BASE=http://localhost:9000/adikabuyer-media
+# served through Caddy (/media/*) so uploaded image URLs are same-origin and pass the CSP
+S3_PUBLIC_URL_BASE=https://localhost/media/adikabuyer-media
 
 APP_JWT_SECRET=local-dev-jwt-secret-not-for-any-real-use-000000000000000000
 APP_SECURITY_ADMIN_USERNAME=admin
