@@ -15,9 +15,10 @@
         X-Frame-Options DENY
         Referrer-Policy strict-origin-when-cross-origin
         Permissions-Policy "camera=(), microphone=(), geolocation=(), browsing-topics=()"
-        # SPA is fully same-origin (hashed /assets/*.js + *.css, /api, /media). 'unsafe-inline'
-        # for style-src only, needed by framer-motion and inline style props; script stays strict.
-        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'{$CADDY_CSP_TAIL:; upgrade-insecure-requests}"
+        # Scripts stay strict ('self'). style-src needs 'unsafe-inline' (framer-motion +
+        # inline style props) and fonts.googleapis.com for the Unbounded/Space Grotesk
+        # @import in index.css; the font files come from fonts.gstatic.com.
+        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: http:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'{$CADDY_CSP_TAIL:; upgrade-insecure-requests}"
         -Server
     }
 
