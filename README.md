@@ -28,7 +28,7 @@ Open `http://localhost:5173`. Dev admin login: `admin` / `devpassword` (dev-only
 
 First run only: `docker compose up -d` creates `adikabuyer_orders` automatically via `postgres-init/`. If the Postgres volume already existed before that script was added, create it once by hand: `docker exec adikabuyer-postgres psql -U adikabuyer -d adikabuyer -c "CREATE DATABASE adikabuyer_orders"`.
 
-Tests: `mvn test` in each backend service, `npm run test` in `frontend`.
+Tests: `mvn test` in each backend service, `npm run test` in `frontend`. `scripts/e2e-smoke.sh` runs an end-to-end smoke against a live stack (CI does this in the `e2e-smoke` job): `docker compose -f docker-compose.prod.yml --env-file <env> up -d --build --wait` then `bash scripts/e2e-smoke.sh https://localhost admin devpassword`.
 
 ### Telegram order notifications
 
