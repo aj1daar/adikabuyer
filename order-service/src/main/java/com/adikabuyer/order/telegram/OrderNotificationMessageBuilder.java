@@ -22,7 +22,8 @@ public final class OrderNotificationMessageBuilder {
     }
 
     public static String buildOrderMessage(
-            String orderId, CartDto cart, BigDecimal itemsTotal, BigDecimal deliveryFee, BigDecimal grandTotal
+            String orderId, CartDto cart, List<CartItemDto> items,
+            BigDecimal itemsTotal, BigDecimal deliveryFee, BigDecimal grandTotal
     ) {
         StringBuilder message = new StringBuilder();
         message.append("Новый заказ ").append(orderId).append('\n');
@@ -30,7 +31,7 @@ public final class OrderNotificationMessageBuilder {
         message.append("Телефон: ").append(cart.customerPhone()).append('\n');
         message.append("Город: ").append(cart.region()).append("\n\n");
 
-        for (CartItemDto item : cart.items()) {
+        for (CartItemDto item : items) {
             message.append(buildItemLine(item)).append('\n');
         }
 

@@ -223,6 +223,35 @@ class CatalogServiceTest {
         assertThat(catalogService.isVariantAvailable(2L, 3)).isTrue();
     }
 
+    @Test
+    void getVariantPricing_returnsAuthoritativePriceNameSkuAndAvailability() {
+        Product product = Product.builder().name("Real Tumbler").build();
+        Variant variant = Variant.builder()
+                .id(7L).sku("REAL-7").product(product)
+                .priceOverride(BigDecimal.valueOf(1499)).stockQuantity(4)
+                .active(true).status(VariantStatus.IN_STOCK)
+                .build();
+        when(variantRepository.findAllById(List.of(7L))).thenReturn(List.of(variant));
+
+        var result = catalogService.getVariantPricing(List.of(7L));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).variantId()).isEqualTo(7L);
+        assertThat(result.get(0).productName()).isEqualTo("Real Tumbler");
+        assertThat(result.get(0).sku()).isEqualTo("REAL-7");
+        assertThat(result.get(0).unitPrice()).isEqualByComparingTo(BigDecimal.valueOf(1499));
+        assertThat(result.get(0).stockQuantity()).isEqualTo(4);
+        assertThat(result.get(0).active()).isTrue();
+        assertThat(result.get(0).status()).isEqualTo(VariantStatus.IN_STOCK);
+    }
+
+    @Test
+    void getVariantPricing_silentlyOmitsUnknownIds() {
+        when(variantRepository.findAllById(List.of(1L, 999L))).thenReturn(List.of());
+
+        assertThat(catalogService.getVariantPricing(List.of(1L, 999L))).isEmpty();
+    }
+
     @ParameterizedTest
     @ValueSource(ints = {0, -1, -1000})
     void isVariantAvailable_rejectsNonPositiveRequestedQuantity_withoutTouchingRepository(int requestedQuantity) {

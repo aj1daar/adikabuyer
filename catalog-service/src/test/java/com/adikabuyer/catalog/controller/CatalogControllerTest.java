@@ -194,6 +194,32 @@ class CatalogControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void getVariantPricing_returns200WithPricingForRequestedIds() throws Exception {
+        when(catalogService.getVariantPricing(List.of(1L, 2L))).thenReturn(List.of(
+                new com.adikabuyer.catalog.dto.VariantPricingDto(
+                        1L, "Mug", "MUG-1", BigDecimal.valueOf(1200), 3, true,
+                        com.adikabuyer.catalog.domain.VariantStatus.IN_STOCK)
+        ));
+
+        mockMvc.perform(get("/api/catalog/variants/pricing").param("ids", "1,2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].variantId").value(1))
+                .andExpect(jsonPath("$[0].unitPrice").value(1200))
+                .andExpect(jsonPath("$[0].productName").value("Mug"));
+
+        verify(catalogService).getVariantPricing(List.of(1L, 2L));
+    }
+
+    @Test
+    void getVariantPricing_returnsEmptyArray_whenIdsParamMissing() throws Exception {
+        mockMvc.perform(get("/api/catalog/variants/pricing"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
+
+        verifyNoInteractions(catalogService);
+    }
+
     private String validProductJson() {
         return """
                 {

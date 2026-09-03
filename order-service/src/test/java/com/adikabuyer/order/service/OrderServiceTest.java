@@ -1,5 +1,6 @@
 package com.adikabuyer.order.service;
 
+import com.adikabuyer.order.client.CatalogClient;
 import com.adikabuyer.order.config.DeliveryFeeProperties;
 import com.adikabuyer.order.domain.Order;
 import com.adikabuyer.order.dto.CartDto;
@@ -7,6 +8,7 @@ import com.adikabuyer.order.dto.CartItemDto;
 import com.adikabuyer.order.dto.CheckoutResponseDto;
 import com.adikabuyer.order.dto.OrderDto;
 import com.adikabuyer.order.dto.OrderPlacedEvent;
+import com.adikabuyer.order.dto.VariantPricing;
 import com.adikabuyer.order.repository.OrderRepository;
 import com.adikabuyer.order.telegram.TelegramNotifier;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,15 +19,20 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,24 +52,46 @@ class OrderServiceTest {
     @Mock
     private TelegramNotifier telegramNotifier;
 
+    @Mock
+    private CatalogClient catalogClient;
+
     private OrderService orderService;
+
+    /** Authoritative pricing the fake catalog will return, keyed by variant id. */
+    private final Map<Long, VariantPricing> catalog = new HashMap<>();
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, rabbitTemplate, deliveryFeeProperties, telegramNotifier);
+        orderService = new OrderService(orderRepository, rabbitTemplate, deliveryFeeProperties, telegramNotifier, catalogClient);
         ReflectionTestUtils.setField(orderService, "exchangeName", "order.exchange");
         ReflectionTestUtils.setField(orderService, "routingKey", "order.new");
+        lenient().when(catalogClient.fetchPricing(any())).thenAnswer(invocation -> {
+            Collection<Long> ids = invocation.getArgument(0);
+            Map<Long, VariantPricing> out = new HashMap<>();
+            if (ids != null) {
+                for (Long id : ids) {
+                    VariantPricing registered = catalog.get(id);
+                    if (registered != null) {
+                        out.put(id, registered);
+                    }
+                }
+            }
+            return out;
+        });
+    }
+
+    private VariantPricing pricing(long id, BigDecimal price, int stock, boolean active, String status) {
+        return new VariantPricing(id, "Custom Tumbler", "TUM-BLK-500", price, stock, active, status);
+    }
+
+    /** Registers authoritative pricing for a variant and returns a matching cart line. */
+    private CartItemDto item(long id, BigDecimal unitPrice, int quantity) {
+        catalog.put(id, pricing(id, unitPrice, Integer.MAX_VALUE, true, "IN_STOCK"));
+        return new CartItemDto(id, "Custom Tumbler", "TUM-BLK-500", Map.of("color", "black", "size", "500ml"), unitPrice, quantity);
     }
 
     private CartItemDto buildItem(BigDecimal unitPrice, int quantity) {
-        return new CartItemDto(
-                1L,
-                "Custom Tumbler",
-                "TUM-BLK-500",
-                Map.of("color", "black", "size", "500ml"),
-                unitPrice,
-                quantity
-        );
+        return item(1L, unitPrice, quantity);
     }
 
     private CartDto buildCart(String region, CartItemDto... items) {
@@ -175,7 +204,7 @@ class OrderServiceTest {
         when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.ZERO);
 
         CartItemDto first = buildItem(BigDecimal.valueOf(10), 2);
-        CartItemDto second = new CartItemDto(2L, "Gym Shorts", "GYM-BLK-M", Map.of("size", "M"), BigDecimal.valueOf(15), 3);
+        CartItemDto second = item(2L, BigDecimal.valueOf(15), 3);
 
         CheckoutResponseDto response = orderService.checkout(buildCart("Ош", first, second));
 
@@ -231,6 +260,83 @@ class OrderServiceTest {
     }
 
     @Test
+    void checkout_pricesFromCatalog_ignoringClientSuppliedPrice() {
+        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.ZERO);
+        catalog.put(1L, pricing(1L, BigDecimal.valueOf(1000), Integer.MAX_VALUE, true, "IN_STOCK"));
+        CartItemDto tampered = new CartItemDto(1L, "iPhone", "FAKE", Map.of(), BigDecimal.ONE, 2);
+
+        CheckoutResponseDto response = orderService.checkout(buildCart("Ош", tampered));
+
+        assertThat(response.itemsTotal()).isEqualByComparingTo(BigDecimal.valueOf(2000));
+    }
+
+    @Test
+    void checkout_persistsCatalogNameAndSku_notClientValues() {
+        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.ZERO);
+        catalog.put(1L, new VariantPricing(1L, "Real Product", "REAL-SKU", BigDecimal.TEN, 5, true, "IN_STOCK"));
+        CartItemDto tampered = new CartItemDto(1L, "Free Money", "STOLEN", Map.of(), BigDecimal.ONE, 1);
+
+        orderService.checkout(buildCart("Ош", tampered));
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(orderCaptor.capture());
+        assertThat(orderCaptor.getValue().getItems().get(0).getProductName()).isEqualTo("Real Product");
+        assertThat(orderCaptor.getValue().getItems().get(0).getSku()).isEqualTo("REAL-SKU");
+    }
+
+    @Test
+    void checkout_rejectsUnknownVariant_withBadRequest() {
+        CartItemDto missing = new CartItemDto(999L, "x", "x", Map.of(), BigDecimal.TEN, 1);
+        // variant 999 was never registered in the fake catalog
+
+        assertThatThrownBy(() -> orderService.checkout(buildCart("Ош", missing)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void checkout_rejectsInactiveVariant_withConflict() {
+        catalog.put(1L, pricing(1L, BigDecimal.TEN, 5, false, "IN_STOCK"));
+        CartItemDto item = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 1);
+
+        assertThatThrownBy(() -> orderService.checkout(buildCart("Ош", item)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409");
+    }
+
+    @Test
+    void checkout_rejectsSoldOutVariant_withConflict() {
+        catalog.put(1L, pricing(1L, BigDecimal.TEN, 0, true, "SOLD_OUT"));
+        CartItemDto item = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 1);
+
+        assertThatThrownBy(() -> orderService.checkout(buildCart("Ош", item)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409");
+    }
+
+    @Test
+    void checkout_rejectsInsufficientStock_withConflict() {
+        catalog.put(1L, pricing(1L, BigDecimal.TEN, 1, true, "IN_STOCK"));
+        CartItemDto item = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 5);
+
+        assertThatThrownBy(() -> orderService.checkout(buildCart("Ош", item)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409");
+    }
+
+    @Test
+    void checkout_allowsPreOrderVariant_withZeroStock() {
+        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.ZERO);
+        catalog.put(1L, pricing(1L, BigDecimal.valueOf(50), 0, true, "PRE_ORDER"));
+        CartItemDto item = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.valueOf(50), 3);
+
+        CheckoutResponseDto response = orderService.checkout(buildCart("Ош", item));
+
+        assertThat(response.itemsTotal()).isEqualByComparingTo(BigDecimal.valueOf(150));
+    }
+
+    @Test
     void getAllOrders_mapsPersistedOrdersToDto() {
         Order order = Order.builder()
                 .id("order-1")
@@ -268,7 +374,7 @@ class OrderServiceTest {
         when(orderRepository.existsById("missing")).thenReturn(false);
 
         assertThatThrownBy(() -> orderService.deleteOrder("missing"))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("404");
 
         verify(orderRepository, never()).deleteById(anyString());

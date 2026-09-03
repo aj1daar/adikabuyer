@@ -15,6 +15,8 @@ what got fixed, and what is a known limitation with the reasoning for leaving it
 | Auth logging | Failed logins (with sanitised username + client IP), successful logins, and rate-limit rejections are logged. `LoginRequest` now bounds field sizes (username ≤ 100, password ≤ 72 — bcrypt's limit). |
 | Dependency visibility | `.github/dependabot.yml` (maven/npm/docker/actions, weekly) + a Trivy `fs` scan and `npm audit --audit-level=high` in CI. |
 | Framework upgrade | Spring Boot 3.3.4 → **4.1.1**, Spring Cloud 2023.0.3 → **2025.1.3** (both were past OSS support). jjwt 0.13.0, AWS SDK 2.54.10, MapStruct 1.6.3, JaCoCo 0.8.15. Jackson 3, Jakarta EE 11, Spring Security 7, Hibernate 7, Tomcat 11. Smoke-tested: full `docker-compose.prod.yml` stack boots healthy, catalog/auth/rate-limit verified end-to-end through Caddy. |
+| Checkout re-pricing | `OrderService.checkout` re-resolves every cart line against catalog-service (`GET /api/catalog/variants/pricing`) and uses the catalog's price / name / SKU, never the client's. Unknown, inactive or `SOLD_OUT` variants are rejected (400/409), and stock is checked (`PRE_ORDER` excepted). |
+| Supply chain | MinIO pinned to a release digest, `appleboy/ssh-action` to a commit SHA; deploy force-recreates the gateway so it can't hold a stale IP for a rebuilt catalog/order container. |
 
 ## Deployer checklist (one-time, on the server)
 
@@ -38,10 +40,11 @@ what got fixed, and what is a known limitation with the reasoning for leaving it
   `Instant` — use `new JacksonJsonMessageConverter()`; the gateway's `spring.cloud.gateway.{routes,globalcors}`
   moved under `.server.webflux.*`; `RestClient.Builder` isn't auto-configured for a plain MVC app.
   `docs/ARCHITECTURE.md` has the full list.
-- **Checkout trusts client-supplied prices.** `OrderService.checkout` totals the cart from
-  `CartItemDto.unitPrice` without re-pricing against the catalog. Bounded by manual Telegram
-  fulfilment and no online payment — a human sees every order before it ships. Proper fix
-  (server-side re-pricing + stock check) is tracked separately.
+- **Checkout stock check is best-effort.** `OrderService.checkout` re-prices and checks stock against
+  catalog-service before creating the order, but the actual decrement happens asynchronously in
+  `InventoryListener`. Two simultaneous checkouts for the last unit can both pass the pre-flight; the
+  listener floors stock at 0 so nothing goes negative, but the operator may see one order they can't
+  fulfil. Acceptable for a manually-fulfilled shop.
 - **JWT stored in `localStorage`.** XSS-exfiltratable, but the token lives ≤ 1h and there is no
   raw-HTML sink in the frontend. Conscious trade-off vs. an httpOnly cookie + CSRF machinery for a
   single-admin app.

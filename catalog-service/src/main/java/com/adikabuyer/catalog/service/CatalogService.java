@@ -6,6 +6,7 @@ import com.adikabuyer.catalog.domain.VariantStatus;
 import com.adikabuyer.catalog.dto.ProductDto;
 import com.adikabuyer.catalog.dto.ProductPageResponse;
 import com.adikabuyer.catalog.dto.ProductRequest;
+import com.adikabuyer.catalog.dto.VariantPricingDto;
 import com.adikabuyer.catalog.dto.VariantRequest;
 import com.adikabuyer.catalog.exception.OutOfStockException;
 import com.adikabuyer.catalog.mapper.ProductMapper;
@@ -87,6 +88,21 @@ public class CatalogService {
     private boolean isArchived(Product product) {
         return !product.getVariants().isEmpty()
                 && product.getVariants().stream().allMatch(variant -> variant.getStatus() == VariantStatus.SOLD_OUT);
+    }
+
+    @Transactional(readOnly = true)
+    public List<VariantPricingDto> getVariantPricing(List<Long> variantIds) {
+        return variantRepository.findAllById(variantIds).stream()
+                .map(variant -> new VariantPricingDto(
+                        variant.getId(),
+                        variant.getProduct().getName(),
+                        variant.getSku(),
+                        variant.getPriceOverride(),
+                        variant.getStockQuantity(),
+                        variant.isActive(),
+                        variant.getStatus()
+                ))
+                .toList();
     }
 
     public boolean isVariantAvailable(Long variantId, int requestedQuantity) {

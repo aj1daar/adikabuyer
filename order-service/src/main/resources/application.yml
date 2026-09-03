@@ -28,6 +28,9 @@ spring:
     password: adikabuyer
 
 app:
+  catalog:
+    # order-service calls catalog-service directly (internal), not through the gateway
+    base-url: ${CATALOG_SERVICE_URL:http://localhost:8081}
   rabbitmq:
     exchange: order.exchange
     queue: order.queue

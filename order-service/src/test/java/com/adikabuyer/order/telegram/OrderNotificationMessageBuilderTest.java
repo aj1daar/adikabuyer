@@ -32,7 +32,7 @@ class OrderNotificationMessageBuilderTest {
         CartDto cart = buildCart("Ош", buildItem(BigDecimal.valueOf(25), 2));
 
         String message = OrderNotificationMessageBuilder.buildOrderMessage(
-                "order-1", cart, BigDecimal.valueOf(50), BigDecimal.valueOf(500), BigDecimal.valueOf(550)
+                "order-1", cart, cart.items(), BigDecimal.valueOf(50), BigDecimal.valueOf(500), BigDecimal.valueOf(550)
         );
 
         assertThat(message)
@@ -50,7 +50,7 @@ class OrderNotificationMessageBuilderTest {
         CartDto cart = buildCart("Ош", buildItem(BigDecimal.valueOf(2200.50), 5));
 
         String message = OrderNotificationMessageBuilder.buildOrderMessage(
-                "order-1", cart, BigDecimal.valueOf(11002.50), BigDecimal.valueOf(500), BigDecimal.valueOf(11502.50)
+                "order-1", cart, cart.items(), BigDecimal.valueOf(11002.50), BigDecimal.valueOf(500), BigDecimal.valueOf(11502.50)
         );
 
         assertThat(message)
@@ -64,7 +64,7 @@ class OrderNotificationMessageBuilderTest {
         CartDto cart = buildCart("Бишкек", item);
 
         String message = OrderNotificationMessageBuilder.buildOrderMessage(
-                "order-1", cart, BigDecimal.valueOf(2200), BigDecimal.valueOf(250), BigDecimal.valueOf(2450)
+                "order-1", cart, cart.items(), BigDecimal.valueOf(2200), BigDecimal.valueOf(250), BigDecimal.valueOf(2450)
         );
 
         assertThat(message)
@@ -82,7 +82,7 @@ class OrderNotificationMessageBuilderTest {
         );
 
         String message = OrderNotificationMessageBuilder.buildOrderMessage(
-                "order-1", cart, BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.TEN
+                "order-1", cart, cart.items(), BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.TEN
         );
 
         assertThat(message).contains("<script>alert(1)</script>");
@@ -95,7 +95,7 @@ class OrderNotificationMessageBuilderTest {
         CartDto cart = buildCart("Ош", first, second);
 
         String message = OrderNotificationMessageBuilder.buildOrderMessage(
-                "order-1", cart, BigDecimal.valueOf(65), BigDecimal.ZERO, BigDecimal.valueOf(65)
+                "order-1", cart, cart.items(), BigDecimal.valueOf(65), BigDecimal.ZERO, BigDecimal.valueOf(65)
         );
 
         assertThat(message)

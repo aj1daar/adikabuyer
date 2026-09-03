@@ -3,6 +3,7 @@ package com.adikabuyer.catalog.controller;
 import com.adikabuyer.catalog.dto.ProductDto;
 import com.adikabuyer.catalog.dto.ProductPageResponse;
 import com.adikabuyer.catalog.dto.ProductRequest;
+import com.adikabuyer.catalog.dto.VariantPricingDto;
 import com.adikabuyer.catalog.service.CatalogService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +65,11 @@ public class CatalogController {
     @GetMapping("/variants/{id}/availability")
     public boolean isVariantAvailable(@PathVariable Long id, @RequestParam(defaultValue = "1") int quantity) {
         return catalogService.isVariantAvailable(id, quantity);
+    }
+
+    @GetMapping("/variants/pricing")
+    public List<VariantPricingDto> getVariantPricing(@RequestParam(required = false) List<Long> ids) {
+        return ids == null || ids.isEmpty() ? List.of() : catalogService.getVariantPricing(ids);
     }
 
     @PostMapping("/products")

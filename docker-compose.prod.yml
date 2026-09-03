@@ -95,6 +95,7 @@ services:
       - rabbitmq
     environment:
       JAVA_OPTS: ${ORDER_SERVICE_JAVA_OPTS:--Xmx256m -Xms128m}
+      CATALOG_SERVICE_URL: http://catalog-service:8081
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/${POSTGRES_DB:-adikabuyer}_orders
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-adikabuyer}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
