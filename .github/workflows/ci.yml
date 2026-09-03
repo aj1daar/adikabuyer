@@ -66,3 +66,44 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
+
+  e2e-smoke:
+    # Boots the real docker-compose.prod.yml stack and runs scripts/e2e-smoke.sh.
+    # Catches what the mock-based unit tests can't: Flyway migrations, RabbitMQ
+    # round-trips, gateway routing, cross-service calls, Caddy headers.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write a throwaway env file
+        run: |
+          cat > .env.ci <<'EOF'
+          DOMAIN=localhost
+          CORS_ALLOWED_ORIGIN=http://localhost:5173
+          POSTGRES_USER=adikabuyer
+          POSTGRES_PASSWORD=ci-only-postgres-password
+          POSTGRES_DB=adikabuyer
+          RABBITMQ_USER=adikabuyer
+          RABBITMQ_PASSWORD=ci-only-rabbit-password
+          MINIO_ROOT_USER=adikabuyer
+          MINIO_ROOT_PASSWORD=ci-only-minio-password
+          S3_BUCKET=adikabuyer-media
+          S3_PUBLIC_URL_BASE=http://localhost:9000/adikabuyer-media
+          APP_JWT_SECRET=ci-only-jwt-secret-not-used-anywhere-real-0000000000000000000
+          APP_SECURITY_ADMIN_USERNAME=admin
+          APP_SECURITY_ADMIN_PASSWORD_HASH=$$2a$$10$$9BguCDSXLntTaKP7osWD..AgeTJ5gZs69qeWqqgizXeppyOjuEgoO
+          TELEGRAM_BOT_TOKEN=
+          TELEGRAM_REGISTRATION_PASSWORD=
+          CATALOG_SERVICE_JAVA_OPTS=-Xmx512m
+          ORDER_SERVICE_JAVA_OPTS=-Xmx512m
+          GATEWAY_JAVA_OPTS=-Xmx512m
+          EOF
+      - name: Bring the stack up
+        run: docker compose -f docker-compose.prod.yml --env-file .env.ci up -d --build --wait --wait-timeout 360
+      - name: Smoke test
+        run: bash scripts/e2e-smoke.sh https://localhost admin devpassword
+      - name: Stack logs (on failure)
+        if: failure()
+        run: docker compose -f docker-compose.prod.yml --env-file .env.ci logs --tail 200
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker-compose.prod.yml --env-file .env.ci down -v
