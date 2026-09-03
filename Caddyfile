@@ -16,10 +16,12 @@
 
     handle /api/* {
         reverse_proxy api-gateway:8080 {
-            # Overwrite client-supplied forwarding headers with the real TCP peer.
-            # Caddy is the only ingress (gateway/services publish no host ports), so
-            # this is the single trusted hop — downstream can treat X-Forwarded-For
-            # as authoritative for rate limiting.
+            # Caddy is the only ingress (gateway/services publish no host ports).
+            # Overwrite the client's forwarding headers with the real TCP peer, and
+            # stamp X-Real-Ip separately: Spring Cloud Gateway rewrites X-Forwarded-*
+            # per CVE-2025-41235, but passes X-Real-Ip straight through to the app,
+            # which keys the login rate limiter on it.
+            header_up X-Real-Ip {http.request.remote.host}
             header_up X-Forwarded-For {http.request.remote.host}
             header_up -Forwarded
             header_up -X-Forwarded-Host

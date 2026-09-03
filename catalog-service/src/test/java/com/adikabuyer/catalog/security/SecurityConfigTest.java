@@ -133,6 +133,25 @@ class SecurityConfigTest {
     }
 
     @Test
+    void loginRateLimit_isKeyedOnXRealIp_notSharedAcrossClients() throws Exception {
+        for (int i = 0; i < 5; i++) {
+            mockMvc.perform(post("/api/auth/login").header("X-Real-Ip", "10.0.0.1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"username\":\"admin\",\"password\":\"wrong-password\"}"));
+        }
+        // exhausted for 10.0.0.1
+        mockMvc.perform(post("/api/auth/login").header("X-Real-Ip", "10.0.0.1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"admin\",\"password\":\"devpassword\"}"))
+                .andExpect(status().isTooManyRequests());
+        // a different client is unaffected
+        mockMvc.perform(post("/api/auth/login").header("X-Real-Ip", "10.0.0.2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"admin\",\"password\":\"devpassword\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void catalogNotFoundError_isNotMaskedBySecurity_onInternalErrorForward() throws Exception {
         when(catalogService.getProductById(999L))
                 .thenThrow(new org.springframework.web.server.ResponseStatusException(

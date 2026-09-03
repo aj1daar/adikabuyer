@@ -6,7 +6,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class LoginRateLimiterTest {
 
-    private final LoginRateLimiter rateLimiter = new LoginRateLimiter();
+    private final LoginRateLimiter rateLimiter = new LoginRateLimiter(5, 20, 60);
+
+    @Test
+    void isAllowed_honoursConfiguredPerIpLimit() {
+        LoginRateLimiter loose = new LoginRateLimiter(50, 200, 60);
+        for (int i = 0; i < 40; i++) {
+            assertThat(loose.isAllowed("9.9.9.9")).isTrue();
+        }
+    }
 
     @Test
     void isAllowed_returnsTrue_forFirstFiveAttempts() {

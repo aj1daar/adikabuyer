@@ -44,11 +44,10 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
-        // With server.forward-headers-strategy=framework, getRemoteAddr() resolves from
-        // X-Forwarded-For. Caddy (the only ingress) overwrites that header with the real
-        // peer, so a client can't rotate it to sidestep the per-IP limit; the global
-        // limit in LoginRateLimiter is the backstop if that assumption ever breaks.
-        String clientKey = httpRequest.getRemoteAddr();
+        // Caddy stamps X-Real-Ip with the real TCP peer and the gateway passes it
+        // through untouched, so a client can't rotate it to dodge the per-IP limit.
+        // Fall back to the connection address when the request didn't come via Caddy.
+        String clientKey = clientIp(httpRequest);
         if (!loginRateLimiter.isAllowed(clientKey)) {
             log.warn("Login rate limit exceeded for client {}", clientKey);
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many login attempts. Please try again later.");
@@ -65,6 +64,11 @@ public class AuthController {
         log.info("Successful admin login from client {}", clientKey);
         String token = jwtUtil.generateToken(adminUsername, "ADMIN");
         return ResponseEntity.ok(new LoginResponse(token, "Bearer"));
+    }
+
+    private static String clientIp(HttpServletRequest request) {
+        String realIp = request.getHeader("X-Real-Ip");
+        return realIp != null && !realIp.isBlank() ? realIp.trim() : request.getRemoteAddr();
     }
 
     /** Strips CR/LF and other control characters so a crafted username can't forge log lines. */

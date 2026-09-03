@@ -43,6 +43,9 @@ S3_PUBLIC_URL_BASE=https://localhost/media/adikabuyer-media
 APP_JWT_SECRET=local-dev-jwt-secret-not-for-any-real-use-000000000000000000
 APP_SECURITY_ADMIN_USERNAME=admin
 APP_SECURITY_ADMIN_PASSWORD_HASH=${ADMIN_HASH}
+# local dev: don't lock yourself out while testing (prod defaults are 5 / 20)
+APP_SECURITY_LOGIN_MAX_PER_IP=100
+APP_SECURITY_LOGIN_MAX_GLOBAL=500
 
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_REGISTRATION_PASSWORD=
