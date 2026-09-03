@@ -15,20 +15,28 @@ The frontend follows a Neo-Y2K / Editorial Futurism design system: Unbounded typ
 
 ## Run it
 
+`scripts/local.sh` wraps both local setups (needs Docker + git-bash). Admin login is `admin` / `devpassword` either way (the dev-only fallback in `application.yml`; production requires `APP_JWT_SECRET` and `APP_SECURITY_ADMIN_PASSWORD_HASH`).
+
+**Full stack in Docker** — production-parity, one command, everything at `https://localhost` (self-signed cert):
+
 ```bash
-docker compose up -d
-
-cd catalog-service && mvn clean package -DskipTests && java -jar target/catalog-service-0.0.1-SNAPSHOT.jar
-cd order-service && mvn clean package -DskipTests && java -jar target/order-service-0.0.1-SNAPSHOT.jar
-
-cd frontend && npm install && npm run dev
+scripts/local.sh up       # writes .env (git-ignored, throwaway secrets), builds, waits for health
+scripts/local.sh smoke    # scripts/e2e-smoke.sh against the running stack
+scripts/local.sh down     # stop, keep data   |   reset = stop + wipe volumes
 ```
 
-Open `http://localhost:5173`. Dev admin login: `admin` / `devpassword` (dev-only fallback in `application.yml`; production requires `APP_JWT_SECRET` and `APP_SECURITY_ADMIN_PASSWORD_HASH`).
+**Dev mode** — infra in Docker, services on the host for hot reload:
 
-First run only: `docker compose up -d` creates `adikabuyer_orders` automatically via `postgres-init/`. If the Postgres volume already existed before that script was added, create it once by hand: `docker exec adikabuyer-postgres psql -U adikabuyer -d adikabuyer -c "CREATE DATABASE adikabuyer_orders"`.
+```bash
+scripts/local.sh infra    # Postgres/RabbitMQ/MinIO/gateway in Docker
+cd catalog-service && mvn spring-boot:run          # :8081
+cd order-service   && mvn spring-boot:run          # :8082
+cd frontend        && npm install && npm run dev   # :5173  -> http://localhost:5173
+```
 
-Tests: `mvn test` in each backend service, `npm run test` in `frontend`. `scripts/e2e-smoke.sh` runs an end-to-end smoke against a live stack (CI does this in the `e2e-smoke` job): `docker compose -f docker-compose.prod.yml --env-file <env> up -d --build --wait` then `bash scripts/e2e-smoke.sh https://localhost admin devpassword`.
+`postgres-init/` creates the `adikabuyer_orders` database on a fresh Postgres volume. If the volume predates that script: `docker exec adikabuyer-dev-postgres psql -U adikabuyer -d adikabuyer -c "CREATE DATABASE adikabuyer_orders"` (`adikabuyer-postgres` for the full stack).
+
+Tests: `mvn test` in each backend service, `npm run test` in `frontend`. `scripts/e2e-smoke.sh <base-url> <user> <pass>` runs an end-to-end smoke against a live stack — CI does this in the `e2e-smoke` job.
 
 ### Telegram order notifications
 

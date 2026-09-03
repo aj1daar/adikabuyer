@@ -1,7 +1,12 @@
+# Dev infra only — Postgres/RabbitMQ/MinIO + gateway in Docker, the JVM services and
+# frontend run on the host. Its own project name so volumes/containers never collide
+# with the full docker-compose.prod.yml stack.
+name: adikabuyer-dev
+
 services:
   postgres-db:
     image: postgres:16-alpine
-    container_name: adikabuyer-postgres
+    container_name: adikabuyer-dev-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: adikabuyer
@@ -17,7 +22,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
-    container_name: adikabuyer-rabbitmq
+    container_name: adikabuyer-dev-rabbitmq
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: adikabuyer
@@ -32,7 +37,7 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: adikabuyer-minio
+    container_name: adikabuyer-dev-minio
     restart: unless-stopped
     environment:
       MINIO_ROOT_USER: adikabuyer
@@ -49,7 +54,7 @@ services:
   api-gateway:
     build:
       context: ./api-gateway
-    container_name: adikabuyer-api-gateway
+    container_name: adikabuyer-dev-api-gateway
     restart: unless-stopped
     environment:
       CATALOG_SERVICE_URL: http://host.docker.internal:8081
