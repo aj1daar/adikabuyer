@@ -40,25 +40,44 @@ open(out, "wb").write(png)
 PYEOF
 }
 
-upload() { # $1=file -> prints media url
+upload() { # $1=file $2=mime -> prints media url
   $C -XPOST "$BASE/api/media/upload" -H "$AUTH" \
-     -F "file=@-;type=image/png;filename=$(basename "$1")" < "$1" \
+     -F "file=@-;type=${2:-image/png};filename=$(basename "$1")" < "$1" \
      | sed -n 's/.*"url":"\([^"]*\)".*/\1/p'
 }
 
+is_jpeg() { [ "$(head -c2 "$1" 2>/dev/null | od -An -tx1 | tr -d ' \n')" = "ffd8" ]; }
+
+# a real 900x900 photo for the keyword; loremflickr -> picsum -> flat colour
+photo() { # $1=slug $2=keyword $3=fallback-hex -> writes $WORK/$1, echoes mime
+  if $C -fL --max-time 25 -o "$WORK/$1" "https://loremflickr.com/900/900/$2" && is_jpeg "$WORK/$1"; then
+    echo image/jpeg; return
+  fi
+  if $C -fL --max-time 20 -o "$WORK/$1" "https://picsum.photos/seed/adika-$1/900" && is_jpeg "$WORK/$1"; then
+    echo image/jpeg; return
+  fi
+  gen_png "$3" "$WORK/$1"; echo image/png
+}
+
 declare -A IMG
-for name in midnight sunrise hoodie tee sneaker shopper bottle cap socks blanket \
-            sw_black sw_white sw_pink sw_silver sw_blue sw_beige sw_grey; do
-  case "$name" in
-    midnight) hex=1b1b2f;; sunrise) hex=ffd9c0;; hoodie) hex=2b2b2b;; tee) hex=f2f2f2;;
-    sneaker) hex=e8e8e8;; shopper) hex=d8c9a3;; bottle) hex=1e5fa8;; cap) hex=222222;;
-    socks) hex=8a8a8a;; blanket) hex=c9b8c9;;
-    sw_black) hex=111111;; sw_white) hex=fafafa;; sw_pink) hex=f6b8cf;; sw_silver) hex=c9ccd1;;
-    sw_blue) hex=2e6fb0;; sw_beige) hex=d8c9a3;; sw_grey) hex=8f9195;;
+# product photos, keyword per product
+for row in "midnight thermos,bottle 1b1b2f" "sunrise mug,coffee ffd9c0" "hoodie hoodie 2b2b2b" \
+           "tee tshirt f2f2f2" "sneaker sneakers e8e8e8" "shopper totebag d8c9a3" \
+           "bottle waterbottle 1e5fa8" "cap baseballcap 222222" "socks socks 8a8a8a" "blanket blanket c9b8c9"; do
+  set -- $row; slug=$1; kw=$2; hx=$3
+  mime=$(photo "$slug" "$kw" "$hx")
+  IMG[$slug]=$(upload "$WORK/$slug" "$mime")
+  echo "  photo  $slug ($kw, $mime) -> ${IMG[$slug]}"
+done
+# colour swatches stay flat colour chips
+for slug in sw_black sw_white sw_pink sw_silver sw_blue sw_beige sw_grey; do
+  case "$slug" in
+    sw_black) hx=111111;; sw_white) hx=fafafa;; sw_pink) hx=f6b8cf;; sw_silver) hx=c9ccd1;;
+    sw_blue) hx=2e6fb0;; sw_beige) hx=d8c9a3;; sw_grey) hx=8f9195;;
   esac
-  gen_png "$hex" "$WORK/$name.png"
-  IMG[$name]=$(upload "$WORK/$name.png")
-  echo "  uploaded $name -> ${IMG[$name]}"
+  gen_png "$hx" "$WORK/$slug.png"
+  IMG[$slug]=$(upload "$WORK/$slug.png" image/png)
+  echo "  swatch $slug -> ${IMG[$slug]}"
 done
 
 create() { # $1 = product JSON
