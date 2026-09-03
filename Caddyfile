@@ -1,16 +1,23 @@
-{$DOMAIN:localhost} {
+# CADDY_SITE:
+#   prod  -> "adikabuyer.kg"        (Caddy adds automatic HTTPS + Let's Encrypt)
+#   local -> "http://localhost"     (plain HTTP, no cert, no HSTS — set by scripts/local.sh)
+# CADDY_HSTS: seconds for Strict-Transport-Security (0 disables it, for local).
+# CADDY_CSP_TAIL: appended to the CSP ("; upgrade-insecure-requests" for HTTPS, empty for HTTP).
+{$CADDY_SITE:localhost} {
     encode gzip
 
+    @www host www.{$DOMAIN:localhost}
+    redir @www {scheme}://{$DOMAIN:localhost}{uri} permanent
+
     header {
-        # HSTS (Caddy also sets this automatically on TLS; explicit for includeSubDomains).
-        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        Strict-Transport-Security "max-age={$CADDY_HSTS:31536000}; includeSubDomains"
         X-Content-Type-Options nosniff
         X-Frame-Options DENY
         Referrer-Policy strict-origin-when-cross-origin
         Permissions-Policy "camera=(), microphone=(), geolocation=(), browsing-topics=()"
         # SPA is fully same-origin (hashed /assets/*.js + *.css, /api, /media). 'unsafe-inline'
         # for style-src only, needed by framer-motion and inline style props; script stays strict.
-        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'{$CADDY_CSP_TAIL:; upgrade-insecure-requests}"
         -Server
     }
 
@@ -41,8 +48,4 @@
         try_files {path} /index.html
         file_server
     }
-}
-
-www.{$DOMAIN:localhost} {
-    redir https://{$DOMAIN:localhost}{uri} permanent
 }

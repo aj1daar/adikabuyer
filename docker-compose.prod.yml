@@ -140,6 +140,11 @@ services:
       - api-gateway
     environment:
       DOMAIN: ${DOMAIN}
+      # Caddy site address. Unset -> "localhost" (auto-HTTPS via Caddy's internal CA).
+      # Prod: set to "adikabuyer.kg, www.adikabuyer.kg". Local browser use: "http://localhost".
+      CADDY_SITE: ${CADDY_SITE:-${DOMAIN}}
+      CADDY_HSTS: ${CADDY_HSTS-31536000}
+      CADDY_CSP_TAIL: ${CADDY_CSP_TAIL-; upgrade-insecure-requests}
     ports:
       - "80:80"
       - "443:443"

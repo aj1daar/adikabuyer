@@ -25,6 +25,10 @@ write_env_if_missing() {
   echo "Creating $ENV_FILE (local-only, git-ignored, throwaway secrets)"
   cat > "$ENV_FILE" <<EOF
 DOMAIN=localhost
+# plain HTTP locally — no self-signed-cert / HSTS friction in the browser
+CADDY_SITE=http://localhost
+CADDY_HSTS=0
+CADDY_CSP_TAIL=
 CORS_ALLOWED_ORIGIN=http://localhost:5173
 
 POSTGRES_USER=adikabuyer
@@ -38,7 +42,7 @@ MINIO_ROOT_USER=adikabuyer
 MINIO_ROOT_PASSWORD=local-dev-minio-123
 S3_BUCKET=adikabuyer-media
 # served through Caddy (/media/*) so uploaded image URLs are same-origin and pass the CSP
-S3_PUBLIC_URL_BASE=https://localhost/media/adikabuyer-media
+S3_PUBLIC_URL_BASE=http://localhost/media/adikabuyer-media
 
 APP_JWT_SECRET=local-dev-jwt-secret-not-for-any-real-use-000000000000000000
 APP_SECURITY_ADMIN_USERNAME=admin
@@ -58,7 +62,7 @@ EOF
 
 case "${1:-}" in
   ""|-h|--help|help) sed -n '2,13p' "$0"; exit 0 ;;
-  smoke) exec bash scripts/e2e-smoke.sh https://localhost admin devpassword ;;
+  smoke) exec bash scripts/e2e-smoke.sh "${LOCAL_BASE_URL:-http://localhost}" admin devpassword ;;
 esac
 
 # docker-compose.prod.yml has `${VAR:?}` guards that are evaluated even by `down`, so
@@ -70,11 +74,11 @@ case "$1" in
     $DEV down --remove-orphans 2>/dev/null || true   # release ports if dev infra is running
     $PROD --env-file "$ENV_FILE" up -d --build --wait --wait-timeout 360
     echo
-    echo "  storefront : https://localhost        (self-signed cert; -k / accept the warning)"
-    echo "  admin      : https://localhost/admin  login  admin / devpassword"
-    echo "  api        : https://localhost/api/catalog/products"
-    echo "  MinIO UI   : http://localhost:9001    (adikabuyer / local-dev-minio-123)"
-    echo "  RabbitMQ UI: http://localhost:15672   (adikabuyer / local-dev-rabbit)"
+    echo "  storefront : http://localhost"
+    echo "  admin      : http://localhost/admin      login  admin / devpassword"
+    echo "  api        : http://localhost/api/catalog/products"
+    echo "  MinIO UI   : http://localhost:9001       (adikabuyer / local-dev-minio-123)"
+    echo "  RabbitMQ UI: http://localhost:15672      (adikabuyer / local-dev-rabbit)"
     echo
     echo "  next: scripts/local.sh smoke"
     ;;

@@ -17,7 +17,7 @@ The frontend follows a Neo-Y2K / Editorial Futurism design system: Unbounded typ
 
 `scripts/local.sh` wraps both local setups (needs Docker + git-bash). Admin login is `admin` / `devpassword` either way (the dev-only fallback in `application.yml`; production requires `APP_JWT_SECRET` and `APP_SECURITY_ADMIN_PASSWORD_HASH`).
 
-**Full stack in Docker** — production-parity, one command, everything at `https://localhost` (self-signed cert):
+**Full stack in Docker** — one command, everything at `http://localhost` (plain HTTP locally — Caddy does automatic HTTPS in prod):
 
 ```bash
 scripts/local.sh up       # writes .env (git-ignored, throwaway secrets), builds, waits for health
