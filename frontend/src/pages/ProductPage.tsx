@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import MainLayout from '../layouts/MainLayout'
 import catalogClient from '../api/catalogClient'
 import useCartStore from '../store/useCartStore'
@@ -41,8 +41,17 @@ export default function ProductPage() {
   const [selection, setSelection] = useState<Record<string, string>>({})
   const [quantity, setQuantity] = useState(1)
   const [descOpen, setDescOpen] = useState(false)
+  const [justAdded, setJustAdded] = useState(false)
 
   usePageTitle(product?.name)
+
+  useEffect(() => {
+    if (!justAdded) {
+      return
+    }
+    const timer = setTimeout(() => setJustAdded(false), 1400)
+    return () => clearTimeout(timer)
+  }, [justAdded])
 
   useEffect(() => {
     if (!product) {
@@ -146,6 +155,7 @@ export default function ProductPage() {
       status: selectedVariant.status,
     })
     setQuantity(1)
+    setJustAdded(true)
     openCart()
   }
 
@@ -280,84 +290,121 @@ export default function ProductPage() {
                   </>
                 )}
 
-                <p className="font-grotesk text-3xl font-bold text-ink">{formatPrice(price)}</p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <motion.div
+                    key={price}
+                    initial={{ scale: 0.7, rotate: -8, opacity: 0 }}
+                    animate={{ scale: 1, rotate: -2, opacity: 1 }}
+                    transition={{ type: 'spring', stiffness: 340, damping: 14 }}
+                    className="w-fit rounded-2xl border-2 border-black bg-bubblegum px-5 py-2 shadow-[4px_4px_0_0_#000]"
+                  >
+                    <span className="font-grotesk text-3xl font-black tracking-tight text-white sm:text-4xl">
+                      {formatPrice(price)}
+                    </span>
+                  </motion.div>
+                  {selectedVariant && (
+                    <span
+                      className={`rounded-pill border-2 border-black px-3 py-1.5 font-grotesk text-xs font-bold uppercase tracking-wide ${
+                        selectedVariant.status === 'PRE_ORDER' ? 'bg-silver text-ink' : 'bg-white text-ink'
+                      }`}
+                    >
+                      {selectedVariant.status === 'PRE_ORDER' ? 'Под заказ' : 'В наличии'}
+                    </span>
+                  )}
+                </div>
 
-                {sellableVariants.length > 1 && keys.length > 0 &&
-                  keys.map((key) => {
-                    const swatches = product.colorSwatches ?? {}
-                    const useSwatches = key === COLOR_ATTRIBUTE_KEY && Object.keys(swatches).length > 0
-                    return (
-                      <div key={key} className="flex flex-col gap-2">
-                        <span className="font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
-                          {attributeKeyLabel(key)}
-                        </span>
-                        <div className={`flex flex-wrap ${useSwatches ? 'gap-3' : 'gap-2'}`}>
-                          {attributeValues(sellableVariants, key).map((value) => {
-                            const selected = selection[key] === value
-                            const available = isValueAvailable(sellableVariants, selection, key, value)
-                            const swatch = useSwatches ? swatches[value] : undefined
-                            if (swatch) {
+                {/* up to 5 attributes (backend cap) — every row reserves the same
+                    height (label line + one non-wrapping, horizontally scrollable
+                    value strip) so picking a value, or moving between products
+                    with a different attribute count, never reflows the page */}
+                {sellableVariants.length > 1 && keys.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    {keys.map((key) => {
+                      const swatches = product.colorSwatches ?? {}
+                      const useSwatches = key === COLOR_ATTRIBUTE_KEY && Object.keys(swatches).length > 0
+                      const pickedValue = selectedVariant?.attributes[key]
+                      return (
+                        <div key={key} className="flex flex-col gap-2">
+                          <div className="flex h-5 items-baseline justify-between gap-2">
+                            <span className="truncate font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
+                              {attributeKeyLabel(key)}
+                            </span>
+                            {pickedValue != null && (
+                              <span className="shrink-0 truncate font-grotesk text-sm font-bold text-ink">
+                                {formatAttributeValue(key, pickedValue)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="scrollbar-none flex h-11 items-center gap-2 overflow-x-auto overscroll-contain">
+                            {attributeValues(sellableVariants, key).map((value) => {
+                              const selected = selection[key] === value
+                              const available = isValueAvailable(sellableVariants, selection, key, value)
+                              const swatch = useSwatches ? swatches[value] : undefined
+                              if (swatch) {
+                                return (
+                                  <motion.button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => chooseAttribute(key, value)}
+                                    aria-pressed={selected}
+                                    aria-label={value}
+                                    title={value}
+                                    animate={{ scale: selected ? 1.1 : 1, y: selected ? -2 : 0 }}
+                                    whileTap={{ scale: 0.88 }}
+                                    transition={{ type: 'spring', stiffness: 420, damping: 15 }}
+                                    className={`h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 ${
+                                      selected
+                                        ? 'border-bubblegum-dark shadow-[3px_3px_0_0_#E8799F]'
+                                        : available
+                                          ? 'border-black hover:border-bubblegum-dark'
+                                          : 'border-black/30 opacity-40 hover:opacity-100'
+                                    }`}
+                                  >
+                                    <img src={swatch} alt="" className="h-full w-full object-cover" />
+                                  </motion.button>
+                                )
+                              }
                               return (
-                                <button
+                                <motion.button
                                   key={value}
                                   type="button"
                                   onClick={() => chooseAttribute(key, value)}
                                   aria-pressed={selected}
-                                  aria-label={value}
-                                  title={value}
-                                  className={`h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 transition ${
+                                  animate={{ scale: selected ? 1.06 : 1, y: selected ? -2 : 0 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  transition={{ type: 'spring', stiffness: 420, damping: 15 }}
+                                  className={`h-11 shrink-0 whitespace-nowrap rounded-pill border-2 border-black px-4 font-grotesk text-sm font-bold ${
                                     selected
-                                      ? 'border-bubblegum-dark shadow-[3px_3px_0_0_#E8799F]'
+                                      ? 'bg-ink text-white shadow-[3px_3px_0_0_#E8799F]'
                                       : available
-                                        ? 'border-black hover:border-bubblegum-dark'
-                                        : 'border-black/30 opacity-40 hover:opacity-100'
+                                        ? 'bg-white text-ink hover:bg-bubblegum hover:text-white'
+                                        : 'bg-white text-ink/40 line-through hover:bg-bubblegum hover:text-white hover:no-underline'
                                   }`}
                                 >
-                                  <img src={swatch} alt="" className="h-full w-full object-cover" />
-                                </button>
+                                  {formatAttributeValue(key, value)}
+                                </motion.button>
                               )
-                            }
-                            return (
-                              <button
-                                key={value}
-                                type="button"
-                                onClick={() => chooseAttribute(key, value)}
-                                aria-pressed={selected}
-                                className={`min-h-[44px] rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
-                                  selected
-                                    ? 'bg-ink text-white shadow-[3px_3px_0_0_#E8799F]'
-                                    : available
-                                      ? 'bg-white text-ink hover:bg-bubblegum hover:text-white'
-                                      : 'bg-white text-ink/40 line-through hover:bg-bubblegum hover:text-white hover:no-underline'
-                                }`}
-                              >
-                                {formatAttributeValue(key, value)}
-                              </button>
-                            )
-                          })}
+                            })}
+                          </div>
                         </div>
-                        {useSwatches && selectedVariant?.attributes[key] != null && (
-                          <span className="font-grotesk text-sm font-bold text-ink">
-                            {String(selectedVariant.attributes[key])}
-                          </span>
-                        )}
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
+                )}
 
                 {sellableVariants.length > 1 && keys.length === 0 && (
                   <div className="flex flex-col gap-2">
-                    <span className="font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
+                    <span className="h-5 font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
                       Вариант
                     </span>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="scrollbar-none flex h-11 items-center gap-2 overflow-x-auto overscroll-contain">
                       {sellableVariants.map((variant, index) => (
                         <button
                           key={variant.id}
                           type="button"
                           onClick={() => chooseVariant(variant.id)}
                           aria-pressed={variant.id === selectedVariantId}
-                          className={`min-h-[44px] rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
+                          className={`h-11 shrink-0 whitespace-nowrap rounded-pill border-2 border-black px-4 font-grotesk text-sm font-bold transition ${
                             variant.id === selectedVariantId
                               ? 'bg-ink text-white shadow-[3px_3px_0_0_#E8799F]'
                               : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
@@ -370,43 +417,59 @@ export default function ProductPage() {
                   </div>
                 )}
 
-                {selectedVariant && (
-                  <p className="text-sm text-ink/50">
-                    {selectedVariant.status === 'PRE_ORDER' ? 'Под заказ' : 'В наличии'}
-                  </p>
-                )}
-
-                <div className="mt-2 flex items-center gap-3">
-                  <button
+                {/* buy box — last thing in the column, sticks near the bottom of
+                    the viewport as you scroll (clears the mobile tab bar) */}
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15, type: 'spring', stiffness: 260, damping: 20 }}
+                  className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom)+0.5rem)] z-20 mt-2 flex items-center gap-3 rounded-2xl border-2 border-black bg-white p-3 shadow-[4px_4px_0_0_#000] sm:bottom-4"
+                >
+                  <motion.button
                     type="button"
                     onClick={() => setQuantity((current) => Math.max(1, current - 1))}
                     disabled={!selectedVariant || quantity <= 1}
                     aria-label="Уменьшить количество"
+                    whileTap={{ scale: 0.85 }}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-lg font-bold text-ink transition hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
                   >
                     −
-                  </button>
-                  <span className="min-w-8 text-center font-grotesk text-lg font-bold text-ink">
+                  </motion.button>
+                  <span className="min-w-8 shrink-0 text-center font-grotesk text-lg font-bold text-ink">
                     {quantity}
                   </span>
-                  <button
+                  <motion.button
                     type="button"
                     onClick={() => setQuantity((current) => current + 1)}
                     disabled={!selectedVariant}
                     aria-label="Увеличить количество"
+                    whileTap={{ scale: 0.85 }}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-lg font-bold text-ink transition hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
                   >
                     +
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
                     type="button"
                     onClick={handleAddToCart}
                     disabled={!selectedVariant}
-                    className="flex-1 rounded-pill border-2 border-black bg-ink px-6 py-3 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F] disabled:cursor-not-allowed disabled:opacity-40"
+                    whileTap={{ scale: 0.93, rotate: -1 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 14 }}
+                    className="flex-1 overflow-hidden rounded-pill border-2 border-black bg-ink px-6 py-3 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F] disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    В корзину
-                  </button>
-                </div>
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.span
+                        key={justAdded ? 'added' : 'idle'}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.16 }}
+                        className="block"
+                      >
+                        {justAdded ? '✓ Добавлено' : 'В корзину'}
+                      </motion.span>
+                    </AnimatePresence>
+                  </motion.button>
+                </motion.div>
               </div>
             </div>
           )}
