@@ -36,7 +36,7 @@ cd frontend        && npm install && npm run dev   # :5173  -> http://localhost:
 
 `postgres-init/` creates the `adikabuyer_orders` database on a fresh Postgres volume. If the volume predates that script: `docker exec adikabuyer-dev-postgres psql -U adikabuyer -d adikabuyer -c "CREATE DATABASE adikabuyer_orders"` (`adikabuyer-postgres` for the full stack).
 
-`scripts/seed-demo.sh [base-url] [user] [pass]` populates the catalog with 10 demo products (generated placeholder images + colour/size/volume attributes + swatches + labels) via the admin API — run it once against a fresh DB.
+`scripts/seed-demo.sh [base-url] [user] [pass]` populates the catalog with 10 demo products via the admin API — keyworded stock photos (loremflickr → picsum → flat-colour fallback), multi-paragraph descriptions, colour/size/volume attributes, swatches and labels, plus one multi-photo gallery. Run it once against a fresh DB.
 
 Tests: `mvn test` in each backend service, `npm run test` in `frontend`. `scripts/e2e-smoke.sh <base-url> <user> <pass>` runs an end-to-end smoke against a live stack — CI does this in the `e2e-smoke` job.
 
