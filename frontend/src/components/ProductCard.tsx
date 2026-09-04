@@ -9,10 +9,13 @@ import useIsMobileViewport from '../hooks/useIsMobileViewport'
 import { COLOR_ATTRIBUTE_KEY, formatAttributeValue } from '../utils/attributeOptions'
 import type { MobileColumns } from './MobileColumnsToggle'
 import ProductLabels from './ProductLabels'
+import TextBubbleModal from './TextBubbleModal'
 
 const MAX_SWATCHES_DESKTOP = 4
 const MAX_SWATCHES_MOBILE = 3
-const MAX_DESCRIPTION_CHARS = 160
+// how much description a card teases before the "подробнее" bubble takes over —
+// short enough that the blurb + tag row + swatches clear the image height
+const CARD_BLURB_CHARS = 110
 
 type ProductCardProps = {
   product: ProductDto
@@ -27,6 +30,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
   const [quantity, setQuantity] = useState(1)
   const [activeColor, setActiveColor] = useState<string | null>(null)
   const [imageIndex, setImageIndex] = useState(0)
+  const [blurbOpen, setBlurbOpen] = useState(false)
   const hideDescriptionOnMobile = mobileColumns >= 2
   const hideTagsAndVariantsOnMobile = mobileColumns >= 2
   const hideCategoryOnMobile = mobileColumns >= 2
@@ -108,6 +112,9 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     product.isNew && !(product.labels ?? []).includes('Новинка')
       ? ['Новинка', ...(product.labels ?? [])]
       : product.labels
+
+  const description = product.description?.trim() ?? ''
+  const blurbTruncated = description.length > CARD_BLURB_CHARS
 
   const handleAddToCart = () => {
     if (!shownVariant) {
@@ -232,12 +239,24 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
           </h3>
         </Link>
 
-        {product.description && (
-          <p
-            className={`line-clamp-2 text-sm text-ink/60 ${hideDescriptionOnMobile ? 'max-sm:hidden' : ''}`}
-          >
-            {truncate(product.description, MAX_DESCRIPTION_CHARS)}
-          </p>
+        {description && (
+          <div className={`flex flex-col items-start gap-1 ${hideDescriptionOnMobile ? 'max-sm:hidden' : ''}`}>
+            <p className="line-clamp-2 text-sm text-ink/60">
+              {blurbTruncated ? truncate(description, CARD_BLURB_CHARS) : description}
+            </p>
+            {blurbTruncated && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setBlurbOpen(true)
+                }}
+                className="rounded-pill border-2 border-black bg-bubblegum px-2 py-0.5 font-grotesk text-[10px] font-bold uppercase tracking-wide text-white transition hover:bg-bubblegum-dark active:scale-95"
+              >
+                подробнее
+              </button>
+            )}
+          </div>
         )}
 
         {reserveTagRow && (
@@ -362,6 +381,13 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
           </button>
         </div>
       </div>
+
+      <TextBubbleModal
+        open={blurbOpen}
+        title={product.name}
+        text={description}
+        onClose={() => setBlurbOpen(false)}
+      />
     </div>
   )
 }
