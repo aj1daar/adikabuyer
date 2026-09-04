@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import MainLayout from '../layouts/MainLayout'
+import { popIn } from '../utils/motion'
 import ProductGrid from '../components/ProductGrid'
 import SearchBar from '../components/SearchBar'
 import FilterBar from '../components/FilterBar'
@@ -66,9 +68,11 @@ export default function CatalogPage() {
   return (
     <MainLayout>
       <div className="flex flex-col gap-6 py-8">
-        <SearchBar value={searchInput} onChange={setSearchInput} />
+        <motion.div {...popIn(0)}>
+          <SearchBar value={searchInput} onChange={setSearchInput} />
+        </motion.div>
 
-        <div className="flex items-center justify-between gap-3">
+        <motion.div {...popIn(0.06)} className="flex items-center justify-between gap-3">
           <FilterBar
             category={category}
             color={color}
@@ -94,7 +98,7 @@ export default function CatalogPage() {
             onVolumeChange={handleVolumeChange}
           />
           <MobileColumnsToggle value={mobileColumns} onChange={setMobileColumns} />
-        </div>
+        </motion.div>
 
         {loading && products.length === 0 && <p className="text-ink/60">Загрузка товаров...</p>}
         {error && <p className="text-red-500">{error}</p>}

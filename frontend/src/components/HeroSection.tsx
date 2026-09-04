@@ -66,9 +66,11 @@ export default function HeroSection() {
               <MotionLink
                 to="/catalog"
                 className="block rounded-pill border-2 border-black bg-ink px-8 py-3 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition-[background-color,box-shadow] hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F]"
-                whileHover={ctaHover}
-                whileTap={ctaTap}
-                transition={ctaSpring}
+                initial={{ opacity: 0, scale: 0.85, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                whileHover={{ ...ctaHover, transition: ctaSpring }}
+                whileTap={{ ...ctaTap, transition: ctaSpring }}
+                transition={{ ...ctaSpring, delay: 0.2 }}
               >
                 Смотреть каталог
               </MotionLink>
@@ -81,9 +83,11 @@ export default function HeroSection() {
               <MotionLink
                 to="/about"
                 className="block rounded-pill border-2 border-black bg-white px-8 py-3 font-grotesk text-sm font-bold text-ink transition-[background-color,color] hover:bg-bubblegum hover:text-white"
-                whileHover={ctaHover}
-                whileTap={ctaTap}
-                transition={ctaSpring}
+                initial={{ opacity: 0, scale: 0.85, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                whileHover={{ ...ctaHover, transition: ctaSpring }}
+                whileTap={{ ...ctaTap, transition: ctaSpring }}
+                transition={{ ...ctaSpring, delay: 0.25 }}
               >
                 Подробнее
               </MotionLink>
@@ -91,12 +95,16 @@ export default function HeroSection() {
           </div>
         </div>
 
+        <motion.div
+          {...popIn(0.3)}
+          className="relative mt-8 h-56 w-56 shrink-0 sm:mt-0 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
+        >
         <motion.a
           href="https://www.instagram.com/adika.buyer/"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Adika Buyer в Instagram"
-          className="relative mt-8 block h-56 w-56 shrink-0 sm:mt-0 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
+          className="relative block h-full w-full"
           animate={reduceMotion ? undefined : { y: [0, -14, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
           whileHover={{ scale: 1.05, rotate: -3 }}
@@ -147,6 +155,7 @@ export default function HeroSection() {
             className="relative h-full w-full rounded-full border-4 border-black object-cover"
           />
         </motion.a>
+        </motion.div>
       </motion.div>
     </section>
   )
