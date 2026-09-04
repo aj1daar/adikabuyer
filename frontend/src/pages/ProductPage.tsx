@@ -398,9 +398,12 @@ export default function ProductPage() {
                                       animate={{
                                         scale: selected ? 1.1 : 1,
                                         y: selected ? -2 : 0,
-                                        transition: { type: 'spring', stiffness: 420, damping: 15 },
+                                        // snappier + more damped than the row's mount pop-in spring
+                                        // so the select toggle settles quickly and consistently even
+                                        // when tapped again mid-animation, instead of a slow wobble
+                                        transition: { type: 'spring', stiffness: 600, damping: 32 },
                                       }}
-                                      whileTap={{ scale: 0.88, transition: { type: 'spring', stiffness: 420, damping: 15 } }}
+                                      whileTap={{ scale: 0.88, transition: { type: 'spring', stiffness: 600, damping: 32 } }}
                                       className={`h-11 w-11 overflow-hidden rounded-full border-2 ${
                                         selected
                                           ? 'border-bubblegum-dark shadow-[3px_3px_0_0_#E8799F]'
@@ -429,9 +432,12 @@ export default function ProductPage() {
                                     animate={{
                                       scale: selected ? 1.06 : 1,
                                       y: selected ? -2 : 0,
-                                      transition: { type: 'spring', stiffness: 420, damping: 15 },
+                                      // snappier + more damped than the row's mount pop-in spring
+                                      // so the select toggle settles quickly and consistently even
+                                      // when tapped again mid-animation, instead of a slow wobble
+                                      transition: { type: 'spring', stiffness: 600, damping: 32 },
                                     }}
-                                    whileTap={{ scale: 0.9, transition: { type: 'spring', stiffness: 420, damping: 15 } }}
+                                    whileTap={{ scale: 0.9, transition: { type: 'spring', stiffness: 600, damping: 32 } }}
                                     className={`h-11 whitespace-nowrap rounded-pill border-2 border-black px-4 font-grotesk text-sm font-bold ${
                                       selected
                                         ? 'bg-ink text-white shadow-[3px_3px_0_0_#E8799F]'
