@@ -188,14 +188,14 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
 
         {reserveTagRow && (
           <div
-            className={`flex h-[26px] shrink-0 items-center gap-1 overflow-hidden ${
+            className={`flex h-9 shrink-0 items-center gap-1 overflow-x-hidden ${
               hideTagsAndVariantsOnMobile ? 'max-sm:hidden' : ''
             }`}
           >
             {attributeTags.map((tag, index) => (
               <span
                 key={index}
-                className="shrink-0 whitespace-nowrap rounded-pill border-2 border-black bg-silver px-2 py-0.5 font-grotesk text-xs font-bold text-ink"
+                className="inline-flex shrink-0 items-center whitespace-nowrap rounded-pill border-2 border-black bg-silver px-2 py-1 font-grotesk text-[11px] font-bold leading-none text-ink"
               >
                 {tag}
               </span>
