@@ -369,7 +369,7 @@ export default function ProductPage() {
                           </div>
                           {/* capped + horizontally scrollable (no visible scrollbar) so 16
                               colours never blow out the row — "+N" pops the rest in place */}
-                          <div className="scrollbar-none flex h-11 items-center gap-2 overflow-x-auto overscroll-contain">
+                          <div className="scrollbar-none flex h-14 items-center gap-2 overflow-x-auto overscroll-contain">
                             {shownValues.map((value, valueIndex) => {
                               const selected = selection[key] === value
                               const available = isValueAvailable(sellableVariants, selection, key, value)
@@ -475,7 +475,7 @@ export default function ProductPage() {
                     <span className="h-5 font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
                       Вариант
                     </span>
-                    <div className="scrollbar-none flex h-11 items-center gap-2 overflow-x-auto overscroll-contain">
+                    <div className="scrollbar-none flex h-14 items-center gap-2 overflow-x-auto overscroll-contain">
                       {sellableVariants.map((variant, index) => (
                         <button
                           key={variant.id}

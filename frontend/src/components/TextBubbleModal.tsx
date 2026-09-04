@@ -50,7 +50,7 @@ export default function TextBubbleModal({ open, title, text, onClose }: TextBubb
             exit={{ opacity: 0, scale: 0.7, y: 40 }}
             transition={{ type: 'spring', stiffness: 380, damping: 12, mass: 0.8 }}
             onClick={(event) => event.stopPropagation()}
-            className="relative max-h-[80dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-3xl border-2 border-black bg-white p-6 shadow-[8px_8px_0_0_#000]"
+            className="relative w-full max-w-xl rounded-3xl border-2 border-black bg-white p-8 shadow-[8px_8px_0_0_#000]"
           >
             {/* speech-bubble tail */}
             <span className="absolute -bottom-[11px] left-10 h-5 w-5 rotate-45 border-b-2 border-r-2 border-black bg-white" />
@@ -66,8 +66,8 @@ export default function TextBubbleModal({ open, title, text, onClose }: TextBubb
               </svg>
             </button>
 
-            <h2 className="pr-10 font-grotesk text-lg font-bold text-ink">{title}</h2>
-            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-ink/80">{text}</p>
+            <h2 className="pr-10 font-grotesk text-xl font-bold text-ink">{title}</h2>
+            <p className="mt-3 whitespace-pre-line text-base leading-relaxed text-ink/80">{text}</p>
           </motion.div>
         </motion.div>
       )}
