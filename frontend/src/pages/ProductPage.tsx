@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import MainLayout from '../layouts/MainLayout'
 import catalogClient from '../api/catalogClient'
 import useCartStore from '../store/useCartStore'
@@ -8,6 +9,7 @@ import { resolveVariantGallery } from '../utils/variantImage'
 import usePageTitle from '../hooks/usePageTitle'
 import formatPrice from '../utils/formatPrice'
 import ProductLabels from '../components/ProductLabels'
+import TextBubbleModal from '../components/TextBubbleModal'
 import type { ProductDto, VariantDto } from '../types/catalog'
 import { attributeKeyLabel, COLOR_ATTRIBUTE_KEY, formatAttributeValue } from '../utils/attributeOptions'
 import {
@@ -38,6 +40,7 @@ export default function ProductPage() {
   // explicit attribute picks; a second click on an active value drops it
   const [selection, setSelection] = useState<Record<string, string>>({})
   const [quantity, setQuantity] = useState(1)
+  const [descOpen, setDescOpen] = useState(false)
 
   usePageTitle(product?.name)
 
@@ -95,7 +98,9 @@ export default function ProductPage() {
   const selectedVariant = sellableVariants.find((variant) => variant.id === selectedVariantId)
   const gallery = product ? resolveVariantGallery(product, selectedVariant) : []
   const [photoIndex, setPhotoIndex] = useState(0)
-  const imageUrl = gallery[Math.min(photoIndex, gallery.length - 1)] ?? null
+  const imageUrl = gallery.length ? gallery[photoIndex % gallery.length] : null
+  const stepPhoto = (delta: number) =>
+    setPhotoIndex((current) => (current + delta + gallery.length) % gallery.length)
   const price = selectedVariant?.displayPrice ?? product?.displayPrice ?? 0
 
   const chooseVariant = (variantId: number) => {
@@ -171,6 +176,41 @@ export default function ProductPage() {
                   ) : (
                     <span className="font-grotesk text-6xl font-semibold text-ink/20">{initials}</span>
                   )}
+
+                  {gallery.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => stepPhoto(-1)}
+                        aria-label="Предыдущее фото"
+                        className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[3px_3px_0_0_#000] transition hover:bg-bubblegum hover:text-white active:scale-90"
+                      >
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                          <path d="M15 18l-6-6 6-6" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => stepPhoto(1)}
+                        aria-label="Следующее фото"
+                        className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[3px_3px_0_0_#000] transition hover:bg-bubblegum hover:text-white active:scale-90"
+                      >
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                          <path d="M9 6l6 6-6 6" />
+                        </svg>
+                      </button>
+                      <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+                        {gallery.map((_, dot) => (
+                          <span
+                            key={dot}
+                            className={`h-2 w-2 rounded-full border-2 border-black transition ${
+                              dot === photoIndex % gallery.length ? 'bg-ink' : 'bg-white'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {gallery.length > 1 && (
@@ -213,7 +253,31 @@ export default function ProductPage() {
                 <h1 className="font-grotesk text-4xl font-bold text-ink sm:text-5xl">{product.name}</h1>
 
                 {product.description && (
-                  <p className="text-base leading-relaxed text-ink/70">{product.description}</p>
+                  <>
+                    <motion.button
+                      type="button"
+                      onClick={() => setDescOpen(true)}
+                      whileTap={{ scale: 0.95, rotate: -1 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 12 }}
+                      className="group w-full rounded-2xl border-2 border-black bg-white px-4 py-3 text-left shadow-[4px_4px_0_0_#000] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_0_#E8799F]"
+                    >
+                      <p className="line-clamp-2 text-base leading-relaxed text-ink/70">
+                        {product.description}
+                      </p>
+                      <span className="mt-1.5 inline-flex items-center gap-1 font-grotesk text-[11px] font-bold uppercase tracking-wide text-bubblegum-dark">
+                        Развернуть
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 transition-transform group-hover:translate-x-0.5">
+                          <path d="M9 6l6 6-6 6" />
+                        </svg>
+                      </span>
+                    </motion.button>
+                    <TextBubbleModal
+                      open={descOpen}
+                      title={product.name}
+                      text={product.description}
+                      onClose={() => setDescOpen(false)}
+                    />
+                  </>
                 )}
 
                 <p className="font-grotesk text-3xl font-bold text-ink">{formatPrice(price)}</p>

@@ -120,6 +120,44 @@ describe('ProductPage', () => {
     expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'black-side.jpg')
   })
 
+  it('pages the main photo with the prev/next arrows', async () => {
+    mockedGet.mockResolvedValue({ data: product })
+
+    renderPage()
+
+    await screen.findByText('Custom Tumbler')
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'black.jpg')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Следующее фото' }))
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'black-side.jpg')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Следующее фото' }))
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'black.jpg')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Предыдущее фото' }))
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'black-side.jpg')
+  })
+
+  it('opens the full description in a bubble when the clamped blurb is clicked', async () => {
+    const longText =
+      'Термокружка из нержавеющей стали с двойными стенками и вакуумной изоляцией, ' +
+      'держит напиток горячим до двенадцати часов и холодным до суток; крышка с защёлкой не протекает.'
+    mockedGet.mockResolvedValue({ data: { ...product, description: longText } })
+
+    renderPage()
+
+    await screen.findByText('Custom Tumbler')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Развернуть'))
+
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toHaveTextContent(longText)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Закрыть' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+
   it('shows an error message when loading fails', async () => {
     mockedGet.mockRejectedValue(new Error('boom'))
 

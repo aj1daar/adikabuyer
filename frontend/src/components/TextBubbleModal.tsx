@@ -45,10 +45,10 @@ export default function TextBubbleModal({ open, title, text, onClose }: TextBubb
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            initial={{ opacity: 0, scale: 0.9, y: 12 }}
+            initial={{ opacity: 0, scale: 0.6, y: 60 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 12 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+            exit={{ opacity: 0, scale: 0.7, y: 40 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 12, mass: 0.8 }}
             onClick={(event) => event.stopPropagation()}
             className="relative max-h-[80dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-3xl border-2 border-black bg-white p-6 shadow-[8px_8px_0_0_#000]"
           >

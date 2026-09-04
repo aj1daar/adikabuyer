@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import ProductCard from '../../components/ProductCard'
 import useCartStore from '../../store/useCartStore'
@@ -63,14 +63,14 @@ describe('ProductCard', () => {
   it('keeps description and tags visible on mobile at the default density', () => {
     render(<ProductCard product={product} />, { wrapper: MemoryRouter })
 
-    expect(screen.getByText('Insulated steel tumbler').closest('div')).not.toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Insulated steel tumbler')).not.toHaveClass('max-sm:hidden')
     expect(screen.getByText('Black').closest('div')).not.toHaveClass('max-sm:hidden')
   })
 
   it('hides the description, tags, and category on mobile once 2 columns are selected', () => {
     render(<ProductCard product={product} mobileColumns={2} />, { wrapper: MemoryRouter })
 
-    expect(screen.getByText('Insulated steel tumbler').closest('div')).toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Insulated steel tumbler')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Black').closest('div')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Drinkware').closest('div')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Custom Tumbler').closest('a')).not.toHaveClass('max-sm:hidden')
@@ -79,33 +79,10 @@ describe('ProductCard', () => {
   it('additionally hides the name on mobile once 3 columns are selected', () => {
     render(<ProductCard product={product} mobileColumns={3} />, { wrapper: MemoryRouter })
 
-    expect(screen.getByText('Insulated steel tumbler').closest('div')).toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Insulated steel tumbler')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Drinkware').closest('div')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Black').closest('div')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Custom Tumbler').closest('a')).toHaveClass('max-sm:hidden')
-  })
-
-  it('teases a long description and opens the full text in a bubble on "подробнее"', async () => {
-    const longText =
-      'Термокружка из нержавеющей стали с двойными стенками и вакуумной изоляцией, ' +
-      'держит напиток горячим до двенадцати часов и холодным до суток, крышка с защёлкой не протекает.'
-    render(<ProductCard product={{ ...product, description: longText }} />, { wrapper: MemoryRouter })
-
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    const trigger = screen.getByRole('button', { name: /подробнее/i })
-    fireEvent.click(trigger)
-
-    const dialog = screen.getByRole('dialog')
-    expect(dialog).toHaveTextContent(longText)
-
-    fireEvent.click(screen.getByRole('button', { name: 'Закрыть' }))
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-  })
-
-  it('shows no "подробнее" trigger when the description already fits', () => {
-    render(<ProductCard product={product} />, { wrapper: MemoryRouter })
-
-    expect(screen.queryByRole('button', { name: /подробнее/i })).not.toBeInTheDocument()
   })
 
   it('shrinks and truncates the title to one line on mobile once a compact density is selected', () => {
