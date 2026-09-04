@@ -1,4 +1,4 @@
-import { useRef, useState, type MouseEvent } from 'react'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import type { ProductDto } from '../types/catalog'
 import useCartStore from '../store/useCartStore'
@@ -26,6 +26,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
   const isMobile = useIsMobileViewport()
   const [quantity, setQuantity] = useState(1)
   const [activeColor, setActiveColor] = useState<string | null>(null)
+  const [imageIndex, setImageIndex] = useState(0)
   const hideDescriptionOnMobile = mobileColumns >= 2
   const hideTagsAndVariantsOnMobile = mobileColumns >= 2
   const hideCategoryOnMobile = mobileColumns >= 2
@@ -64,11 +65,29 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     : undefined
   const shownVariant = activeVariant ?? sellableVariants[0]
 
-  const cardImage =
-    (activeColor && (activeVariant?.imageUrls[0] ?? colorSwatches[activeColor])) ||
-    product.imageUrl ||
-    sellableVariants.find((variant) => variant.imageUrls.length > 0)?.imageUrls[0] ||
-    null
+  // the gallery for the current view: the picked colour's photos, else the swatch
+  // for that colour, else every photo we have (product cover + all variant shots)
+  const cardImages: string[] = activeVariant?.imageUrls.length
+    ? activeVariant.imageUrls
+    : activeColor && colorSwatches[activeColor]
+      ? [colorSwatches[activeColor]]
+      : [
+          product.imageUrl,
+          ...sellableVariants.flatMap((variant) => variant.imageUrls),
+        ].filter((url): url is string => Boolean(url))
+  const safeImageIndex = cardImages.length ? imageIndex % cardImages.length : 0
+  const cardImage = cardImages[safeImageIndex] ?? null
+
+  // reset to the first photo whenever the gallery changes under us
+  useEffect(() => {
+    setImageIndex(0)
+  }, [activeColor])
+
+  const stepImage = (delta: number) => (event: MouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setImageIndex((current) => (current + delta + cardImages.length) % cardImages.length)
+  }
   const tagKeys = (attributes: Record<string, unknown>) =>
     Object.entries(attributes).filter(([key]) => !(key === COLOR_ATTRIBUTE_KEY && swatchColors.length > 0))
   const attributeTags = shownVariant
@@ -109,7 +128,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
 
   const handleCardClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement
-    if (!cardRef.current || !target.closest('a')) {
+    if (!cardRef.current || !target.closest('a') || target.closest('button')) {
       return
     }
     const rect = cardRef.current.getBoundingClientRect()
@@ -131,7 +150,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
 
       <Link
         to={`/catalog/${product.id}`}
-        className="flex aspect-[4/5] items-center justify-center overflow-hidden border-b-2 border-black bg-silver"
+        className="relative flex aspect-[4/5] items-center justify-center overflow-hidden border-b-2 border-black bg-silver"
       >
         {cardImage ? (
           <img
@@ -144,6 +163,41 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
           <span className="font-grotesk text-4xl font-semibold text-ink/20">
             {initials}
           </span>
+        )}
+
+        {cardImages.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={stepImage(-1)}
+              aria-label="Предыдущее фото"
+              className="absolute left-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[2px_2px_0_0_#000] transition hover:bg-bubblegum hover:text-white active:scale-90 max-sm:h-7 max-sm:w-7"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={stepImage(1)}
+              aria-label="Следующее фото"
+              className="absolute right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[2px_2px_0_0_#000] transition hover:bg-bubblegum hover:text-white active:scale-90 max-sm:h-7 max-sm:w-7"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                <path d="M9 6l6 6-6 6" />
+              </svg>
+            </button>
+            <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 gap-1">
+              {cardImages.map((_, dot) => (
+                <span
+                  key={dot}
+                  className={`h-1.5 w-1.5 rounded-full border border-black transition ${
+                    dot === safeImageIndex ? 'bg-ink' : 'bg-white'
+                  }`}
+                />
+              ))}
+            </div>
+          </>
         )}
       </Link>
 
