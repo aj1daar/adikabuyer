@@ -25,22 +25,25 @@ export default function HeroSection() {
       >
         <div className="flex flex-col items-center gap-5 sm:items-start">
           <motion.span
-            {...popIn(0.15)}
+            {...popIn(0)}
             className="rounded-pill border-2 border-black bg-gradient-to-r from-bubblegum to-bubblegum-light px-5 py-1.5 font-grotesk text-sm font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]"
           >
             Под заказ
           </motion.span>
 
-          <h1 className="font-grotesk text-display font-semibold leading-[0.95] tracking-[-0.03em] text-ink sm:text-[clamp(3rem,6.5vw,5rem)]">
+          <motion.h1
+            {...popIn(0.06)}
+            className="font-grotesk text-display font-semibold leading-[0.95] tracking-[-0.03em] text-ink sm:text-[clamp(3rem,6.5vw,5rem)]"
+          >
             сделано
             <br />
             для <span className="text-bubblegum">тебя</span>
-          </h1>
+          </motion.h1>
 
-          <p className="max-w-xl text-lg text-ink/70">
+          <motion.p {...popIn(0.12)} className="max-w-xl text-lg text-ink/70">
             Термостаканы, одежда, обувь и многое другое. Выбери вариант, мы соберём заказ
             и свяжемся с вами как можно скорее.
-          </p>
+          </motion.p>
 
           <div className="relative flex flex-wrap items-start justify-center gap-x-4 gap-y-6 sm:items-center sm:justify-start sm:gap-y-4">
             <ScribbleNote
