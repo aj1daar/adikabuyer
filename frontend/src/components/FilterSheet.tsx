@@ -37,7 +37,16 @@ function AccordionSection({ title, summary, isOpen, onToggleOpen, children }: Ac
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
-      {isOpen && <div className="pb-4">{children}</div>}
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+          className="pb-4"
+        >
+          {children}
+        </motion.div>
+      )}
     </div>
   )
 }

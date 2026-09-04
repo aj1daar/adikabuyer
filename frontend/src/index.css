@@ -98,3 +98,14 @@
 .animate-grid-density-pop {
   animation: grid-density-pop 220ms ease-out;
 }
+
+/* Compact horizontal strips (product-page attribute rows) skip the chunky
+   16px Neo-Y2K scrollbar above — it would eat most of an h-11 row. Still
+   scrollable with touch/wheel/drag, just no visible rail. */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

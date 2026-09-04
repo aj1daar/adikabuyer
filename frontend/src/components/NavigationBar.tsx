@@ -9,6 +9,7 @@ import useHideOnScroll from '../hooks/useHideOnScroll'
 const MotionLink = motion.create(Link)
 
 const navItems = [
+  { to: '/', label: 'Главная', end: true },
   { to: '/catalog', label: 'Каталог' },
   { to: '/about', label: 'О нас' },
 ]
@@ -91,7 +92,7 @@ export default function NavigationBar() {
           <nav className="hidden items-center gap-6 sm:flex">
             <Sparkle className="h-3.5 w-3.5 text-bubblegum-dark/70" />
             {navItems.map((item) => (
-              <NavLink key={item.to} to={item.to} className={desktopLinkClass}>
+              <NavLink key={item.to} to={item.to} end={item.end} className={desktopLinkClass}>
                 {item.label}
               </NavLink>
             ))}
@@ -124,11 +125,8 @@ export default function NavigationBar() {
           hidden ? 'translate-y-full' : 'translate-y-0'
         }`}
       >
-        <NavLink to="/" end className={tabLinkClass}>
-          Главная
-        </NavLink>
         {navItems.map((item) => (
-          <NavLink key={item.to} to={item.to} className={tabLinkClass}>
+          <NavLink key={item.to} to={item.to} end={item.end} className={tabLinkClass}>
             {item.label}
           </NavLink>
         ))}

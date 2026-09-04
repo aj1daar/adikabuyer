@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import ScribbleNote from './ScribbleNote'
 import HeroBubbles from './HeroBubbles'
+import { popIn } from '../utils/motion'
 
 const MotionLink = motion.create(Link)
 
@@ -23,20 +24,26 @@ export default function HeroSection() {
         className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center gap-5 text-center sm:flex-row sm:justify-between sm:gap-10 sm:text-left"
       >
         <div className="flex flex-col items-center gap-5 sm:items-start">
-          <span className="rounded-pill border-2 border-black bg-gradient-to-r from-bubblegum to-bubblegum-light px-5 py-1.5 font-grotesk text-sm font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]">
+          <motion.span
+            {...popIn(0)}
+            className="rounded-pill border-2 border-black bg-gradient-to-r from-bubblegum to-bubblegum-light px-5 py-1.5 font-grotesk text-sm font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]"
+          >
             Под заказ
-          </span>
+          </motion.span>
 
-          <h1 className="font-grotesk text-display font-semibold leading-[0.95] tracking-[-0.03em] text-ink sm:text-[clamp(3rem,6.5vw,5rem)]">
+          <motion.h1
+            {...popIn(0.06)}
+            className="font-grotesk text-display font-semibold leading-[0.95] tracking-[-0.03em] text-ink sm:text-[clamp(3rem,6.5vw,5rem)]"
+          >
             сделано
             <br />
             для <span className="text-bubblegum">тебя</span>
-          </h1>
+          </motion.h1>
 
-          <p className="max-w-xl text-lg text-ink/70">
+          <motion.p {...popIn(0.12)} className="max-w-xl text-lg text-ink/70">
             Термостаканы, одежда, обувь и многое другое. Выбери вариант, мы соберём заказ
             и свяжемся с вами как можно скорее.
-          </p>
+          </motion.p>
 
           <div className="relative flex flex-wrap items-start justify-center gap-x-4 gap-y-6 sm:items-center sm:justify-start sm:gap-y-4">
             <ScribbleNote
@@ -62,9 +69,11 @@ export default function HeroSection() {
               <MotionLink
                 to="/catalog"
                 className="block rounded-pill border-2 border-black bg-ink px-8 py-3 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition-[background-color,box-shadow] hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F]"
-                whileHover={ctaHover}
-                whileTap={ctaTap}
-                transition={ctaSpring}
+                initial={{ opacity: 0, scale: 0.85, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                whileHover={{ ...ctaHover, transition: ctaSpring }}
+                whileTap={{ ...ctaTap, transition: ctaSpring }}
+                transition={{ ...ctaSpring, delay: 0.2 }}
               >
                 Смотреть каталог
               </MotionLink>
@@ -77,9 +86,11 @@ export default function HeroSection() {
               <MotionLink
                 to="/about"
                 className="block rounded-pill border-2 border-black bg-white px-8 py-3 font-grotesk text-sm font-bold text-ink transition-[background-color,color] hover:bg-bubblegum hover:text-white"
-                whileHover={ctaHover}
-                whileTap={ctaTap}
-                transition={ctaSpring}
+                initial={{ opacity: 0, scale: 0.85, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                whileHover={{ ...ctaHover, transition: ctaSpring }}
+                whileTap={{ ...ctaTap, transition: ctaSpring }}
+                transition={{ ...ctaSpring, delay: 0.25 }}
               >
                 Подробнее
               </MotionLink>
@@ -87,12 +98,16 @@ export default function HeroSection() {
           </div>
         </div>
 
+        <motion.div
+          {...popIn(0.3)}
+          className="relative mt-8 h-56 w-56 shrink-0 sm:mt-0 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
+        >
         <motion.a
           href="https://www.instagram.com/adika.buyer/"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Adika Buyer в Instagram"
-          className="relative mt-8 block h-56 w-56 shrink-0 sm:mt-0 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
+          className="relative block h-full w-full"
           animate={reduceMotion ? undefined : { y: [0, -14, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
           whileHover={{ scale: 1.05, rotate: -3 }}
@@ -143,6 +158,7 @@ export default function HeroSection() {
             className="relative h-full w-full rounded-full border-4 border-black object-cover"
           />
         </motion.a>
+        </motion.div>
       </motion.div>
     </section>
   )

@@ -1,4 +1,4 @@
-import { useRef, useState, type MouseEvent } from 'react'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import type { ProductDto } from '../types/catalog'
 import useCartStore from '../store/useCartStore'
@@ -12,7 +12,8 @@ import ProductLabels from './ProductLabels'
 
 const MAX_SWATCHES_DESKTOP = 4
 const MAX_SWATCHES_MOBILE = 3
-const MAX_DESCRIPTION_CHARS = 160
+// keep the card blurb short — the full text lives on the product page
+const CARD_DESCRIPTION_CHARS = 110
 
 type ProductCardProps = {
   product: ProductDto
@@ -26,13 +27,12 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
   const isMobile = useIsMobileViewport()
   const [quantity, setQuantity] = useState(1)
   const [activeColor, setActiveColor] = useState<string | null>(null)
+  const [imageIndex, setImageIndex] = useState(0)
   const hideDescriptionOnMobile = mobileColumns >= 2
   const hideTagsAndVariantsOnMobile = mobileColumns >= 2
   const hideCategoryOnMobile = mobileColumns >= 2
   const hideNameOnMobile = mobileColumns >= 3
-  // 2-col mobile: reserve the swatch row so every card is the same height.
   // 3-col mobile: the card is too narrow for swatches — hide the row entirely.
-  const reserveSwatchRow = isMobile && mobileColumns === 2
   const hideSwatchRow = isMobile && mobileColumns >= 3
   // smaller swatches in the cramped 2-col mobile card so a full row + "+N" never wraps
   const swatchSizeClass = mobileColumns >= 2 ? 'max-sm:h-6 max-sm:w-6' : 'max-sm:h-7 max-sm:w-7'
@@ -64,11 +64,33 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     : undefined
   const shownVariant = activeVariant ?? sellableVariants[0]
 
-  const cardImage =
-    (activeColor && (activeVariant?.imageUrls[0] ?? colorSwatches[activeColor])) ||
-    product.imageUrl ||
-    sellableVariants.find((variant) => variant.imageUrls.length > 0)?.imageUrls[0] ||
-    null
+  // the gallery for the current view: the picked colour's photos, else the swatch
+  // for that colour, else every photo we have (product cover + all variant shots)
+  const cardImages: string[] = [
+    ...new Set(
+      activeVariant?.imageUrls.length
+        ? activeVariant.imageUrls
+        : activeColor && colorSwatches[activeColor]
+          ? [colorSwatches[activeColor]]
+          : [
+              product.imageUrl,
+              ...sellableVariants.flatMap((variant) => variant.imageUrls),
+            ].filter((url): url is string => Boolean(url)),
+    ),
+  ]
+  const safeImageIndex = cardImages.length ? imageIndex % cardImages.length : 0
+  const cardImage = cardImages[safeImageIndex] ?? null
+
+  // reset to the first photo whenever the gallery changes under us
+  useEffect(() => {
+    setImageIndex(0)
+  }, [activeColor])
+
+  const stepImage = (delta: number) => (event: MouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setImageIndex((current) => (current + delta + cardImages.length) % cardImages.length)
+  }
   const tagKeys = (attributes: Record<string, unknown>) =>
     Object.entries(attributes).filter(([key]) => !(key === COLOR_ATTRIBUTE_KEY && swatchColors.length > 0))
   const attributeTags = shownVariant
@@ -77,9 +99,6 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
         return `${formatAttributeValue(key, value)}${more > 0 ? ` +${more}` : ''}`
       })
     : []
-  // reserve the tag row whenever any variant could show one, so picking a colour
-  // (which swaps the shown variant) never grows or shrinks the card
-  const reserveTagRow = sellableVariants.some((variant) => tagKeys(variant.attributes).length > 0)
   // no colour picked → the product's "from" (cheapest) price; picked → that colour's price
   const shownPrice = activeVariant?.displayPrice ?? product.displayPrice
 
@@ -109,7 +128,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
 
   const handleCardClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement
-    if (!cardRef.current || !target.closest('a')) {
+    if (!cardRef.current || !target.closest('a') || target.closest('button')) {
       return
     }
     const rect = cardRef.current.getBoundingClientRect()
@@ -131,7 +150,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
 
       <Link
         to={`/catalog/${product.id}`}
-        className="flex aspect-[4/5] items-center justify-center overflow-hidden border-b-2 border-black bg-silver"
+        className="relative flex aspect-[4/5] items-center justify-center overflow-hidden border-b-2 border-black bg-silver"
       >
         {cardImage ? (
           <img
@@ -145,68 +164,99 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
             {initials}
           </span>
         )}
+
+        {cardImages.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={stepImage(-1)}
+              aria-label="Предыдущее фото"
+              className="absolute left-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[2px_2px_0_0_#000] transition hover:bg-bubblegum hover:text-white active:scale-90 max-sm:h-7 max-sm:w-7"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={stepImage(1)}
+              aria-label="Следующее фото"
+              className="absolute right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[2px_2px_0_0_#000] transition hover:bg-bubblegum hover:text-white active:scale-90 max-sm:h-7 max-sm:w-7"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                <path d="M9 6l6 6-6 6" />
+              </svg>
+            </button>
+            <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 gap-1">
+              {cardImages.map((_, dot) => (
+                <span
+                  key={dot}
+                  className={`h-1.5 w-1.5 rounded-full border border-black transition ${
+                    dot === safeImageIndex ? 'bg-ink' : 'bg-white'
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </Link>
 
       <div className={`flex flex-1 flex-col gap-2 p-5 ${mobileColumns >= 2 ? 'max-sm:p-3' : ''}`}>
-        {(product.brand || product.category) && (
-          <div
-            className={`flex flex-wrap items-center gap-1.5 ${hideCategoryOnMobile ? 'max-sm:hidden' : ''}`}
-          >
-            {product.brand && (
-              <span className="rounded-pill border-2 border-black bg-ink px-2 py-0.5 font-grotesk text-[10px] font-bold uppercase tracking-wide text-white">
-                {product.brand}
-              </span>
-            )}
-            {product.category && (
-              <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-bubblegum-dark">
-                {product.category}
-              </span>
-            )}
-          </div>
-        )}
+        {/* every row below reserves its own height whether or not this particular
+            product has that content, so cards never stagger to different sizes */}
+        <div
+          className={`flex h-6 items-center gap-1.5 overflow-hidden ${hideCategoryOnMobile ? 'max-sm:hidden' : ''}`}
+        >
+          {product.brand && (
+            <span className="shrink-0 rounded-pill border-2 border-black bg-ink px-2 py-0.5 font-grotesk text-[10px] font-bold uppercase leading-none tracking-wide text-white">
+              {product.brand}
+            </span>
+          )}
+          {product.category && (
+            <span className="truncate font-grotesk text-xs font-bold uppercase tracking-wide text-bubblegum-dark">
+              {product.category}
+            </span>
+          )}
+        </div>
 
         <Link
           to={`/catalog/${product.id}`}
           className={hideNameOnMobile ? 'max-sm:hidden' : ''}
         >
           <h3
-            className={`font-grotesk text-lg font-bold text-ink transition hover:text-bubblegum-dark ${
-              hideDescriptionOnMobile ? 'max-sm:truncate max-sm:text-xs' : ''
+            className={`line-clamp-2 min-h-[3.5rem] font-grotesk text-lg font-bold text-ink transition hover:text-bubblegum-dark ${
+              hideDescriptionOnMobile ? 'max-sm:min-h-0 max-sm:truncate max-sm:text-xs' : ''
             }`}
           >
             {product.name}
           </h3>
         </Link>
 
-        {product.description && (
-          <p
-            className={`line-clamp-2 text-sm text-ink/60 ${hideDescriptionOnMobile ? 'max-sm:hidden' : ''}`}
-          >
-            {truncate(product.description, MAX_DESCRIPTION_CHARS)}
-          </p>
-        )}
+        <p
+          className={`line-clamp-2 min-h-[2.5rem] text-sm text-ink/60 ${hideDescriptionOnMobile ? 'max-sm:hidden' : ''}`}
+        >
+          {product.description ? truncate(product.description, CARD_DESCRIPTION_CHARS) : ''}
+        </p>
 
-        {reserveTagRow && (
-          <div
-            className={`flex h-[26px] shrink-0 items-center gap-1 overflow-hidden ${
-              hideTagsAndVariantsOnMobile ? 'max-sm:hidden' : ''
-            }`}
-          >
-            {attributeTags.map((tag, index) => (
-              <span
-                key={index}
-                className="shrink-0 whitespace-nowrap rounded-pill border-2 border-black bg-silver px-2 py-0.5 font-grotesk text-xs font-bold text-ink"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
+        <div
+          className={`flex h-9 shrink-0 items-center gap-1 overflow-x-hidden ${
+            hideTagsAndVariantsOnMobile ? 'max-sm:hidden' : ''
+          }`}
+        >
+          {attributeTags.map((tag, index) => (
+            <span
+              key={index}
+              className="inline-flex shrink-0 items-center whitespace-nowrap rounded-pill border-2 border-black bg-silver px-2 py-1 font-grotesk text-[11px] font-bold leading-none text-ink"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
 
-        {(swatchColors.length > 0 || reserveSwatchRow) && !hideSwatchRow && (
+        {!hideSwatchRow && (
           <div
-            className={`flex flex-wrap items-center gap-2 max-sm:gap-1.5 ${
-              reserveSwatchRow ? 'max-sm:h-6' : ''
+            className={`flex h-9 items-center gap-2 max-sm:gap-1.5 ${
+              mobileColumns >= 2 ? 'max-sm:h-6' : 'max-sm:h-7'
             }`}
           >
             {visibleSwatches.map((color) => (

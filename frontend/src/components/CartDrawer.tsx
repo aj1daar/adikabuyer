@@ -5,6 +5,7 @@ import submitCheckout from '../api/checkout'
 import formatPrice from '../utils/formatPrice'
 import resolveDeliveryFee, { DELIVERY_CITIES } from '../utils/deliveryFee'
 import CityDropdown from './CityDropdown'
+import { popIn } from '../utils/motion'
 
 type DeliveryMode = 'together' | 'separate'
 
@@ -26,7 +27,13 @@ type CartItemRowProps = {
 
 function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-ink/10 py-3">
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.9, y: -8 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.9, height: 0, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
+      transition={{ type: 'spring', stiffness: 340, damping: 20 }}
+      className="flex items-center justify-between gap-3 overflow-hidden border-b border-ink/10 py-3">
       <div>
         <p className="font-grotesk text-sm font-bold text-ink">{item.productName}</p>
         <p className="text-xs text-ink/50">
@@ -67,7 +74,7 @@ function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
           Удалить
         </button>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -185,9 +192,12 @@ export default function CartDrawer() {
 
             {orderPlaced ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-4 text-center">
-                <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-black bg-bubblegum-light font-grotesk text-3xl font-bold text-ink">
+                <motion.span
+                  {...popIn(0.05)}
+                  className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-black bg-bubblegum-light font-grotesk text-3xl font-bold text-ink"
+                >
                   ✓
-                </span>
+                </motion.span>
                 <h3 className="font-grotesk text-lg font-bold text-ink">Заказ принят!</h3>
                 <p className="text-sm text-ink/60">
                   Мы свяжемся с вами по указанному номеру, чтобы уточнить детали заказа и доставку.
@@ -212,18 +222,33 @@ export default function CartDrawer() {
                   <p className="mt-2 font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
                     В наличии
                   </p>
-                  {inStockItems.map((item) => (
-                    <CartItemRow
-                      key={item.variantId}
-                      item={item}
-                      onChangeQuantity={changeQuantity}
-                      onRemove={removeItem}
-                    />
-                  ))}
+                  <AnimatePresence initial={false}>
+                    {inStockItems.map((item) => (
+                      <CartItemRow
+                        key={item.variantId}
+                        item={item}
+                        onChangeQuantity={changeQuantity}
+                        onRemove={removeItem}
+                      />
+                    ))}
+                  </AnimatePresence>
                   <p className="mt-4 font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
                     Под заказ
                   </p>
-                  {preOrderItems.map((item) => (
+                  <AnimatePresence initial={false}>
+                    {preOrderItems.map((item) => (
+                      <CartItemRow
+                        key={item.variantId}
+                        item={item}
+                        onChangeQuantity={changeQuantity}
+                        onRemove={removeItem}
+                      />
+                    ))}
+                  </AnimatePresence>
+                </>
+              ) : (
+                <AnimatePresence initial={false}>
+                  {items.map((item) => (
                     <CartItemRow
                       key={item.variantId}
                       item={item}
@@ -231,16 +256,7 @@ export default function CartDrawer() {
                       onRemove={removeItem}
                     />
                   ))}
-                </>
-              ) : (
-                items.map((item) => (
-                  <CartItemRow
-                    key={item.variantId}
-                    item={item}
-                    onChangeQuantity={changeQuantity}
-                    onRemove={removeItem}
-                  />
-                ))
+                </AnimatePresence>
               )}
 
               {items.length > 0 && (

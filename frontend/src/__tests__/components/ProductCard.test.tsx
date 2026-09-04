@@ -197,6 +197,39 @@ describe('ProductCard', () => {
     expect(screen.getByText('40 KGS')).toBeInTheDocument()
   })
 
+  it('shows prev/next arrows over the image and cycles through every photo', () => {
+    const gallery: ProductDto = {
+      ...product,
+      imageUrl: 'cover.jpg',
+      variants: [
+        { ...product.variants[0], id: 1, imageUrls: ['v1-a.jpg'] },
+        { ...product.variants[0], id: 2, sku: 'TUM-2', imageUrls: ['v2-a.jpg'] },
+      ],
+    }
+
+    render(<ProductCard product={gallery} />, { wrapper: MemoryRouter })
+
+    const img = screen.getByAltText('Custom Tumbler')
+    expect(img).toHaveAttribute('src', 'cover.jpg')
+
+    const next = screen.getByRole('button', { name: 'Следующее фото' })
+    fireEvent.click(next)
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'v1-a.jpg')
+    fireEvent.click(next)
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'v2-a.jpg')
+    fireEvent.click(next)
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'cover.jpg')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Предыдущее фото' }))
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'v2-a.jpg')
+  })
+
+  it('hides the arrows when there is only one photo', () => {
+    render(<ProductCard product={{ ...product, imageUrl: 'only.jpg' }} />, { wrapper: MemoryRouter })
+
+    expect(screen.queryByRole('button', { name: 'Следующее фото' })).not.toBeInTheDocument()
+  })
+
   it('collapses many colours to a "+N" that links to the product', () => {
     const many: ProductDto = {
       ...product,

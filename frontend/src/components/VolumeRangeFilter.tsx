@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
 import FilterActions from './FilterActions'
 
 type VolumeRangeFilterProps = {
@@ -50,10 +51,11 @@ export default function VolumeRangeFilter({ min, max, onApply }: VolumeRangeFilt
 
   return (
     <div ref={containerRef} className="relative">
-      <button
+      <motion.button
         type="button"
         onClick={() => (isOpen ? setIsOpen(false) : openDropdown())}
         aria-expanded={isOpen}
+        whileTap={{ scale: 0.95 }}
         className={`flex h-14 items-center gap-2 rounded-pill border-2 px-5 font-grotesk text-sm font-bold transition ${
           isActive
             ? 'border-black bg-black text-white hover:bg-bubblegum-dark'
@@ -73,10 +75,16 @@ export default function VolumeRangeFilter({ min, max, onApply }: VolumeRangeFilt
         >
           <polyline points="6 9 12 15 18 9" />
         </svg>
-      </button>
+      </motion.button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full z-30 mt-2 w-72 max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000]">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: -8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+          style={{ transformOrigin: 'top left' }}
+          className="absolute left-0 top-full z-30 mt-2 w-72 max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border-2 border-black bg-white shadow-[6px_6px_0_0_#000]"
+        >
           <div className="flex items-center gap-2 p-3">
             <input
               type="number"
@@ -98,7 +106,7 @@ export default function VolumeRangeFilter({ min, max, onApply }: VolumeRangeFilt
           </div>
 
           <FilterActions onReset={handleReset} onApply={handleSave} />
-        </div>
+        </motion.div>
       )}
     </div>
   )
