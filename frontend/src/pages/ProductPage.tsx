@@ -382,7 +382,7 @@ export default function ProductPage() {
                                     initial={{ opacity: 0, scale: 0.5, y: 8 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     transition={{ type: 'spring', stiffness: 420, damping: 15, delay: popDelay }}
-                                    className="shrink-0"
+                                    className="flex shrink-0"
                                   >
                                     <motion.button
                                       type="button"
@@ -415,7 +415,7 @@ export default function ProductPage() {
                                   initial={{ opacity: 0, scale: 0.5, y: 8 }}
                                   animate={{ opacity: 1, scale: 1, y: 0 }}
                                   transition={{ type: 'spring', stiffness: 420, damping: 15, delay: popDelay }}
-                                  className="shrink-0"
+                                  className="flex shrink-0"
                                 >
                                   <motion.button
                                     type="button"
