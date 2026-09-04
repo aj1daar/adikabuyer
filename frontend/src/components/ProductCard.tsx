@@ -71,14 +71,18 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
 
   // the gallery for the current view: the picked colour's photos, else the swatch
   // for that colour, else every photo we have (product cover + all variant shots)
-  const cardImages: string[] = activeVariant?.imageUrls.length
-    ? activeVariant.imageUrls
-    : activeColor && colorSwatches[activeColor]
-      ? [colorSwatches[activeColor]]
-      : [
-          product.imageUrl,
-          ...sellableVariants.flatMap((variant) => variant.imageUrls),
-        ].filter((url): url is string => Boolean(url))
+  const cardImages: string[] = [
+    ...new Set(
+      activeVariant?.imageUrls.length
+        ? activeVariant.imageUrls
+        : activeColor && colorSwatches[activeColor]
+          ? [colorSwatches[activeColor]]
+          : [
+              product.imageUrl,
+              ...sellableVariants.flatMap((variant) => variant.imageUrls),
+            ].filter((url): url is string => Boolean(url)),
+    ),
+  ]
   const safeImageIndex = cardImages.length ? imageIndex % cardImages.length : 0
   const cardImage = cardImages[safeImageIndex] ?? null
 
