@@ -10,6 +10,7 @@ import usePageTitle from '../hooks/usePageTitle'
 import formatPrice from '../utils/formatPrice'
 import ProductLabels from '../components/ProductLabels'
 import TextBubbleModal from '../components/TextBubbleModal'
+import { popIn } from '../utils/motion'
 import type { ProductDto, VariantDto } from '../types/catalog'
 import { attributeKeyLabel, COLOR_ATTRIBUTE_KEY, formatAttributeValue } from '../utils/attributeOptions'
 import {
@@ -18,16 +19,6 @@ import {
   isValueAvailable,
   resolveVariant,
 } from '../utils/variantSelection'
-
-// same springy pop the price sticker uses, just staggered across the page so
-// the info column cascades in on load instead of appearing all at once
-function popIn(delay = 0) {
-  return {
-    initial: { opacity: 0, scale: 0.85, y: 10 },
-    animate: { opacity: 1, scale: 1, y: 0 },
-    transition: { type: 'spring' as const, stiffness: 340, damping: 14, delay },
-  }
-}
 
 function variantLabel(variant: VariantDto, index: number): string {
   if (!variant.sku.startsWith('DEFAULT-')) {

@@ -16,6 +16,35 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
   })) as typeof window.matchMedia
 }
 
+// jsdom has no IntersectionObserver; framer-motion's whileInView needs one.
+// Fire "intersecting" synchronously so scroll-triggered animations resolve
+// immediately instead of sitting at their (invisible) initial state.
+if (typeof window !== 'undefined' && !window.IntersectionObserver) {
+  class MockIntersectionObserver implements IntersectionObserver {
+    readonly root = null
+    readonly rootMargin = ''
+    readonly scrollMargin = ''
+    readonly thresholds: ReadonlyArray<number> = []
+    callback: IntersectionObserverCallback
+
+    constructor(callback: IntersectionObserverCallback) {
+      this.callback = callback
+    }
+    observe(target: Element) {
+      this.callback(
+        [{ isIntersecting: true, target } as IntersectionObserverEntry],
+        this
+      )
+    }
+    unobserve() {}
+    disconnect() {}
+    takeRecords(): IntersectionObserverEntry[] {
+      return []
+    }
+  }
+  window.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver
+}
+
 afterEach(() => {
   cleanup()
 })

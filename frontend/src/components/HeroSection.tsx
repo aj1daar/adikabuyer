@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import ScribbleNote from './ScribbleNote'
 import HeroBubbles from './HeroBubbles'
+import { popIn } from '../utils/motion'
 
 const MotionLink = motion.create(Link)
 
@@ -23,9 +24,12 @@ export default function HeroSection() {
         className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center gap-5 text-center sm:flex-row sm:justify-between sm:gap-10 sm:text-left"
       >
         <div className="flex flex-col items-center gap-5 sm:items-start">
-          <span className="rounded-pill border-2 border-black bg-gradient-to-r from-bubblegum to-bubblegum-light px-5 py-1.5 font-grotesk text-sm font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]">
+          <motion.span
+            {...popIn(0.15)}
+            className="rounded-pill border-2 border-black bg-gradient-to-r from-bubblegum to-bubblegum-light px-5 py-1.5 font-grotesk text-sm font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]"
+          >
             Под заказ
-          </span>
+          </motion.span>
 
           <h1 className="font-grotesk text-display font-semibold leading-[0.95] tracking-[-0.03em] text-ink sm:text-[clamp(3rem,6.5vw,5rem)]">
             сделано
