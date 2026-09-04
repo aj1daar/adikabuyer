@@ -19,6 +19,16 @@ import {
   resolveVariant,
 } from '../utils/variantSelection'
 
+// same springy pop the price sticker uses, just staggered across the page so
+// the info column cascades in on load instead of appearing all at once
+function popIn(delay = 0) {
+  return {
+    initial: { opacity: 0, scale: 0.85, y: 10 },
+    animate: { opacity: 1, scale: 1, y: 0 },
+    transition: { type: 'spring' as const, stiffness: 340, damping: 14, delay },
+  }
+}
+
 function variantLabel(variant: VariantDto, index: number): string {
   if (!variant.sku.startsWith('DEFAULT-')) {
     return variant.sku
@@ -246,7 +256,7 @@ export default function ProductPage() {
               </div>
 
               <div className="flex flex-col gap-5">
-                <div className="flex flex-wrap items-center gap-2">
+                <motion.div {...popIn(0)} className="flex flex-wrap items-center gap-2">
                   {product.brand && (
                     <span className="w-fit rounded-pill border-2 border-black bg-ink px-4 py-1 font-grotesk text-xs font-bold uppercase tracking-wider text-white shadow-[3px_3px_0_0_#000]">
                       {product.brand}
@@ -258,17 +268,21 @@ export default function ProductPage() {
                     </span>
                   )}
                   <ProductLabels labels={product.labels} size="page" />
-                </div>
+                </motion.div>
 
-                <h1 className="font-grotesk text-4xl font-bold text-ink sm:text-5xl">{product.name}</h1>
+                <motion.h1 {...popIn(0.05)} className="font-grotesk text-4xl font-bold text-ink sm:text-5xl">
+                  {product.name}
+                </motion.h1>
 
                 {product.description && (
                   <>
                     <motion.button
                       type="button"
                       onClick={() => setDescOpen(true)}
-                      whileTap={{ scale: 0.95, rotate: -1 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 12 }}
+                      initial={{ opacity: 0, scale: 0.85, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      whileTap={{ scale: 0.95, rotate: -1, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 12, delay: 0.1 }}
                       className="group w-full rounded-2xl border-2 border-black bg-white px-4 py-3 text-left shadow-[4px_4px_0_0_#000] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_0_#E8799F]"
                     >
                       <p className="line-clamp-2 text-base leading-relaxed text-ink/70">
@@ -303,13 +317,17 @@ export default function ProductPage() {
                     </span>
                   </motion.div>
                   {selectedVariant && (
-                    <span
+                    <motion.span
+                      key={selectedVariant.id}
+                      initial={{ opacity: 0, scale: 0.7, rotate: 6 }}
+                      animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                      transition={{ type: 'spring', stiffness: 340, damping: 14, delay: 0.05 }}
                       className={`rounded-pill border-2 border-black px-3 py-1.5 font-grotesk text-xs font-bold uppercase tracking-wide ${
                         selectedVariant.status === 'PRE_ORDER' ? 'bg-silver text-ink' : 'bg-white text-ink'
                       }`}
                     >
                       {selectedVariant.status === 'PRE_ORDER' ? 'Под заказ' : 'В наличии'}
-                    </span>
+                    </motion.span>
                   )}
                 </div>
 
@@ -319,12 +337,12 @@ export default function ProductPage() {
                     with a different attribute count, never reflows the page */}
                 {sellableVariants.length > 1 && keys.length > 0 && (
                   <div className="flex flex-col gap-4">
-                    {keys.map((key) => {
+                    {keys.map((key, rowIndex) => {
                       const swatches = product.colorSwatches ?? {}
                       const useSwatches = key === COLOR_ATTRIBUTE_KEY && Object.keys(swatches).length > 0
                       const pickedValue = selectedVariant?.attributes[key]
                       return (
-                        <div key={key} className="flex flex-col gap-2">
+                        <motion.div key={key} {...popIn(0.15 + rowIndex * 0.06)} className="flex flex-col gap-2">
                           <div className="flex h-5 items-baseline justify-between gap-2">
                             <span className="truncate font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
                               {attributeKeyLabel(key)}
@@ -386,14 +404,14 @@ export default function ProductPage() {
                               )
                             })}
                           </div>
-                        </div>
+                        </motion.div>
                       )
                     })}
                   </div>
                 )}
 
                 {sellableVariants.length > 1 && keys.length === 0 && (
-                  <div className="flex flex-col gap-2">
+                  <motion.div {...popIn(0.15)} className="flex flex-col gap-2">
                     <span className="h-5 font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
                       Вариант
                     </span>
@@ -414,7 +432,7 @@ export default function ProductPage() {
                         </button>
                       ))}
                     </div>
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* buy box — last thing in the column, sticks near the bottom of
@@ -422,7 +440,7 @@ export default function ProductPage() {
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15, type: 'spring', stiffness: 260, damping: 20 }}
+                  transition={{ delay: 0.25 + keys.length * 0.06, type: 'spring', stiffness: 260, damping: 20 }}
                   className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom)+0.5rem)] z-20 mt-2 flex items-center gap-3 rounded-2xl border-2 border-black bg-white p-3 shadow-[4px_4px_0_0_#000] sm:bottom-4"
                 >
                   <motion.button
