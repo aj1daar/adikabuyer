@@ -205,10 +205,10 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
         {/* every row below reserves its own height whether or not this particular
             product has that content, so cards never stagger to different sizes */}
         <div
-          className={`flex h-5 items-center gap-1.5 overflow-hidden ${hideCategoryOnMobile ? 'max-sm:hidden' : ''}`}
+          className={`flex h-6 items-center gap-1.5 overflow-hidden ${hideCategoryOnMobile ? 'max-sm:hidden' : ''}`}
         >
           {product.brand && (
-            <span className="shrink-0 rounded-pill border-2 border-black bg-ink px-2 py-0.5 font-grotesk text-[10px] font-bold uppercase tracking-wide text-white">
+            <span className="shrink-0 rounded-pill border-2 border-black bg-ink px-2 py-0.5 font-grotesk text-[10px] font-bold uppercase leading-none tracking-wide text-white">
               {product.brand}
             </span>
           )}
