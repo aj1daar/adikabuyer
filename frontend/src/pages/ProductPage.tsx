@@ -20,6 +20,10 @@ import {
   resolveVariant,
 } from '../utils/variantSelection'
 
+// past this many values a row (colours, sizes, whatever) collapses behind a
+// "+N" cell rather than growing the scroll strip indefinitely
+const ATTR_VALUE_CAP = 8
+
 function variantLabel(variant: VariantDto, index: number): string {
   if (!variant.sku.startsWith('DEFAULT-')) {
     return variant.sku
@@ -43,6 +47,8 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1)
   const [descOpen, setDescOpen] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
+  // attribute keys whose value strip has been expanded past ATTR_VALUE_CAP
+  const [expandedAttrs, setExpandedAttrs] = useState<Set<string>>(new Set())
 
   usePageTitle(product?.name)
 
@@ -132,6 +138,18 @@ export default function ProductPage() {
     if (next) {
       chooseVariant(next.id)
     }
+  }
+
+  const toggleAttrExpanded = (key: string) => {
+    setExpandedAttrs((current) => {
+      const next = new Set(current)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
   }
 
   const initials = (product?.name ?? '')
@@ -332,6 +350,11 @@ export default function ProductPage() {
                       const swatches = product.colorSwatches ?? {}
                       const useSwatches = key === COLOR_ATTRIBUTE_KEY && Object.keys(swatches).length > 0
                       const pickedValue = selectedVariant?.attributes[key]
+                      const allValues = attributeValues(sellableVariants, key)
+                      const isExpanded = expandedAttrs.has(key)
+                      const collapsed = allValues.length > ATTR_VALUE_CAP && !isExpanded
+                      const shownValues = collapsed ? allValues.slice(0, ATTR_VALUE_CAP - 1) : allValues
+                      const hiddenCount = allValues.length - shownValues.length
                       return (
                         <motion.div key={key} {...popIn(0.15 + rowIndex * 0.06)} className="flex flex-col gap-2">
                           <div className="flex h-5 items-baseline justify-between gap-2">
@@ -344,56 +367,102 @@ export default function ProductPage() {
                               </span>
                             )}
                           </div>
+                          {/* capped + horizontally scrollable (no visible scrollbar) so 16
+                              colours never blow out the row — "+N" pops the rest in place */}
                           <div className="scrollbar-none flex h-11 items-center gap-2 overflow-x-auto overscroll-contain">
-                            {attributeValues(sellableVariants, key).map((value) => {
+                            {shownValues.map((value, valueIndex) => {
                               const selected = selection[key] === value
                               const available = isValueAvailable(sellableVariants, selection, key, value)
                               const swatch = useSwatches ? swatches[value] : undefined
+                              const popDelay = Math.min(valueIndex, 10) * 0.03
                               if (swatch) {
                                 return (
-                                  <motion.button
+                                  <motion.div
                                     key={value}
-                                    type="button"
-                                    onClick={() => chooseAttribute(key, value)}
-                                    aria-pressed={selected}
-                                    aria-label={value}
-                                    title={value}
-                                    animate={{ scale: selected ? 1.1 : 1, y: selected ? -2 : 0 }}
-                                    whileTap={{ scale: 0.88 }}
-                                    transition={{ type: 'spring', stiffness: 420, damping: 15 }}
-                                    className={`h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 ${
-                                      selected
-                                        ? 'border-bubblegum-dark shadow-[3px_3px_0_0_#E8799F]'
-                                        : available
-                                          ? 'border-black hover:border-bubblegum-dark'
-                                          : 'border-black/30 opacity-40 hover:opacity-100'
-                                    }`}
+                                    initial={{ opacity: 0, scale: 0.5, y: 8 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    transition={{ type: 'spring', stiffness: 420, damping: 15, delay: popDelay }}
+                                    className="shrink-0"
                                   >
-                                    <img src={swatch} alt="" className="h-full w-full object-cover" />
-                                  </motion.button>
+                                    <motion.button
+                                      type="button"
+                                      onClick={() => chooseAttribute(key, value)}
+                                      aria-pressed={selected}
+                                      aria-label={value}
+                                      title={value}
+                                      animate={{
+                                        scale: selected ? 1.1 : 1,
+                                        y: selected ? -2 : 0,
+                                        transition: { type: 'spring', stiffness: 420, damping: 15 },
+                                      }}
+                                      whileTap={{ scale: 0.88, transition: { type: 'spring', stiffness: 420, damping: 15 } }}
+                                      className={`h-11 w-11 overflow-hidden rounded-full border-2 ${
+                                        selected
+                                          ? 'border-bubblegum-dark shadow-[3px_3px_0_0_#E8799F]'
+                                          : available
+                                            ? 'border-black hover:border-bubblegum-dark'
+                                            : 'border-black/30 opacity-40 hover:opacity-100'
+                                      }`}
+                                    >
+                                      <img src={swatch} alt="" className="h-full w-full object-cover" />
+                                    </motion.button>
+                                  </motion.div>
                                 )
                               }
                               return (
-                                <motion.button
+                                <motion.div
                                   key={value}
-                                  type="button"
-                                  onClick={() => chooseAttribute(key, value)}
-                                  aria-pressed={selected}
-                                  animate={{ scale: selected ? 1.06 : 1, y: selected ? -2 : 0 }}
-                                  whileTap={{ scale: 0.9 }}
-                                  transition={{ type: 'spring', stiffness: 420, damping: 15 }}
-                                  className={`h-11 shrink-0 whitespace-nowrap rounded-pill border-2 border-black px-4 font-grotesk text-sm font-bold ${
-                                    selected
-                                      ? 'bg-ink text-white shadow-[3px_3px_0_0_#E8799F]'
-                                      : available
-                                        ? 'bg-white text-ink hover:bg-bubblegum hover:text-white'
-                                        : 'bg-white text-ink/40 line-through hover:bg-bubblegum hover:text-white hover:no-underline'
-                                  }`}
+                                  initial={{ opacity: 0, scale: 0.5, y: 8 }}
+                                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                                  transition={{ type: 'spring', stiffness: 420, damping: 15, delay: popDelay }}
+                                  className="shrink-0"
                                 >
-                                  {formatAttributeValue(key, value)}
-                                </motion.button>
+                                  <motion.button
+                                    type="button"
+                                    onClick={() => chooseAttribute(key, value)}
+                                    aria-pressed={selected}
+                                    animate={{
+                                      scale: selected ? 1.06 : 1,
+                                      y: selected ? -2 : 0,
+                                      transition: { type: 'spring', stiffness: 420, damping: 15 },
+                                    }}
+                                    whileTap={{ scale: 0.9, transition: { type: 'spring', stiffness: 420, damping: 15 } }}
+                                    className={`h-11 whitespace-nowrap rounded-pill border-2 border-black px-4 font-grotesk text-sm font-bold ${
+                                      selected
+                                        ? 'bg-ink text-white shadow-[3px_3px_0_0_#E8799F]'
+                                        : available
+                                          ? 'bg-white text-ink hover:bg-bubblegum hover:text-white'
+                                          : 'bg-white text-ink/40 line-through hover:bg-bubblegum hover:text-white hover:no-underline'
+                                    }`}
+                                  >
+                                    {formatAttributeValue(key, value)}
+                                  </motion.button>
+                                </motion.div>
                               )
                             })}
+                            {collapsed && (
+                              <motion.button
+                                type="button"
+                                onClick={() => toggleAttrExpanded(key)}
+                                aria-label={`Показать ещё ${hiddenCount}`}
+                                initial={{ opacity: 0, scale: 0.5, y: 8 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                whileTap={{ scale: 0.88 }}
+                                transition={{
+                                  type: 'spring',
+                                  stiffness: 420,
+                                  damping: 15,
+                                  delay: Math.min(shownValues.length, 10) * 0.03,
+                                }}
+                                className={
+                                  useSwatches
+                                    ? 'flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-black bg-silver font-grotesk text-xs font-bold text-ink transition hover:border-bubblegum-dark hover:bg-bubblegum hover:text-white'
+                                    : 'flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-pill border-2 border-black bg-silver px-4 font-grotesk text-sm font-bold text-ink transition hover:border-bubblegum-dark hover:bg-bubblegum hover:text-white'
+                                }
+                              >
+                                +{hiddenCount}
+                              </motion.button>
+                            )}
                           </div>
                         </motion.div>
                       )

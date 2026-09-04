@@ -158,6 +158,36 @@ describe('ProductPage', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 
+  it('caps a long attribute value list behind a "+N" chip and expands it on click', async () => {
+    const sizes = Array.from({ length: 16 }, (_, i) => `${i + 30}`)
+    const manySizesProduct: ProductDto = {
+      ...product,
+      variants: sizes.map((size, i) => ({
+        ...product.variants[0],
+        id: 100 + i,
+        sku: `TUM-${size}`,
+        attributes: { size },
+        imageUrls: [],
+      })),
+    }
+    mockedGet.mockResolvedValue({ data: manySizesProduct })
+
+    renderPage()
+    await screen.findByText('Custom Tumbler')
+
+    expect(screen.getByRole('button', { name: sizes[0] })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: sizes[6] })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: sizes[7] })).not.toBeInTheDocument()
+    const expandButton = screen.getByRole('button', { name: 'Показать ещё 9' })
+    expect(expandButton).toHaveTextContent('+9')
+
+    fireEvent.click(expandButton)
+
+    expect(screen.getByRole('button', { name: sizes[7] })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: sizes[15] })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Показать ещё 9' })).not.toBeInTheDocument()
+  })
+
   it('shows an error message when loading fails', async () => {
     mockedGet.mockRejectedValue(new Error('boom'))
 
