@@ -368,8 +368,13 @@ export default function ProductPage() {
                             )}
                           </div>
                           {/* capped + horizontally scrollable (no visible scrollbar) so 16
-                              colours never blow out the row — "+N" pops the rest in place */}
-                          <div className="scrollbar-none flex h-14 items-center gap-2 overflow-x-auto overscroll-contain">
+                              colours never blow out the row — "+N" pops the rest in place.
+                              -mx-2 px-2: the selected-value pop (scale 1.06-1.1 + lift) needs
+                              room to grow into: without it, the first pill sits flush against
+                              the scroll container's left edge, so its own growth animation gets
+                              clipped by the container's overflow-x boundary (can't scroll to
+                              negative offsets to reveal it) instead of scaling smoothly */}
+                          <div className="scrollbar-none -mx-2 flex h-14 items-center gap-2 overflow-x-auto overscroll-contain px-2">
                             {shownValues.map((value, valueIndex) => {
                               const selected = selection[key] === value
                               const available = isValueAvailable(sellableVariants, selection, key, value)
