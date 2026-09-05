@@ -9,12 +9,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DeliveryFeePropertiesTest {
 
     @Test
-    void exposesConfiguredDefaultFeeAndBishkekFee() {
+    void exposesConfiguredBishkekAndPickupFees() {
         DeliveryFeeProperties properties = new DeliveryFeeProperties();
-        properties.setDefaultFee(BigDecimal.valueOf(500));
-        properties.setBishkekFee(BigDecimal.valueOf(250));
+        properties.setBishkekFee(BigDecimal.valueOf(300));
+        properties.setPickupFee(BigDecimal.ZERO);
 
-        assertThat(properties.getDefaultFee()).isEqualByComparingTo(BigDecimal.valueOf(500));
-        assertThat(properties.getBishkekFee()).isEqualByComparingTo(BigDecimal.valueOf(250));
+        assertThat(properties.getBishkekFee()).isEqualByComparingTo(BigDecimal.valueOf(300));
+        assertThat(properties.getPickupFee()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 }

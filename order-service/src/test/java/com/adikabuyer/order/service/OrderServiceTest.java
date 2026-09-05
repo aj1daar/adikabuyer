@@ -105,31 +105,31 @@ class OrderServiceTest {
     }
 
     @Test
-    void checkout_usesBishkekFee_whenRegionIsBishkek() {
-        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.valueOf(250));
+    void checkout_chargesTheCityFee_whenTheCourierDelivers() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.valueOf(300));
 
         CheckoutResponseDto response = orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.valueOf(25), 2)));
 
         assertThat(response.itemsTotal()).isEqualByComparingTo(BigDecimal.valueOf(50));
-        assertThat(response.deliveryFee()).isEqualByComparingTo(BigDecimal.valueOf(250));
-        assertThat(response.grandTotal()).isEqualByComparingTo(BigDecimal.valueOf(300));
+        assertThat(response.deliveryFee()).isEqualByComparingTo(BigDecimal.valueOf(300));
+        assertThat(response.grandTotal()).isEqualByComparingTo(BigDecimal.valueOf(350));
     }
 
     @Test
-    void checkout_usesDefaultFee_whenRegionIsAnyOtherCity() {
-        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.valueOf(500));
+    void checkout_chargesNothing_whenTheCustomerPicksTheOrderUp() {
+        when(deliveryFeeProperties.getPickupFee()).thenReturn(BigDecimal.ZERO);
 
-        CheckoutResponseDto response = orderService.checkout(buildCart("Ош", buildItem(BigDecimal.valueOf(25), 2)));
+        CheckoutResponseDto response = orderService.checkout(buildCart("Самовывоз", buildItem(BigDecimal.valueOf(25), 2)));
 
-        assertThat(response.deliveryFee()).isEqualByComparingTo(BigDecimal.valueOf(500));
-        assertThat(response.grandTotal()).isEqualByComparingTo(BigDecimal.valueOf(550));
+        assertThat(response.deliveryFee()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(response.grandTotal()).isEqualByComparingTo(BigDecimal.valueOf(50));
     }
 
     @Test
     void checkout_persistsOrderWithItems() {
-        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.valueOf(500));
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.valueOf(500));
 
-        CheckoutResponseDto response = orderService.checkout(buildCart("Ош", buildItem(BigDecimal.valueOf(25), 2)));
+        CheckoutResponseDto response = orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.valueOf(25), 2)));
 
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
         verify(orderRepository).save(orderCaptor.capture());
@@ -137,7 +137,7 @@ class OrderServiceTest {
         Order saved = orderCaptor.getValue();
         assertThat(saved.getId()).isEqualTo(response.orderId());
         assertThat(saved.getCustomerName()).isEqualTo("John Doe");
-        assertThat(saved.getRegion()).isEqualTo("Ош");
+        assertThat(saved.getRegion()).isEqualTo("Бишкек");
         assertThat(saved.getGrandTotal()).isEqualByComparingTo(BigDecimal.valueOf(550));
         assertThat(saved.getItems()).hasSize(1);
         assertThat(saved.getItems().get(0).getSku()).isEqualTo("TUM-BLK-500");
@@ -146,16 +146,16 @@ class OrderServiceTest {
 
     @Test
     void checkout_sendsTelegramNotification_withNonBlankMessage() {
-        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.valueOf(500));
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.valueOf(500));
 
-        orderService.checkout(buildCart("Ош", buildItem(BigDecimal.valueOf(25), 2)));
+        orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.valueOf(25), 2)));
 
         assertThat(captureTelegramMessage()).isNotBlank();
     }
 
     @Test
-    void checkout_usesDefaultFee_whenRegionIsUnknownCity() {
-        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.valueOf(500));
+    void checkout_chargesTheCityFee_whenRegionIsSomethingElse() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.valueOf(500));
 
         CheckoutResponseDto response = orderService.checkout(buildCart("Атлантида", buildItem(BigDecimal.TEN, 1)));
 
@@ -163,8 +163,8 @@ class OrderServiceTest {
     }
 
     @Test
-    void checkout_usesDefaultFee_whenRegionIsNull() {
-        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.valueOf(500));
+    void checkout_chargesTheCityFee_whenRegionIsNull() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.valueOf(500));
 
         CheckoutResponseDto response = orderService.checkout(buildCart(null, buildItem(BigDecimal.TEN, 1)));
 
@@ -172,50 +172,50 @@ class OrderServiceTest {
     }
 
     @Test
-    void checkout_matchesBishkekCaseInsensitively() {
-        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.valueOf(250));
+    void checkout_matchesPickupCaseInsensitively() {
+        when(deliveryFeeProperties.getPickupFee()).thenReturn(BigDecimal.ZERO);
 
-        CheckoutResponseDto response = orderService.checkout(buildCart("БИШКЕК", buildItem(BigDecimal.TEN, 1)));
+        CheckoutResponseDto response = orderService.checkout(buildCart("САМОВЫВОЗ", buildItem(BigDecimal.TEN, 1)));
 
-        assertThat(response.deliveryFee()).isEqualByComparingTo(BigDecimal.valueOf(250));
+        assertThat(response.deliveryFee()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
     @Test
-    void checkout_resolvesBishkekFee_whenRegionHasLeadingOrTrailingWhitespace() {
-        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.valueOf(250));
+    void checkout_resolvesPickupFee_whenRegionHasLeadingOrTrailingWhitespace() {
+        when(deliveryFeeProperties.getPickupFee()).thenReturn(BigDecimal.ZERO);
 
-        CheckoutResponseDto response = orderService.checkout(buildCart("  Бишкек  ", buildItem(BigDecimal.TEN, 1)));
+        CheckoutResponseDto response = orderService.checkout(buildCart("  Самовывоз  ", buildItem(BigDecimal.TEN, 1)));
 
-        assertThat(response.deliveryFee()).isEqualByComparingTo(BigDecimal.valueOf(250));
+        assertThat(response.deliveryFee()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
     @Test
     void checkout_generatesUniqueOrderId_onEachCall() {
-        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.ZERO);
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
 
-        CheckoutResponseDto first = orderService.checkout(buildCart("Ош", buildItem(BigDecimal.TEN, 1)));
-        CheckoutResponseDto second = orderService.checkout(buildCart("Ош", buildItem(BigDecimal.TEN, 1)));
+        CheckoutResponseDto first = orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.TEN, 1)));
+        CheckoutResponseDto second = orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.TEN, 1)));
 
         assertThat(first.orderId()).isNotEqualTo(second.orderId());
     }
 
     @Test
     void checkout_sumsMultipleLineItems() {
-        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.ZERO);
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
 
         CartItemDto first = buildItem(BigDecimal.valueOf(10), 2);
         CartItemDto second = item(2L, BigDecimal.valueOf(15), 3);
 
-        CheckoutResponseDto response = orderService.checkout(buildCart("Ош", first, second));
+        CheckoutResponseDto response = orderService.checkout(buildCart("Бишкек", first, second));
 
         assertThat(response.itemsTotal()).isEqualByComparingTo(BigDecimal.valueOf(65));
     }
 
     @Test
     void checkout_handlesEmptyItemsList_withoutThrowing() {
-        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.valueOf(100));
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.valueOf(100));
 
-        CheckoutResponseDto response = orderService.checkout(new CartDto("John Doe", "996700123456", "Ош", List.of()));
+        CheckoutResponseDto response = orderService.checkout(new CartDto("John Doe", "996700123456", "Бишкек", List.of()));
 
         assertThat(response.itemsTotal()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(response.grandTotal()).isEqualByComparingTo(BigDecimal.valueOf(100));
@@ -223,10 +223,10 @@ class OrderServiceTest {
 
     @Test
     void checkout_doesNotThrow_whenQuantityIsVeryLarge() {
-        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.ZERO);
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
 
         CheckoutResponseDto response = orderService.checkout(
-                buildCart("Ош", buildItem(BigDecimal.valueOf(9999), Integer.MAX_VALUE))
+                buildCart("Бишкек", buildItem(BigDecimal.valueOf(9999), Integer.MAX_VALUE))
         );
 
         assertThat(response.itemsTotal()).isPositive();
@@ -234,49 +234,49 @@ class OrderServiceTest {
 
     @Test
     void checkout_doesNotFail_whenTelegramNotificationThrows() {
-        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.ZERO);
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
         org.mockito.Mockito.doThrow(new RuntimeException("telegram down"))
                 .when(telegramNotifier).notifyAdmins(anyString());
 
-        CheckoutResponseDto response = orderService.checkout(buildCart("Ош", buildItem(BigDecimal.TEN, 1)));
+        CheckoutResponseDto response = orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.TEN, 1)));
 
         assertThat(response.orderId()).isNotBlank();
     }
 
     @Test
     void checkout_publishesOrderPlacedEventToConfiguredExchangeAndRoutingKey() {
-        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.valueOf(500));
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.valueOf(500));
 
-        orderService.checkout(buildCart("Ош", buildItem(BigDecimal.valueOf(25), 2)));
+        orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.valueOf(25), 2)));
 
         ArgumentCaptor<OrderPlacedEvent> eventCaptor = ArgumentCaptor.forClass(OrderPlacedEvent.class);
         verify(rabbitTemplate).convertAndSend(anyString(), anyString(), eventCaptor.capture());
 
         OrderPlacedEvent event = eventCaptor.getValue();
         assertThat(event.customerName()).isEqualTo("John Doe");
-        assertThat(event.region()).isEqualTo("Ош");
+        assertThat(event.region()).isEqualTo("Бишкек");
         assertThat(event.grandTotal()).isEqualByComparingTo(BigDecimal.valueOf(550));
         assertThat(event.orderId()).isNotBlank();
     }
 
     @Test
     void checkout_pricesFromCatalog_ignoringClientSuppliedPrice() {
-        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.ZERO);
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
         catalog.put(1L, pricing(1L, BigDecimal.valueOf(1000), Integer.MAX_VALUE, true, "IN_STOCK"));
         CartItemDto tampered = new CartItemDto(1L, "iPhone", "FAKE", Map.of(), BigDecimal.ONE, 2);
 
-        CheckoutResponseDto response = orderService.checkout(buildCart("Ош", tampered));
+        CheckoutResponseDto response = orderService.checkout(buildCart("Бишкек", tampered));
 
         assertThat(response.itemsTotal()).isEqualByComparingTo(BigDecimal.valueOf(2000));
     }
 
     @Test
     void checkout_persistsCatalogNameAndSku_notClientValues() {
-        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.ZERO);
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
         catalog.put(1L, new VariantPricing(1L, "Real Product", "REAL-SKU", BigDecimal.TEN, 5, true, "IN_STOCK"));
         CartItemDto tampered = new CartItemDto(1L, "Free Money", "STOLEN", Map.of(), BigDecimal.ONE, 1);
 
-        orderService.checkout(buildCart("Ош", tampered));
+        orderService.checkout(buildCart("Бишкек", tampered));
 
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
         verify(orderRepository).save(orderCaptor.capture());
@@ -289,7 +289,7 @@ class OrderServiceTest {
         CartItemDto missing = new CartItemDto(999L, "x", "x", Map.of(), BigDecimal.TEN, 1);
         // variant 999 was never registered in the fake catalog
 
-        assertThatThrownBy(() -> orderService.checkout(buildCart("Ош", missing)))
+        assertThatThrownBy(() -> orderService.checkout(buildCart("Бишкек", missing)))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("400");
         verify(orderRepository, never()).save(any());
@@ -300,7 +300,7 @@ class OrderServiceTest {
         catalog.put(1L, pricing(1L, BigDecimal.TEN, 5, false, "IN_STOCK"));
         CartItemDto item = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 1);
 
-        assertThatThrownBy(() -> orderService.checkout(buildCart("Ош", item)))
+        assertThatThrownBy(() -> orderService.checkout(buildCart("Бишкек", item)))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("409");
     }
@@ -310,7 +310,7 @@ class OrderServiceTest {
         catalog.put(1L, pricing(1L, BigDecimal.TEN, 0, true, "SOLD_OUT"));
         CartItemDto item = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 1);
 
-        assertThatThrownBy(() -> orderService.checkout(buildCart("Ош", item)))
+        assertThatThrownBy(() -> orderService.checkout(buildCart("Бишкек", item)))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("409");
     }
@@ -320,18 +320,18 @@ class OrderServiceTest {
         catalog.put(1L, pricing(1L, BigDecimal.TEN, 1, true, "IN_STOCK"));
         CartItemDto item = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 5);
 
-        assertThatThrownBy(() -> orderService.checkout(buildCart("Ош", item)))
+        assertThatThrownBy(() -> orderService.checkout(buildCart("Бишкек", item)))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("409");
     }
 
     @Test
     void checkout_allowsPreOrderVariant_withZeroStock() {
-        when(deliveryFeeProperties.getDefaultFee()).thenReturn(BigDecimal.ZERO);
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
         catalog.put(1L, pricing(1L, BigDecimal.valueOf(50), 0, true, "PRE_ORDER"));
         CartItemDto item = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.valueOf(50), 3);
 
-        CheckoutResponseDto response = orderService.checkout(buildCart("Ош", item));
+        CheckoutResponseDto response = orderService.checkout(buildCart("Бишкек", item));
 
         assertThat(response.itemsTotal()).isEqualByComparingTo(BigDecimal.valueOf(150));
     }

@@ -10,6 +10,7 @@ import com.adikabuyer.catalog.dto.VariantPricingDto;
 import com.adikabuyer.catalog.dto.VariantRequest;
 import com.adikabuyer.catalog.exception.OutOfStockException;
 import com.adikabuyer.catalog.mapper.ProductMapper;
+import com.adikabuyer.catalog.media.S3StorageService;
 import com.adikabuyer.catalog.repository.ProductRepository;
 import com.adikabuyer.catalog.repository.VariantRepository;
 import com.adikabuyer.catalog.util.VariantReconciler;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,6 +45,7 @@ public class CatalogService {
     private final ProductRepository productRepository;
     private final VariantRepository variantRepository;
     private final ProductMapper productMapper;
+    private final S3StorageService s3StorageService;
 
     public ProductPageResponse getAllProducts(
             String search, String category, String color, String size, BigDecimal volumeMin, BigDecimal volumeMax,
@@ -242,7 +245,60 @@ public class CatalogService {
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + id));
+
+        // collect before the delete — afterwards the entity's collections are gone
+        Set<String> media = new LinkedHashSet<>();
+        product.getVariants().forEach(variant -> media.addAll(variant.getImageUrls()));
+        media.addAll(product.getColorSwatches().values());
+
         productRepository.delete(product);
+        s3StorageService.deleteFiles(media);
+    }
+
+    /**
+     * Drops a single variant off a product, keeping the product itself. The last variant
+     * can't go this way — a product without variants has no price and no way back through
+     * the admin form, so that case has to be an explicit "delete the whole product".
+     */
+    @Transactional
+    public ProductDto deleteVariant(Long productId, Long variantId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Product not found: " + productId));
+
+        Variant variant = product.getVariants().stream()
+                .filter(candidate -> Objects.equals(candidate.getId(), variantId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Variant " + variantId + " does not belong to product " + productId));
+
+        if (product.getVariants().size() <= 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "This is the product's only variant — delete the product instead");
+        }
+
+        Set<String> media = new LinkedHashSet<>(variant.getImageUrls());
+        Map<String, String> swatchesBefore = product.getColorSwatches();
+
+        // orphanRemoval on Product.variants turns this into the row delete on save
+        product.getVariants().remove(variant);
+        product.setBasePrice(deriveBasePrice(product.getVariants()));
+        product.setImageUrl(deriveImageUrl(product.getVariants()));
+        product.setColorSwatches(pruneColorSwatches(swatchesBefore, product.getVariants()));
+        product.setUpdatedAt(Instant.now());
+
+        // a colour whose last variant just went takes its swatch image with it
+        Map<String, String> swatchesAfter = product.getColorSwatches();
+        swatchesBefore.forEach((colour, url) -> {
+            if (!swatchesAfter.containsKey(colour)) {
+                media.add(url);
+            }
+        });
+
+        ProductDto dto = productMapper.toDto(saveOrConflict(product));
+        s3StorageService.deleteFiles(media);
+        return dto;
     }
 
     private Predicate<String> skuGuard(Set<String> used) {

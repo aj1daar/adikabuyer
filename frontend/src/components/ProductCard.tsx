@@ -7,6 +7,7 @@ import formatPrice from '../utils/formatPrice'
 import truncate from '../utils/truncate'
 import useIsMobileViewport from '../hooks/useIsMobileViewport'
 import { COLOR_ATTRIBUTE_KEY, formatAttributeValue } from '../utils/attributeOptions'
+import { resolveVariantGallery } from '../utils/variantImage'
 import type { MobileColumns } from './MobileColumnsToggle'
 import ProductLabels from './ProductLabels'
 
@@ -64,18 +65,18 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     : undefined
   const shownVariant = activeVariant ?? sellableVariants[0]
 
-  // the gallery for the current view: the picked colour's photos, else the swatch
-  // for that colour, else every photo we have (product cover + all variant shots)
+  // the gallery for the current view: the shown variant's own photos (borrowing the
+  // closest sibling's if it has none, same rule the product page uses) — never every
+  // variant's photos merged into one long strip. Only when NOTHING at all is available
+  // for a colour the shopper actively picked do we fall back to that colour's swatch.
+  const standardGallery = resolveVariantGallery(product, shownVariant)
   const cardImages: string[] = [
     ...new Set(
-      activeVariant?.imageUrls.length
-        ? activeVariant.imageUrls
+      standardGallery.length > 0
+        ? standardGallery
         : activeColor && colorSwatches[activeColor]
           ? [colorSwatches[activeColor]]
-          : [
-              product.imageUrl,
-              ...sellableVariants.flatMap((variant) => variant.imageUrls),
-            ].filter((url): url is string => Boolean(url)),
+          : [],
     ),
   ]
   const safeImageIndex = cardImages.length ? imageIndex % cardImages.length : 0

@@ -13,6 +13,9 @@ import java.math.BigDecimal;
 @Setter
 public class DeliveryFeeProperties {
 
-    private BigDecimal defaultFee;
+    /** Courier inside Bishkek — the only place the shop delivers to. */
     private BigDecimal bishkekFee;
+
+    /** Customer collects the order themselves. */
+    private BigDecimal pickupFee;
 }

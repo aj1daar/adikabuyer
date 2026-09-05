@@ -161,7 +161,7 @@ describe('ProductCard', () => {
     expect(minus).toBeDisabled()
   })
 
-  it('swaps the image, tags and price to the picked colour', () => {
+  it('shows the standard (first) variant\'s own photo by default, swaps to the picked colour', () => {
     const swatchProduct: ProductDto = {
       ...product,
       imageUrl: 'default.jpg',
@@ -187,7 +187,8 @@ describe('ProductCard', () => {
 
     render(<ProductCard product={swatchProduct} />, { wrapper: MemoryRouter })
 
-    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'default.jpg')
+    // no colour picked yet -> the first variant's own photo, not product.imageUrl
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'black-photo.jpg')
     expect(screen.getByText('25 KGS')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'White' }))
@@ -197,12 +198,13 @@ describe('ProductCard', () => {
     expect(screen.getByText('40 KGS')).toBeInTheDocument()
   })
 
-  it('shows prev/next arrows over the image and cycles through every photo', () => {
+  it('cycles only through the standard variant\'s own photos, never merging in other variants\'', () => {
     const gallery: ProductDto = {
       ...product,
       imageUrl: 'cover.jpg',
       variants: [
-        { ...product.variants[0], id: 1, imageUrls: ['v1-a.jpg'] },
+        { ...product.variants[0], id: 1, imageUrls: ['v1-a.jpg', 'v1-b.jpg'] },
+        // a second variant with its own photos — must never leak into the default gallery
         { ...product.variants[0], id: 2, sku: 'TUM-2', imageUrls: ['v2-a.jpg'] },
       ],
     }
@@ -210,18 +212,17 @@ describe('ProductCard', () => {
     render(<ProductCard product={gallery} />, { wrapper: MemoryRouter })
 
     const img = screen.getByAltText('Custom Tumbler')
-    expect(img).toHaveAttribute('src', 'cover.jpg')
+    expect(img).toHaveAttribute('src', 'v1-a.jpg')
 
     const next = screen.getByRole('button', { name: 'Следующее фото' })
     fireEvent.click(next)
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'v1-b.jpg')
+    // only 2 photos in the gallery (both variant 1's own) — wraps straight back to the first
+    fireEvent.click(next)
     expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'v1-a.jpg')
-    fireEvent.click(next)
-    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'v2-a.jpg')
-    fireEvent.click(next)
-    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'cover.jpg')
 
     fireEvent.click(screen.getByRole('button', { name: 'Предыдущее фото' }))
-    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'v2-a.jpg')
+    expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'v1-b.jpg')
   })
 
   it('hides the arrows when there is only one photo', () => {

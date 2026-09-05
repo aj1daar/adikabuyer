@@ -87,4 +87,10 @@ public class CatalogController {
         catalogService.deleteProduct(id);
         return ResponseEntity.noContent().build();
     }
+
+    /** Drops one variant and returns the product as it now stands (never the last variant). */
+    @DeleteMapping("/products/{productId}/variants/{variantId}")
+    public ProductDto deleteVariant(@PathVariable Long productId, @PathVariable Long variantId) {
+        return catalogService.deleteVariant(productId, variantId);
+    }
 }

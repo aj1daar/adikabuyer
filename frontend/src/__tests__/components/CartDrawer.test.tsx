@@ -27,15 +27,13 @@ beforeEach(() => {
   useCartStore.setState({ items: [], isOpen: true })
 })
 
-const selectCity = (city: string) => {
-  fireEvent.click(screen.getByRole('button', { expanded: false }))
-  fireEvent.click(screen.getByRole('button', { name: city }))
+const chooseDelivery = (label: string) => {
+  fireEvent.click(screen.getByRole('button', { name: label }))
 }
 
 const fillCheckoutForm = () => {
   fireEvent.change(screen.getByPlaceholderText('Имя и фамилия'), { target: { value: 'John Doe' } })
   fireEvent.change(screen.getByPlaceholderText('Номер телефона'), { target: { value: '996700123456' } })
-  selectCity('Бишкек')
 }
 
 describe('CartDrawer', () => {
@@ -95,7 +93,6 @@ describe('CartDrawer', () => {
     render(<CartDrawer />)
     fireEvent.change(screen.getByPlaceholderText('Имя и фамилия'), { target: { value: '   ' } })
     fireEvent.change(screen.getByPlaceholderText('Номер телефона'), { target: { value: '   ' } })
-    selectCity('Бишкек')
 
     expect(screen.getByRole('button', { name: /оформить заказ/i })).toBeDisabled()
   })
@@ -115,33 +112,24 @@ describe('CartDrawer', () => {
     expect(screen.getByRole('button', { name: /оформить заказ/i })).toBeEnabled()
   })
 
-  it('shows the delivery-time note and a placeholder fee until a city is picked', () => {
+  it('shows the delivery-time note and the courier fee straight away', () => {
     useCartStore.setState({ items: [cartItem()], isOpen: true })
 
     render(<CartDrawer />)
 
     expect(screen.getByText(/от 7 до 14 дней/)).toBeInTheDocument()
-    expect(screen.getByText('—')).toBeInTheDocument()
-  })
-
-  it('shows 250 KGS delivery for Bishkek and updates the grand total', () => {
-    useCartStore.setState({ items: [cartItem()], isOpen: true })
-
-    render(<CartDrawer />)
-    selectCity('Бишкек')
-
-    expect(screen.getByText('250 KGS')).toBeInTheDocument()
     expect(screen.getByText('300 KGS')).toBeInTheDocument()
+    expect(screen.getByText('350 KGS')).toBeInTheDocument()
   })
 
-  it('shows 500 KGS delivery for any other listed city', () => {
+  it('drops the fee to nothing when the customer picks the order up', () => {
     useCartStore.setState({ items: [cartItem()], isOpen: true })
 
     render(<CartDrawer />)
-    selectCity('Ош')
+    chooseDelivery('Самовывоз')
 
-    expect(screen.getByText('500 KGS')).toBeInTheDocument()
-    expect(screen.getByText('550 KGS')).toBeInTheDocument()
+    expect(screen.getByText('0 KGS')).toBeInTheDocument()
+    expect(screen.getAllByText('50 KGS').length).toBeGreaterThan(0)
   })
 
   it('on success clears the cart and shows the in-drawer success screen', async () => {
@@ -220,10 +208,9 @@ describe('CartDrawer', () => {
     })
 
     render(<CartDrawer />)
-    selectCity('Бишкек')
 
-    expect(screen.getByText('250 KGS')).toBeInTheDocument()
-    expect(screen.getByText('325 KGS')).toBeInTheDocument()
+    expect(screen.getByText('300 KGS')).toBeInTheDocument()
+    expect(screen.getByText('375 KGS')).toBeInTheDocument()
   })
 
   it('doubles the delivery fee and submits two checkouts when Раздельно is chosen', async () => {
@@ -240,8 +227,8 @@ describe('CartDrawer', () => {
     fillCheckoutForm()
     fireEvent.click(screen.getByRole('button', { name: 'Раздельно' }))
 
-    expect(screen.getAllByText('250 KGS')).toHaveLength(2)
-    expect(screen.getByText('575 KGS')).toBeInTheDocument()
+    expect(screen.getAllByText('300 KGS')).toHaveLength(2)
+    expect(screen.getByText('675 KGS')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /оформить заказ/i }))
 

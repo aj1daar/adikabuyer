@@ -2,6 +2,8 @@ package com.adikabuyer.catalog.media;
 
 import jakarta.annotation.PostConstruct;
 import net.coobird.thumbnailator.Thumbnails;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -10,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.PutBucketPolicyRequest;
@@ -20,10 +23,13 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.UUID;
 
 @Service
 public class S3StorageService {
+
+    private static final Logger log = LoggerFactory.getLogger(S3StorageService.class);
 
     private static final int MAX_DIMENSION = 1600;
     private static final double JPEG_QUALITY = 0.82;
@@ -101,6 +107,45 @@ public class S3StorageService {
         );
 
         return publicUrlBase + "/" + payload.key();
+    }
+
+    /**
+     * Best-effort cleanup of the objects behind stored public URLs. Deletion is never
+     * allowed to break the caller: a URL that isn't ours, or an S3 call that fails, is
+     * logged and skipped so one bad entry can't strand the rest (or abort the DB delete
+     * that triggered the cleanup — the row is already gone either way).
+     */
+    public void deleteFiles(Collection<String> urls) {
+        if (urls == null) {
+            return;
+        }
+        urls.forEach(this::deleteFile);
+    }
+
+    public void deleteFile(String url) {
+        String key = keyFromUrl(url);
+        if (key == null) {
+            return;
+        }
+        try {
+            s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
+        } catch (RuntimeException e) {
+            log.warn("Could not delete media object {} from bucket {}: {}", key, bucket, e.toString());
+        }
+    }
+
+    /** Object key for a URL we handed out, or null when the URL isn't from our bucket. */
+    private String keyFromUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+        String prefix = publicUrlBase.endsWith("/") ? publicUrlBase : publicUrlBase + "/";
+        if (!url.startsWith(prefix)) {
+            log.warn("Skipping media delete for foreign URL {}", url);
+            return null;
+        }
+        String key = url.substring(prefix.length());
+        return key.isBlank() ? null : key;
     }
 
     private record UploadPayload(String key, String contentType, byte[] bytes) {

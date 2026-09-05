@@ -3,6 +3,7 @@ import MainLayout from '../layouts/MainLayout'
 import StepCard, { type StepCloud } from '../components/StepCard'
 import ScribbleNote from '../components/ScribbleNote'
 import HeroBubbles from '../components/HeroBubbles'
+import WeightTariffNote from '../components/WeightTariffNote'
 import { popIn } from '../utils/motion'
 import usePageTitle from '../hooks/usePageTitle'
 
@@ -20,9 +21,9 @@ const steps: Step[] = [
   },
   {
     title: 'Оформи заказ',
-    description: 'Добавь в корзину, укажи имя, телефон и город.',
+    description: 'Добавь в корзину, укажи имя и телефон.',
     clouds: [
-      { text: 'имя · телефон · город', className: 'right-full top-0 mr-3 -rotate-2' },
+      { text: 'имя · телефон', className: 'right-full top-0 mr-3 -rotate-2' },
       { text: 'оплата при оформлении', className: 'right-full top-1/2 mr-6 -translate-y-1/2 rotate-2' },
       { text: 'мы с вами свяжемся', className: 'right-full bottom-0 mr-3 -rotate-3' },
     ],
@@ -31,9 +32,9 @@ const steps: Step[] = [
     title: 'Получи заказ',
     description: 'Соберём под тебя и согласуем доставку.',
     clouds: [
-      { text: 'доставка по Бишкеку', className: 'right-full top-0 mr-3 rotate-2' },
-      { text: 'по всему КР — с доплатой', className: 'right-full top-1/2 mr-5 -translate-y-1/2 -rotate-2' },
-      { text: 'через Яндекс Доставку', className: 'right-full bottom-0 mr-3 rotate-3' },
+      { text: 'по Бишкеку — 300 сом', className: 'right-full top-0 mr-3 rotate-2' },
+      { text: 'или самовывоз', className: 'right-full top-1/2 mr-5 -translate-y-1/2 -rotate-2' },
+      { text: 'плюс вес посылки', className: 'right-full bottom-0 mr-3 rotate-3' },
     ],
   },
 ]
@@ -130,7 +131,10 @@ export default function AboutPage() {
               className="w-full max-w-sm rounded-2xl border-2 border-black bg-bubblegum-light p-4 text-center shadow-[4px_4px_0_0_#000]"
             >
               <p className="font-grotesk text-sm font-bold text-ink">Доставка 7–14 дней</p>
-              <p className="mt-0.5 text-xs text-ink/70">Заказы едут напрямую из США и Кореи.</p>
+              <p className="mt-0.5 text-xs text-ink/70">
+                Заказы едут напрямую из США и Кореи. По Бишкеку — 300 сом, самовывоз — бесплатно.
+              </p>
+              <WeightTariffNote className="mt-2" label="Плюс вес посылки" />
             </motion.div>
           </div>
         </div>

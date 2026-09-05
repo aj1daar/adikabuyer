@@ -335,4 +335,36 @@ class CatalogControllerTest {
         mockMvc.perform(delete("/api/catalog/products/99"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void deleteVariant_returnsTheRemainingProduct() throws Exception {
+        ProductDto remaining = new ProductDto(1L, "Tumbler", "desc", "Drinkware", BigDecimal.TEN, null, true,
+                null, null, null, false, null, List.of());
+        when(catalogService.deleteVariant(1L, 10L)).thenReturn(remaining);
+
+        mockMvc.perform(delete("/api/catalog/products/1/variants/10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Tumbler"));
+
+        verify(catalogService).deleteVariant(1L, 10L);
+    }
+
+    @Test
+    void deleteVariant_returns400_whenItIsTheOnlyVariant() throws Exception {
+        when(catalogService.deleteVariant(1L, 10L)).thenThrow(new ResponseStatusException(
+                HttpStatus.BAD_REQUEST, "This is the product's only variant — delete the product instead"));
+
+        mockMvc.perform(delete("/api/catalog/products/1/variants/10"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deleteVariant_returns404_whenTheVariantIsNotOnThatProduct() throws Exception {
+        when(catalogService.deleteVariant(1L, 999L)).thenThrow(new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Variant 999 does not belong to product 1"));
+
+        mockMvc.perform(delete("/api/catalog/products/1/variants/999"))
+                .andExpect(status().isNotFound());
+    }
 }

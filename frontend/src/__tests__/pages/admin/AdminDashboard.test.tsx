@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import AdminDashboard from '../../../pages/admin/AdminDashboard'
 import useCatalog from '../../../hooks/useCatalog'
 import useAuthStore from '../../../store/useAuthStore'
-import { createProduct, deleteProduct, updateProduct } from '../../../api/adminCatalog'
+import { createProduct, deleteProduct, deleteVariant, updateProduct } from '../../../api/adminCatalog'
 import getOrders, { deleteOrder } from '../../../api/adminOrders'
 import getTelegramAdmins from '../../../api/telegramAdmins'
 import type { ProductDto } from '../../../types/catalog'
@@ -19,6 +19,7 @@ const mockedUseCatalog = vi.mocked(useCatalog)
 const mockedCreateProduct = vi.mocked(createProduct)
 const mockedUpdateProduct = vi.mocked(updateProduct)
 const mockedDeleteProduct = vi.mocked(deleteProduct)
+const mockedDeleteVariant = vi.mocked(deleteVariant)
 const mockedGetOrders = vi.mocked(getOrders)
 const mockedDeleteOrder = vi.mocked(deleteOrder)
 const mockedGetTelegramAdmins = vi.mocked(getTelegramAdmins)
@@ -74,6 +75,43 @@ const productWithoutVariants: ProductDto = {
   variants: [],
 }
 
+const twoVariantProduct: ProductDto = {
+  id: 2,
+  name: 'Two Variant Tumbler',
+  description: null,
+  category: 'Drinkware',
+  basePrice: 25,
+  displayPrice: 25,
+  active: true,
+  imageUrl: null,
+  variants: [
+    {
+      id: 20,
+      productId: 2,
+      sku: 'TWO-A',
+      imageUrls: [],
+      attributes: { color: 'black' },
+      priceOverride: null,
+      displayPrice: 25,
+      stockQuantity: 3,
+      active: true,
+      status: 'IN_STOCK',
+    },
+    {
+      id: 21,
+      productId: 2,
+      sku: 'TWO-B',
+      imageUrls: [],
+      attributes: { color: 'white' },
+      priceOverride: null,
+      displayPrice: 30,
+      stockQuantity: 2,
+      active: true,
+      status: 'IN_STOCK',
+    },
+  ],
+}
+
 function renderDashboard() {
   return render(
     <MemoryRouter>
@@ -87,6 +125,7 @@ beforeEach(() => {
   mockedCreateProduct.mockReset()
   mockedUpdateProduct.mockReset()
   mockedDeleteProduct.mockReset()
+  mockedDeleteVariant.mockReset()
   mockedGetOrders.mockReset()
   mockedDeleteOrder.mockReset()
   mockedGetTelegramAdmins.mockReset()
@@ -168,11 +207,32 @@ describe('AdminDashboard', () => {
     expect(screen.getByDisplayValue('Custom Tumbler')).toBeInTheDocument()
   })
 
-  it('deletes a product and refetches on success', async () => {
+  it('asks for confirmation before deleting a product, and says how many variants go with it', () => {
+    renderDashboard()
+
+    fireEvent.click(screen.getAllByRole('button', { name: /удалить товар/i })[0])
+
+    expect(screen.getByRole('dialog', { name: /удалить товар\?/i })).toBeInTheDocument()
+    expect(screen.getByText(/и все его варианты \(1\)/i)).toBeInTheDocument()
+    expect(mockedDeleteProduct).not.toHaveBeenCalled()
+  })
+
+  it('does not delete anything when the confirmation is cancelled', () => {
+    renderDashboard()
+
+    fireEvent.click(screen.getAllByRole('button', { name: /удалить товар/i })[0])
+    fireEvent.click(screen.getByRole('button', { name: /отмена/i }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(mockedDeleteProduct).not.toHaveBeenCalled()
+  })
+
+  it('deletes a product and refetches once the delete is confirmed', async () => {
     mockedDeleteProduct.mockResolvedValueOnce(undefined)
     renderDashboard()
 
-    fireEvent.click(screen.getAllByRole('button', { name: /удалить$/i })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: /удалить товар/i })[0])
+    fireEvent.click(screen.getByRole('button', { name: /^удалить$/i }))
 
     await waitFor(() => expect(mockedDeleteProduct).toHaveBeenCalledWith(1))
     expect(refetch).toHaveBeenCalled()
@@ -182,9 +242,56 @@ describe('AdminDashboard', () => {
     mockedDeleteProduct.mockRejectedValueOnce(new Error('Cannot delete'))
     renderDashboard()
 
-    fireEvent.click(screen.getAllByRole('button', { name: /удалить$/i })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: /удалить товар/i })[0])
+    fireEvent.click(screen.getByRole('button', { name: /^удалить$/i }))
 
     await waitFor(() => expect(screen.getByText('Cannot delete')).toBeInTheDocument())
+  })
+
+  it('groups variants under one product header instead of listing them as separate products', () => {
+    mockedUseCatalog.mockReturnValue({
+      products: [twoVariantProduct],
+      totalCount: 1,
+      loading: false,
+      error: null,
+      refetch,
+    })
+    renderDashboard()
+
+    // the product name appears once, as the group header — not once per variant
+    expect(screen.getAllByText('Two Variant Tumbler')).toHaveLength(1)
+    expect(screen.getByText(/вариантов: 2/i)).toBeInTheDocument()
+    // one product-level delete, one per-variant delete for each of the two variants
+    expect(screen.getAllByRole('button', { name: /удалить товар/i })).toHaveLength(1)
+    expect(screen.getAllByRole('button', { name: /удалить вариант/i })).toHaveLength(2)
+  })
+
+  it('deletes just the one variant once confirmed, leaving the product', async () => {
+    mockedUseCatalog.mockReturnValue({
+      products: [twoVariantProduct],
+      totalCount: 1,
+      loading: false,
+      error: null,
+      refetch,
+    })
+    mockedDeleteVariant.mockResolvedValueOnce(twoVariantProduct)
+    renderDashboard()
+
+    fireEvent.click(screen.getAllByRole('button', { name: /удалить вариант/i })[0])
+    expect(screen.getByText(/вариант «TWO-A» товара «Two Variant Tumbler»/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /^удалить$/i }))
+
+    await waitFor(() => expect(mockedDeleteVariant).toHaveBeenCalledWith(2, 20))
+    expect(mockedDeleteProduct).not.toHaveBeenCalled()
+    expect(refetch).toHaveBeenCalled()
+  })
+
+  it('offers no variant delete when the product has only one', () => {
+    renderDashboard()
+
+    expect(screen.queryByRole('button', { name: /удалить вариант/i })).not.toBeInTheDocument()
+    expect(screen.getByText(/единственный вариант/i)).toBeInTheDocument()
   })
 
   it('creates a product, closes the form, and refetches on successful submit', async () => {
@@ -273,6 +380,39 @@ describe('AdminDashboard', () => {
     renderDashboard()
 
     expect(mockedGetTelegramAdmins).not.toHaveBeenCalled()
+  })
+
+  it('filters the table by name, SKU or attribute as the admin types', () => {
+    renderDashboard()
+    const search = screen.getByLabelText('Поиск по товарам')
+
+    fireEvent.change(search, { target: { value: 'no variant' } })
+    expect(screen.getByText('No Variant Product')).toBeInTheDocument()
+    expect(screen.queryByText('Custom Tumbler')).not.toBeInTheDocument()
+    expect(screen.getByText('Найдено: 1 из 2')).toBeInTheDocument()
+
+    fireEvent.change(search, { target: { value: 'TUM-BLK' } })
+    expect(screen.getByText('Custom Tumbler')).toBeInTheDocument()
+    expect(screen.queryByText('No Variant Product')).not.toBeInTheDocument()
+  })
+
+  it('says so when a search matches nothing, and clears back to the full list', () => {
+    renderDashboard()
+    const search = screen.getByLabelText('Поиск по товарам')
+
+    fireEvent.change(search, { target: { value: 'ничего' } })
+    expect(screen.getByText('По запросу «ничего» ничего не нашлось.')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Очистить поиск' }))
+    expect(screen.getByText('Custom Tumbler')).toBeInTheDocument()
+    expect(screen.getByText('No Variant Product')).toBeInTheDocument()
+  })
+
+  it('offers no product search outside the products tab', () => {
+    renderDashboard()
+    fireEvent.click(screen.getByRole('button', { name: 'Заказы' }))
+
+    expect(screen.queryByLabelText('Поиск по товарам')).not.toBeInTheDocument()
   })
 
   it('switches to the Telegram tab, fetches, and renders subscribers', async () => {
