@@ -51,6 +51,26 @@ cp .env.prod.example .env.prod
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 
+## Backups
+
+The full stack runs a `db-backup` sidecar (`scripts/backup-db.sh`): one `pg_dump` of **both** databases on boot and every `BACKUP_INTERVAL_SECONDS` (default 24h), gzipped into the `db-backups` volume, pruned after `BACKUP_RETENTION_DAYS` (default 14). It ships with the stack — a normal deploy starts it, nothing to install on the server.
+
+```bash
+docker compose -f docker-compose.prod.yml exec db-backup ls -la /backups     # what's there
+docker compose -f docker-compose.prod.yml exec db-backup /scripts/backup-db.sh   # dump right now
+docker cp adikabuyer-db-backup:/backups ./local-backups                      # pull a copy off the box
+```
+
+Restore one database (this **overwrites** it — restore into a scratch DB first if you only need to look):
+
+```bash
+docker compose -f docker-compose.prod.yml exec db-backup \
+  sh -c 'gunzip -c /backups/adikabuyer-<stamp>.sql.gz' \
+  | docker compose -f docker-compose.prod.yml exec -T postgres-db psql -U adikabuyer -d adikabuyer
+```
+
+**What this does and doesn't cover.** It covers deleting the wrong thing — a product, a variant, a bad migration. It does **not** cover losing the VPS: the dumps live on the same disk as the database. For that you need a copy elsewhere — run the `docker cp` above on a schedule from your own machine, or keep Hetzner snapshots on. Deleted MinIO images are not in these dumps either; a restored row can point at an image that's already gone.
+
 ## Deploy
 
 Live at `https://adikabuyer.kg` (Hetzner VPS, DNS via Cloudflare, NS delegated from cctld.kg). Pushing to `main` triggers `.github/workflows/deploy.yml`: it SSHes into the production server (`/opt/adikabuyer`), resets to `origin/main`, writes `.env.prod` from the base64-encoded `ENV_PROD_B64` secret (plain env content breaks on the bcrypt hash's `$` signs when piped through a shell, hence the base64 wrapping), and rebuilds the compose stack, force-recreating `caddy` separately since its config is bind-mounted and won't otherwise pick up changes. Required GitHub secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `ENV_PROD_B64`.
