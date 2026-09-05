@@ -3,8 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import useCartStore, { type CartItem } from '../store/useCartStore'
 import submitCheckout from '../api/checkout'
 import formatPrice from '../utils/formatPrice'
-import resolveDeliveryFee, { DELIVERY_CITIES } from '../utils/deliveryFee'
-import CityDropdown from './CityDropdown'
+import resolveDeliveryFee, { COURIER, DELIVERY_OPTIONS, PICKUP } from '../utils/deliveryFee'
 import { popIn } from '../utils/motion'
 
 type DeliveryMode = 'together' | 'separate'
@@ -89,7 +88,9 @@ export default function CartDrawer() {
 
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
-  const [region, setRegion] = useState('')
+  // Two ways to get the order and no city to guess — start on the courier, the option
+  // that actually costs money, so the total is never quietly optimistic.
+  const [region, setRegion] = useState<string>(COURIER)
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('together')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isSubmittingRef = useRef(false)
@@ -117,6 +118,7 @@ export default function CartDrawer() {
   const isSplitDelivery = hasBothGroups && deliveryMode === 'separate'
   const singleDeliveryFee = region ? resolveDeliveryFee(region) : 0
   const deliveryFee = isSplitDelivery ? singleDeliveryFee * 2 : singleDeliveryFee
+  const deliveryLabel = region === PICKUP ? 'Самовывоз' : 'Доставка'
   const grandTotal = totalPrice + deliveryFee
 
   const handleCheckout = async () => {
@@ -154,7 +156,7 @@ export default function CartDrawer() {
       setOrderPlaced(false)
       setCustomerName('')
       setCustomerPhone('')
-      setRegion('')
+      setRegion(COURIER)
       setDeliveryMode('together')
     }
   }
@@ -275,12 +277,29 @@ export default function CartDrawer() {
                     placeholder="Номер телефона"
                     className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
                   />
-                  <CityDropdown
-                    cities={DELIVERY_CITIES}
-                    value={region}
-                    onChange={setRegion}
-                    placeholder="Город доставки"
-                  />
+                  <div className="flex flex-col gap-1">
+                    <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
+                      Как получить
+                    </span>
+                    <div className="flex overflow-hidden rounded-pill border-2 border-black">
+                      {DELIVERY_OPTIONS.map((option, index) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          aria-pressed={region === option.value}
+                          onClick={() => setRegion(option.value)}
+                          className={`flex-1 px-3 py-2 font-grotesk text-sm font-bold transition ${
+                            index > 0 ? 'border-l-2 border-black' : ''
+                          } ${region === option.value ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'}`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-ink/50">
+                      {DELIVERY_OPTIONS.find((option) => option.value === region)?.hint}
+                    </p>
+                  </div>
                   {hasBothGroups && (
                     <div className="flex flex-col gap-1">
                       <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
@@ -333,18 +352,18 @@ export default function CartDrawer() {
               {isSplitDelivery ? (
                 <>
                   <div className="mb-1 flex items-center justify-between font-grotesk text-sm text-ink/60">
-                    <span>Доставка — в наличии{region ? '' : ' (выберите город)'}</span>
-                    <span>{region ? formatPrice(singleDeliveryFee) : '—'}</span>
+                    <span>{deliveryLabel} — в наличии</span>
+                    <span>{formatPrice(singleDeliveryFee)}</span>
                   </div>
                   <div className="mb-4 flex items-center justify-between font-grotesk text-sm text-ink/60">
-                    <span>Доставка — под заказ{region ? '' : ' (выберите город)'}</span>
-                    <span>{region ? formatPrice(singleDeliveryFee) : '—'}</span>
+                    <span>{deliveryLabel} — под заказ</span>
+                    <span>{formatPrice(singleDeliveryFee)}</span>
                   </div>
                 </>
               ) : (
                 <div className="mb-4 flex items-center justify-between font-grotesk text-sm text-ink/60">
-                  <span>Доставка{region ? '' : ' (выберите город)'}</span>
-                  <span>{region ? formatPrice(deliveryFee) : '—'}</span>
+                  <span>{deliveryLabel}</span>
+                  <span>{formatPrice(deliveryFee)}</span>
                 </div>
               )}
               <div className="mb-4 flex items-center justify-between border-t border-ink/10 pt-3 font-grotesk text-base font-bold text-ink">
