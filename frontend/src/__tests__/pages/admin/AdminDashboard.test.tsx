@@ -382,6 +382,39 @@ describe('AdminDashboard', () => {
     expect(mockedGetTelegramAdmins).not.toHaveBeenCalled()
   })
 
+  it('filters the table by name, SKU or attribute as the admin types', () => {
+    renderDashboard()
+    const search = screen.getByLabelText('Поиск по товарам')
+
+    fireEvent.change(search, { target: { value: 'no variant' } })
+    expect(screen.getByText('No Variant Product')).toBeInTheDocument()
+    expect(screen.queryByText('Custom Tumbler')).not.toBeInTheDocument()
+    expect(screen.getByText('Найдено: 1 из 2')).toBeInTheDocument()
+
+    fireEvent.change(search, { target: { value: 'TUM-BLK' } })
+    expect(screen.getByText('Custom Tumbler')).toBeInTheDocument()
+    expect(screen.queryByText('No Variant Product')).not.toBeInTheDocument()
+  })
+
+  it('says so when a search matches nothing, and clears back to the full list', () => {
+    renderDashboard()
+    const search = screen.getByLabelText('Поиск по товарам')
+
+    fireEvent.change(search, { target: { value: 'ничего' } })
+    expect(screen.getByText('По запросу «ничего» ничего не нашлось.')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Очистить поиск' }))
+    expect(screen.getByText('Custom Tumbler')).toBeInTheDocument()
+    expect(screen.getByText('No Variant Product')).toBeInTheDocument()
+  })
+
+  it('offers no product search outside the products tab', () => {
+    renderDashboard()
+    fireEvent.click(screen.getByRole('button', { name: 'Заказы' }))
+
+    expect(screen.queryByLabelText('Поиск по товарам')).not.toBeInTheDocument()
+  })
+
   it('switches to the Telegram tab, fetches, and renders subscribers', async () => {
     mockedGetTelegramAdmins.mockResolvedValueOnce([
       { chatId: 42, username: 'shop_owner', registeredAt: '2026-01-01T00:00:00Z' },

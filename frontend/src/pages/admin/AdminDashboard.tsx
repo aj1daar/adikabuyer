@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useCatalog from '../../hooks/useCatalog'
 import useOrders from '../../hooks/useOrders'
@@ -14,6 +14,7 @@ import type { ProductDto } from '../../types/catalog'
 import type { OrderDto } from '../../types/order'
 import type { ProductPayload } from '../../types/admin'
 import formatPrice from '../../utils/formatPrice'
+import filterAdminProducts from '../../utils/filterAdminProducts'
 import usePageTitle from '../../hooks/usePageTitle'
 
 type AdminTab = 'products' | 'orders' | 'telegram'
@@ -62,6 +63,9 @@ export default function AdminDashboard() {
   const [actionError, setActionError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const visibleProducts = useMemo(() => filterAdminProducts(products, search), [products, search])
 
   const handleLogout = () => {
     clearToken()
@@ -232,6 +236,36 @@ export default function AdminDashboard() {
           <TelegramAdminsTable admins={telegramAdmins} loading={telegramAdminsLoading} error={telegramAdminsError} />
         )}
 
+        {activeTab === 'products' && (
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="relative min-w-0 flex-1 sm:max-w-md">
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Поиск: название, SKU, бренд, цвет…"
+                aria-label="Поиск по товарам"
+                className="min-h-11 w-full rounded-pill border-2 border-black px-4 py-2 pr-10 font-grotesk text-base font-semibold text-ink outline-none focus:border-bubblegum-dark sm:text-sm"
+              />
+              {search !== '' && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Очистить поиск"
+                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full font-grotesk text-sm font-bold text-ink/40 transition after:absolute after:-inset-1.5 after:content-[''] hover:bg-silver hover:text-ink"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            {search !== '' && (
+              <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
+                Найдено: {visibleProducts.length} из {products.length}
+              </span>
+            )}
+          </div>
+        )}
+
         {activeTab === 'products' && loading && products.length === 0 && (
           <p className="mt-4 text-ink/60">Загрузка товаров...</p>
         )}
@@ -257,7 +291,7 @@ export default function AdminDashboard() {
                   then its variants indented under it. Variants used to render as loose
                   top-level rows, so a product with N variants read as N separate products —
                   and "Удалить" on any of them quietly took the whole product with it. */}
-              {products.map((product) => (
+              {visibleProducts.map((product) => (
                 <tbody key={product.id} className="border-b-2 border-black/10">
                   <tr className="bg-silver/60">
                     <td className="py-2 pr-4 font-grotesk font-bold text-ink" colSpan={4}>
@@ -346,7 +380,13 @@ export default function AdminDashboard() {
               ))}
             </table>
 
-            {products.length === 0 && <p className="mt-4 text-ink/60">Товары не найдены.</p>}
+            {visibleProducts.length === 0 && (
+              <p className="mt-4 text-ink/60">
+                {search === ''
+                  ? 'Товары не найдены.'
+                  : `По запросу «${search}» ничего не нашлось.`}
+              </p>
+            )}
           </div>
         )}
       </div>
