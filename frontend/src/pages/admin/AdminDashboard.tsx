@@ -7,7 +7,8 @@ import useAuthStore from '../../store/useAuthStore'
 import ProductForm from '../../components/admin/ProductForm'
 import OrdersTable from '../../components/admin/OrdersTable'
 import TelegramAdminsTable from '../../components/admin/TelegramAdminsTable'
-import { createProduct, deleteProduct, updateProduct } from '../../api/adminCatalog'
+import ConfirmDialog from '../../components/admin/ConfirmDialog'
+import { createProduct, deleteProduct, deleteVariant, updateProduct } from '../../api/adminCatalog'
 import { deleteOrder } from '../../api/adminOrders'
 import type { ProductDto } from '../../types/catalog'
 import type { OrderDto } from '../../types/order'
@@ -25,6 +26,16 @@ const VARIANT_STATUS_LABEL: Record<string, string> = {
 
 const isArchived = (product: ProductDto) =>
   product.variants.length > 0 && product.variants.every((variant) => variant.status === 'SOLD_OUT')
+
+type PendingDelete =
+  | { kind: 'product'; product: ProductDto; title: string; message: string }
+  | {
+      kind: 'variant'
+      product: ProductDto
+      variant: ProductDto['variants'][number]
+      title: string
+      message: string
+    }
 
 export default function AdminDashboard() {
   usePageTitle('Админ-панель')
@@ -49,6 +60,8 @@ export default function AdminDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleLogout = () => {
     clearToken()
@@ -88,13 +101,56 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleDelete = async (product: ProductDto) => {
+  // nothing is deleted until it goes through ConfirmDialog — one stray click used to take
+  // a whole product (and every variant under it) with no way back
+  const requestProductDelete = (product: ProductDto) =>
+    setPendingDelete({
+      kind: 'product',
+      product,
+      title: 'Удалить товар?',
+      message:
+        `Товар «${product.name}»` +
+        (product.variants.length > 0
+          ? ` и все его варианты (${product.variants.length}) будут удалены навсегда, вместе с их фото.`
+          : ' будет удалён навсегда.'),
+    })
+
+  const requestVariantDelete = (product: ProductDto, variant: ProductDto['variants'][number]) =>
+    setPendingDelete({
+      kind: 'variant',
+      product,
+      variant,
+      title: 'Удалить вариант?',
+      message:
+        `Вариант «${variant.sku}» товара «${product.name}» будет удалён навсегда, вместе с его фото. ` +
+        `Остальные варианты (${product.variants.length - 1}) останутся.`,
+    })
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) {
+      return
+    }
     setActionError(null)
+    setIsDeleting(true)
     try {
-      await deleteProduct(product.id)
+      if (pendingDelete.kind === 'product') {
+        await deleteProduct(pendingDelete.product.id)
+      } else {
+        await deleteVariant(pendingDelete.product.id, pendingDelete.variant.id)
+      }
+      setPendingDelete(null)
       refetch()
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Не удалось удалить товар.')
+      setActionError(
+        err instanceof Error
+          ? err.message
+          : pendingDelete.kind === 'product'
+            ? 'Не удалось удалить товар.'
+            : 'Не удалось удалить вариант.'
+      )
+      setPendingDelete(null)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -197,85 +253,97 @@ export default function AdminDashboard() {
                   <th className="py-2">Действия</th>
                 </tr>
               </thead>
-              <tbody>
-                {products.flatMap((product) =>
-                  product.variants.length > 0
-                    ? product.variants.map((variant) => (
-                        <tr key={variant.id} className="border-b border-ink/5">
-                          <td className="py-2 pr-4 text-ink">
-                            {product.name}
-                            {isArchived(product) && (
-                              <span className="ml-2 rounded-pill border border-black bg-silver px-2 py-0.5 font-grotesk text-[10px] font-bold uppercase tracking-wide text-ink/60">
-                                В архиве
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-2 pr-4 text-ink/70">{product.category ?? '—'}</td>
-                          <td className="py-2 pr-4 text-ink/70">
-                            {formatPrice(variant.priceOverride ?? product.basePrice)}
-                          </td>
-                          <td className="py-2 pr-4 font-grotesk font-bold text-ink">
-                            {formatPrice(variant.displayPrice ?? product.displayPrice)}
-                          </td>
-                          <td className="py-2 pr-4 text-ink/70">{variant.sku}</td>
-                          <td className="py-2 pr-4 text-ink/70">
-                            {Object.entries(variant.attributes)
-                              .map(([key, value]) => `${key}: ${value}`)
-                              .join(', ')}
-                          </td>
-                          <td className="py-2 pr-4 text-ink/70">{variant.stockQuantity}</td>
-                          <td className="py-2 pr-4 text-ink/70">
-                            {VARIANT_STATUS_LABEL[variant.status] ?? variant.status}
-                          </td>
-                          <td className="py-2">
-                            <button
-                              type="button"
-                              onClick={() => openEditForm(product)}
-                              className="mr-3 font-grotesk text-xs font-bold text-bubblegum-dark hover:underline"
-                            >
-                              Изменить
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(product)}
-                              className="text-xs text-ink/40 hover:text-bubblegum-dark"
-                            >
-                              Удалить
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    : [
-                        <tr key={product.id} className="border-b border-ink/5">
-                          <td className="py-2 pr-4 text-ink">{product.name}</td>
-                          <td className="py-2 pr-4 text-ink/70">{product.category ?? '—'}</td>
-                          <td className="py-2 pr-4 text-ink/70">{formatPrice(product.basePrice)}</td>
-                          <td className="py-2 pr-4 font-grotesk font-bold text-ink">
-                            {formatPrice(product.displayPrice)}
-                          </td>
-                          <td className="py-2 pr-4 text-ink/40" colSpan={4}>
-                            Нет вариантов
-                          </td>
-                          <td className="py-2">
-                            <button
-                              type="button"
-                              onClick={() => openEditForm(product)}
-                              className="mr-3 font-grotesk text-xs font-bold text-bubblegum-dark hover:underline"
-                            >
-                              Изменить
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(product)}
-                              className="text-xs text-ink/40 hover:text-bubblegum-dark"
-                            >
-                              Удалить
-                            </button>
-                          </td>
-                        </tr>,
-                      ]
-                )}
-              </tbody>
+              {/* one <tbody> per product: a header row that owns the product-level actions,
+                  then its variants indented under it. Variants used to render as loose
+                  top-level rows, so a product with N variants read as N separate products —
+                  and "Удалить" on any of them quietly took the whole product with it. */}
+              {products.map((product) => (
+                <tbody key={product.id} className="border-b-2 border-black/10">
+                  <tr className="bg-silver/60">
+                    <td className="py-2 pr-4 font-grotesk font-bold text-ink" colSpan={4}>
+                      {product.name}
+                      <span className="ml-2 font-grotesk text-[10px] font-bold uppercase tracking-wide text-ink/50">
+                        {product.variants.length === 0
+                          ? 'без вариантов'
+                          : `вариантов: ${product.variants.length}`}
+                      </span>
+                      {isArchived(product) && (
+                        <span className="ml-2 rounded-pill border border-black bg-white px-2 py-0.5 font-grotesk text-[10px] font-bold uppercase tracking-wide text-ink/60">
+                          В архиве
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2 pr-4 text-ink/70" colSpan={4}>
+                      {product.category ?? '—'}
+                    </td>
+                    <td className="py-2">
+                      <button
+                        type="button"
+                        onClick={() => openEditForm(product)}
+                        className="mr-3 font-grotesk text-xs font-bold text-bubblegum-dark hover:underline"
+                      >
+                        Изменить
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => requestProductDelete(product)}
+                        className="whitespace-nowrap font-grotesk text-xs font-bold text-ink/50 hover:text-bubblegum-dark"
+                      >
+                        Удалить товар
+                      </button>
+                    </td>
+                  </tr>
+
+                  {product.variants.length === 0 && (
+                    <tr className="border-b border-ink/5">
+                      <td className="py-2 pr-4 pl-6 text-ink/40" colSpan={9}>
+                        Нет вариантов
+                      </td>
+                    </tr>
+                  )}
+
+                  {product.variants.map((variant) => (
+                    <tr key={variant.id} className="border-b border-ink/5">
+                      <td className="py-2 pr-4 pl-6 text-ink/50">↳ вариант</td>
+                      <td className="py-2 pr-4 text-ink/40">—</td>
+                      <td className="py-2 pr-4 text-ink/70">
+                        {formatPrice(variant.priceOverride ?? product.basePrice)}
+                      </td>
+                      <td className="py-2 pr-4 font-grotesk font-bold text-ink">
+                        {formatPrice(variant.displayPrice ?? product.displayPrice)}
+                      </td>
+                      <td className="py-2 pr-4 text-ink/70">{variant.sku}</td>
+                      <td className="py-2 pr-4 text-ink/70">
+                        {Object.entries(variant.attributes)
+                          .map(([key, value]) => `${key}: ${value}`)
+                          .join(', ')}
+                      </td>
+                      <td className="py-2 pr-4 text-ink/70">{variant.stockQuantity}</td>
+                      <td className="py-2 pr-4 text-ink/70">
+                        {VARIANT_STATUS_LABEL[variant.status] ?? variant.status}
+                      </td>
+                      <td className="py-2">
+                        {product.variants.length > 1 ? (
+                          <button
+                            type="button"
+                            onClick={() => requestVariantDelete(product, variant)}
+                            className="whitespace-nowrap text-xs text-ink/40 hover:text-bubblegum-dark"
+                          >
+                            Удалить вариант
+                          </button>
+                        ) : (
+                          <span
+                            title="Последний вариант — удаляется только вместе с товаром"
+                            className="whitespace-nowrap text-xs text-ink/25"
+                          >
+                            Единственный вариант
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              ))}
             </table>
 
             {products.length === 0 && <p className="mt-4 text-ink/60">Товары не найдены.</p>}
@@ -291,6 +359,15 @@ export default function AdminDashboard() {
           isSubmitting={isSubmitting}
         />
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={pendingDelete?.title ?? ''}
+        message={pendingDelete?.message ?? ''}
+        busy={isDeleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   )
 }

@@ -15,3 +15,9 @@ export async function updateProduct(id: number, payload: ProductPayload): Promis
 export async function deleteProduct(id: number): Promise<void> {
   await catalogClient.delete(`/products/${id}`)
 }
+
+/** Drops one variant, keeping the product. Rejected by the backend for the last variant. */
+export async function deleteVariant(productId: number, variantId: number): Promise<ProductDto> {
+  const response = await catalogClient.delete<ProductDto>(`/products/${productId}/variants/${variantId}`)
+  return response.data
+}
