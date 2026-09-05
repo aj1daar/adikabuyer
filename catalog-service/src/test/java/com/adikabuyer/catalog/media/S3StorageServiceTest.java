@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.HeadBucketResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
@@ -22,12 +23,14 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -209,5 +212,46 @@ class S3StorageServiceTest {
         s3StorageService.ensureBucketExists();
 
         verify(s3Client, never()).putBucketPolicy(any(PutBucketPolicyRequest.class));
+    }
+
+    @Test
+    void deleteFile_deletesTheKeyParsedOutOfOurPublicUrl() {
+        s3StorageService.deleteFile("http://localhost:9000/adikabuyer-media/abc-123-photo.png");
+
+        ArgumentCaptor<DeleteObjectRequest> captor = ArgumentCaptor.forClass(DeleteObjectRequest.class);
+        verify(s3Client).deleteObject(captor.capture());
+        assertThat(captor.getValue().bucket()).isEqualTo("adikabuyer-media");
+        assertThat(captor.getValue().key()).isEqualTo("abc-123-photo.png");
+    }
+
+    @Test
+    void deleteFile_ignoresNullBlankAndForeignUrls() {
+        s3StorageService.deleteFile(null);
+        s3StorageService.deleteFile("  ");
+        s3StorageService.deleteFile("https://someone-else.example/photo.png");
+        s3StorageService.deleteFile("http://localhost:9000/adikabuyer-media/");
+
+        verify(s3Client, never()).deleteObject(any(DeleteObjectRequest.class));
+    }
+
+    @Test
+    void deleteFiles_keepsGoingWhenOneObjectFailsToDelete() {
+        when(s3Client.deleteObject(any(DeleteObjectRequest.class)))
+                .thenThrow(new RuntimeException("minio down"))
+                .thenReturn(null);
+
+        s3StorageService.deleteFiles(List.of(
+                "http://localhost:9000/adikabuyer-media/first.png",
+                "http://localhost:9000/adikabuyer-media/second.png"
+        ));
+
+        verify(s3Client, times(2)).deleteObject(any(DeleteObjectRequest.class));
+    }
+
+    @Test
+    void deleteFiles_toleratesNull() {
+        s3StorageService.deleteFiles(null);
+
+        verify(s3Client, never()).deleteObject(any(DeleteObjectRequest.class));
     }
 }
