@@ -1,6 +1,6 @@
 # Adikabuyer
 
-Custom-order catalog for a small drinkware/apparel shop — customers pick a product and variant; checkout persists the order and notifies the store's Telegram admins instead of going through a payment gateway. Prices shown to customers are entered directly by the admin per variant (no markup math); the shop delivers inside Бишкек only, for a flat 300 KGS, or the customer picks the order up for free.
+Custom-order catalog for a small drinkware/apparel shop — customers pick a product and variant; checkout persists the order and notifies the store's Telegram admins instead of going through a payment gateway. Prices shown to customers are entered directly by the admin per variant (no markup math); the shop delivers inside Бишкек only, for a flat 300 KGS, or the customer picks the order up for free. Parcel weight is charged on top from a hand-written tariff (`frontend/src/utils/weightSurcharge.ts`) that the site only quotes — nothing in the catalog carries a weight, so the exact sum is agreed when the order is confirmed.
 
 ## Stack
 

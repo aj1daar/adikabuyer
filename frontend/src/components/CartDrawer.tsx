@@ -4,6 +4,7 @@ import useCartStore, { type CartItem } from '../store/useCartStore'
 import submitCheckout from '../api/checkout'
 import formatPrice from '../utils/formatPrice'
 import resolveDeliveryFee, { COURIER, DELIVERY_OPTIONS, PICKUP } from '../utils/deliveryFee'
+import WeightTariffNote from './WeightTariffNote'
 import { popIn } from '../utils/motion'
 
 type DeliveryMode = 'together' | 'separate'
@@ -366,9 +367,13 @@ export default function CartDrawer() {
                   <span>{formatPrice(deliveryFee)}</span>
                 </div>
               )}
-              <div className="mb-4 flex items-center justify-between border-t border-ink/10 pt-3 font-grotesk text-base font-bold text-ink">
+              <div className="mb-1 flex items-center justify-between border-t border-ink/10 pt-3 font-grotesk text-base font-bold text-ink">
                 <span>Итого</span>
                 <span>{formatPrice(grandTotal)}</span>
+              </div>
+              <div className="mb-4 flex items-center justify-between gap-2 font-grotesk text-xs text-ink/45">
+                <span>Плюс вес посылки — посчитаем при подтверждении</span>
+                <WeightTariffNote label="Тариф" className="shrink-0" />
               </div>
               <button
                 type="button"
