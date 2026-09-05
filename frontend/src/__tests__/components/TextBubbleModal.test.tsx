@@ -19,7 +19,9 @@ describe('TextBubbleModal', () => {
 
     expect(screen.getByRole('dialog').className).toContain('max-h-full')
     expect(scroller.className).toContain('overflow-y-auto')
-    expect(scroller.className).toContain('max-h-full')
+    // it has to shrink as a flex item — a percentage max-height there is not definite
+    expect(scroller.className).toContain('flex-1')
+    expect(scroller.className).toContain('min-h-0')
   })
 
   it('closes on the close button', () => {

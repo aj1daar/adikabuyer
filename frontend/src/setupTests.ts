@@ -45,6 +45,17 @@ if (typeof window !== 'undefined' && !window.IntersectionObserver) {
   window.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver
 }
 
+// jsdom has no ResizeObserver either; components use it to notice a box changing size.
+// jsdom never lays anything out, so an inert stub is the honest stand-in.
+if (typeof window !== 'undefined' && !window.ResizeObserver) {
+  class MockResizeObserver implements ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  window.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver
+}
+
 afterEach(() => {
   cleanup()
 })
