@@ -374,7 +374,7 @@ export default function ProductPage() {
                               the scroll container's left edge, so its own growth animation gets
                               clipped by the container's overflow-x boundary (can't scroll to
                               negative offsets to reveal it) instead of scaling smoothly */}
-                          <div className="scrollbar-none -mx-2 flex h-14 items-center gap-2 overflow-x-auto overscroll-contain px-2">
+                          <div className="-mx-2 flex h-14 items-center gap-2 overflow-x-auto overscroll-contain px-2">
                             {shownValues.map((value, valueIndex) => {
                               const selected = selection[key] === value
                               const available = isValueAvailable(sellableVariants, selection, key, value)
@@ -486,7 +486,7 @@ export default function ProductPage() {
                     <span className="h-5 font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
                       Вариант
                     </span>
-                    <div className="scrollbar-none flex h-14 items-center gap-2 overflow-x-auto overscroll-contain">
+                    <div className="flex h-14 items-center gap-2 overflow-x-auto overscroll-contain">
                       {sellableVariants.map((variant, index) => (
                         <button
                           key={variant.id}
