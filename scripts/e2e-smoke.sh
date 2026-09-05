@@ -66,14 +66,18 @@ if [ -n "$KEY" ]; then
 fi
 
 echo "== checkout (cross-service re-pricing) =="
-CART="{\"customerName\":\"Smoke\",\"customerPhone\":\"+996700000000\",\"region\":\"Osh\",\"items\":[{\"variantId\":$VID,\"productName\":\"Free iPhone\",\"sku\":\"STOLEN\",\"attributes\":{},\"unitPrice\":1,\"quantity\":2}]}"
-R=$($C -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json' -d "$CART")
+# Cyrillic regions go through a file, never an argv string: git-bash on Windows re-encodes
+# arguments to the ANSI codepage and "Бишкек" reaches the service as "??????".
+cat > "$WORK/cart.json" <<EOF
+{"customerName":"Smoke","customerPhone":"+996700000000","region":"Бишкек","items":[{"variantId":$VID,"productName":"Free iPhone","sku":"STOLEN","attributes":{},"unitPrice":1,"quantity":2}]}
+EOF
+R=$($C -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json; charset=utf-8' --data-binary "@$WORK/cart.json")
 OID=$(jstr "$R" orderId)
 [ -n "$OID" ] && ok "checkout -> $OID" || no "checkout ($R)"
 echo "$R" | grep -q '"itemsTotal":2400' && ok "server re-prices to catalog 1200x2=2400 (ignores client price)" || no "re-pricing ($R)"
-echo "$R" | grep -q '"deliveryFee":500' && ok "non-Bishkek delivery fee 500" || no "delivery fee"
-chk "$($C -o /dev/null -w '%{http_code}' -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json' -d '{"customerName":"x","customerPhone":"x","region":"Osh","items":[{"variantId":999999,"productName":"x","sku":"x","attributes":{},"unitPrice":1,"quantity":1}]}')" 400 "checkout unknown variant -> 400"
-chk "$($C -o /dev/null -w '%{http_code}' -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json' -d "{\"customerName\":\"x\",\"customerPhone\":\"x\",\"region\":\"Osh\",\"items\":[{\"variantId\":$VID,\"productName\":\"x\",\"sku\":\"x\",\"attributes\":{},\"unitPrice\":1,\"quantity\":99999}]}")" 409 "checkout over-stock -> 409"
+echo "$R" | grep -q '"deliveryFee":300' && ok "courier delivery fee 300" || no "delivery fee"
+chk "$($C -o /dev/null -w '%{http_code}' -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json' -d '{"customerName":"x","customerPhone":"x","region":"Бишкек","items":[{"variantId":999999,"productName":"x","sku":"x","attributes":{},"unitPrice":1,"quantity":1}]}')" 400 "checkout unknown variant -> 400"
+chk "$($C -o /dev/null -w '%{http_code}' -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json' -d "{\"customerName\":\"x\",\"customerPhone\":\"x\",\"region\":\"Бишкек\",\"items\":[{\"variantId\":$VID,\"productName\":\"x\",\"sku\":\"x\",\"attributes\":{},\"unitPrice\":1,\"quantity\":99999}]}")" 409 "checkout over-stock -> 409"
 
 echo "== inventory deduction (RabbitMQ round-trip) =="
 STK=""
@@ -83,6 +87,13 @@ for _ in $(seq 1 20); do
   sleep 2
 done
 chk "$STK" 3 "stock 5 -> 3 after order of 2 (OrderPlacedEvent consumed)"
+
+# a real second order, so it runs after the stock assertion above — otherwise it would
+# eat another unit before that check gets to look
+cat > "$WORK/pickup.json" <<EOF
+{"customerName":"Smoke","customerPhone":"+996700000000","region":"Самовывоз","items":[{"variantId":$VID,"productName":"x","sku":"x","attributes":{},"unitPrice":1,"quantity":1}]}
+EOF
+$C -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json; charset=utf-8' --data-binary "@$WORK/pickup.json" | grep -q '"deliveryFee":0' && ok "pickup is free" || no "pickup delivery fee"
 
 echo "== orders admin =="
 chk "$($C -o /dev/null -w '%{http_code}' "$BASE/api/orders")" 401 "GET /api/orders without token -> 401"
