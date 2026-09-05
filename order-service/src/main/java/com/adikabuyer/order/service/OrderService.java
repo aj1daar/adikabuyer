@@ -37,7 +37,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderService {
 
-    private static final String BISHKEK = "бишкек";
+    /** Region value the cart sends when the customer collects the order instead of a courier. */
+    private static final String PICKUP = "самовывоз";
     private static final String STATUS_SOLD_OUT = "SOLD_OUT";
     private static final String STATUS_PRE_ORDER = "PRE_ORDER";
 
@@ -197,10 +198,15 @@ public class OrderService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    /**
+     * The shop delivers inside Bishkek only, so the fee is binary: nothing when the
+     * customer collects the order, the flat city rate otherwise. Historical orders keep
+     * whatever region they were placed with — this only prices new ones.
+     */
     private BigDecimal resolveDeliveryFee(String region) {
-        if (region != null && region.strip().equalsIgnoreCase(BISHKEK)) {
-            return deliveryFeeProperties.getBishkekFee();
+        if (region != null && region.strip().equalsIgnoreCase(PICKUP)) {
+            return deliveryFeeProperties.getPickupFee();
         }
-        return deliveryFeeProperties.getDefaultFee();
+        return deliveryFeeProperties.getBishkekFee();
     }
 }

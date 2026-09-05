@@ -36,8 +36,9 @@ app:
     queue: order.queue
     routing-key: order.new
   delivery:
-    default-fee: 500
-    bishkek-fee: 250
+    # Bishkek-only shop: courier inside the city, or the customer picks the order up.
+    bishkek-fee: 300
+    pickup-fee: 0
   jwt:
     # Dev-only fallback; must match catalog-service. Real value comes from APP_JWT_SECRET
     # (enforced in prod by docker-compose.prod.yml `:?`). Never deploy the fallback.
