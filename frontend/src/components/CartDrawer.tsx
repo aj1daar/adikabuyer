@@ -289,7 +289,7 @@ export default function CartDrawer() {
                           type="button"
                           aria-pressed={region === option.value}
                           onClick={() => setRegion(option.value)}
-                          className={`flex-1 px-3 py-2 font-grotesk text-sm font-bold transition ${
+                          className={`min-h-11 flex-1 px-3 py-2 font-grotesk text-sm font-bold leading-none transition ${
                             index > 0 ? 'border-l-2 border-black' : ''
                           } ${region === option.value ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'}`}
                         >
@@ -311,7 +311,7 @@ export default function CartDrawer() {
                           type="button"
                           aria-pressed={deliveryMode === 'together'}
                           onClick={() => setDeliveryMode('together')}
-                          className={`flex-1 px-3 py-2 font-grotesk text-sm font-bold transition ${
+                          className={`min-h-11 flex-1 px-3 py-2 font-grotesk text-sm font-bold leading-none transition ${
                             deliveryMode === 'together' ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'
                           }`}
                         >
@@ -321,7 +321,7 @@ export default function CartDrawer() {
                           type="button"
                           aria-pressed={deliveryMode === 'separate'}
                           onClick={() => setDeliveryMode('separate')}
-                          className={`flex-1 border-l-2 border-black px-3 py-2 font-grotesk text-sm font-bold transition ${
+                          className={`min-h-11 flex-1 border-l-2 border-black px-3 py-2 font-grotesk text-sm font-bold leading-none transition ${
                             deliveryMode === 'separate' ? 'bg-bubblegum text-ink' : 'bg-white text-ink/50'
                           }`}
                         >
