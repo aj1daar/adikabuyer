@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import ScribbleNote from './ScribbleNote'
 import HeroBubbles from './HeroBubbles'
+import WeightTariffNote from './WeightTariffNote'
 import { popIn } from '../utils/motion'
 
 const MotionLink = motion.create(Link)
@@ -43,6 +44,14 @@ export default function HeroSection() {
           <motion.p {...popIn(0.12)} className="max-w-xl text-lg text-ink/70">
             Термостаканы, одежда, обувь и многое другое. Выбери вариант, мы соберём заказ
             и свяжемся с вами как можно скорее.
+          </motion.p>
+
+          <motion.p
+            {...popIn(0.16)}
+            className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 font-grotesk text-xs text-ink/45 sm:justify-start"
+          >
+            <span>Доставка по Бишкеку — 300 сом, самовывоз — бесплатно</span>
+            <WeightTariffNote label="Плюс вес" />
           </motion.p>
 
           <div className="relative flex flex-wrap items-start justify-center gap-x-4 gap-y-6 sm:items-center sm:justify-start sm:gap-y-4">
