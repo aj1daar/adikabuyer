@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import formatPrice from '../utils/formatPrice'
 import {
@@ -35,21 +36,30 @@ export default function WeightTariffNote({
         setIsOpen(false)
       }
     }
+    // The page behind an open sheet must not scroll — on a phone the two scrolls fight
+    // and the sheet feels broken.
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', close)
-    return () => window.removeEventListener('keydown', close)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', close)
+    }
   }, [isOpen])
 
   return (
     <>
+      {/* the pseudo-element grows the tap zone to a thumb's worth without moving the text */}
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className={`inline-flex items-center gap-1 font-grotesk text-xs font-bold text-ink/50 underline decoration-dotted underline-offset-4 transition hover:text-bubblegum-dark ${className}`}
+        className={`relative inline-flex items-center gap-1 font-grotesk text-xs font-bold text-ink/50 underline decoration-dotted underline-offset-4 transition after:absolute after:-inset-3 after:content-[''] hover:text-bubblegum-dark ${className}`}
       >
         {label}
         <span aria-hidden className="text-[0.9em]">?</span>
       </button>
 
+      {createPortal(
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -58,7 +68,7 @@ export default function WeightTariffNote({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/50 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] sm:items-center"
+            className="fixed inset-0 z-[70] flex h-dvh items-end justify-center bg-ink/50 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] sm:items-center"
           >
             <motion.div
               key="weight-tariff-dialog"
@@ -98,14 +108,16 @@ export default function WeightTariffNote({
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="mt-5 w-full rounded-pill border-2 border-black bg-ink px-5 py-3 font-grotesk text-sm font-bold text-white shadow-[3px_3px_0_0_#E8799F] transition hover:bg-bubblegum-dark"
+                className="mt-5 min-h-11 w-full rounded-pill border-2 border-black bg-ink px-5 py-3 font-grotesk text-sm font-bold text-white shadow-[3px_3px_0_0_#E8799F] transition hover:bg-bubblegum-dark"
               >
                 Понятно
               </button>
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body,
+      )}
     </>
   )
 }
