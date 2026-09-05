@@ -9,6 +9,7 @@ import com.adikabuyer.catalog.dto.ProductRequest;
 import com.adikabuyer.catalog.dto.VariantRequest;
 import com.adikabuyer.catalog.exception.OutOfStockException;
 import com.adikabuyer.catalog.mapper.ProductMapper;
+import com.adikabuyer.catalog.media.S3StorageService;
 import com.adikabuyer.catalog.repository.ProductRepository;
 import com.adikabuyer.catalog.repository.VariantRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,11 +50,14 @@ class CatalogServiceTest {
     @Mock
     private ProductMapper productMapper;
 
+    @Mock
+    private S3StorageService s3StorageService;
+
     private CatalogService catalogService;
 
     @BeforeEach
     void setUp() {
-        catalogService = new CatalogService(productRepository, variantRepository, productMapper);
+        catalogService = new CatalogService(productRepository, variantRepository, productMapper, s3StorageService);
     }
 
     @Test
@@ -566,5 +570,150 @@ class CatalogServiceTest {
         assertThatThrownBy(() -> catalogService.deleteProduct(99L))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("404");
+    }
+
+    @Test
+    void deleteProduct_alsoDeletesEveryVariantPhotoAndColourSwatch() {
+        Product existing = Product.builder()
+                .id(1L)
+                .name("Custom Tumbler")
+                .colorSwatches(new java.util.HashMap<>(Map.of("black", "http://media/black-swatch.png")))
+                .build();
+        existing.setVariants(new java.util.ArrayList<>(List.of(
+                variantWith(10L, "black", BigDecimal.TEN, List.of("http://media/a.png", "http://media/b.png")),
+                variantWith(11L, "white", BigDecimal.TEN, List.of("http://media/c.png"))
+        )));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
+
+        catalogService.deleteProduct(1L);
+
+        ArgumentCaptor<java.util.Collection<String>> captor = ArgumentCaptor.forClass(java.util.Collection.class);
+        verify(s3StorageService).deleteFiles(captor.capture());
+        assertThat(captor.getValue()).containsExactlyInAnyOrder(
+                "http://media/a.png", "http://media/b.png", "http://media/c.png", "http://media/black-swatch.png");
+    }
+
+    @Test
+    void deleteVariant_removesOnlyThatVariantAndRecomputesPriceAndCover() {
+        Product existing = productWithTwoVariants();
+        when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(productMapper.toDto(any(Product.class))).thenReturn(sampleDto());
+
+        catalogService.deleteVariant(1L, 10L);
+
+        assertThat(existing.getVariants()).extracting(Variant::getId).containsExactly(11L);
+        assertThat(existing.getBasePrice()).isEqualByComparingTo("20");
+        assertThat(existing.getImageUrl()).isEqualTo("http://media/white.png");
+        verify(productRepository).save(existing);
+        verify(productRepository, never()).delete(any(Product.class));
+    }
+
+    @Test
+    void deleteVariant_deletesThatVariantsPhotosAndTheNowOrphanedColourSwatch() {
+        Product existing = productWithTwoVariants();
+        when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(productMapper.toDto(any(Product.class))).thenReturn(sampleDto());
+
+        catalogService.deleteVariant(1L, 10L);
+
+        ArgumentCaptor<java.util.Collection<String>> captor = ArgumentCaptor.forClass(java.util.Collection.class);
+        verify(s3StorageService).deleteFiles(captor.capture());
+        // the black variant's own photo plus the black swatch, which no variant uses now
+        assertThat(captor.getValue())
+                .containsExactlyInAnyOrder("http://media/black.png", "http://media/black-swatch.png");
+        assertThat(existing.getColorSwatches()).containsOnlyKeys("white");
+    }
+
+    @Test
+    void deleteVariant_keepsASwatchWhoseColourStillHasAnotherVariant() {
+        Product existing = Product.builder()
+                .id(1L)
+                .name("Custom Tumbler")
+                .colorSwatches(new java.util.HashMap<>(Map.of("black", "http://media/black-swatch.png")))
+                .build();
+        existing.setVariants(new java.util.ArrayList<>(List.of(
+                variantWith(10L, "black", BigDecimal.TEN, List.of("http://media/black-s.png")),
+                variantWith(11L, "black", BigDecimal.valueOf(20), List.of("http://media/black-m.png"))
+        )));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(productMapper.toDto(any(Product.class))).thenReturn(sampleDto());
+
+        catalogService.deleteVariant(1L, 10L);
+
+        ArgumentCaptor<java.util.Collection<String>> captor = ArgumentCaptor.forClass(java.util.Collection.class);
+        verify(s3StorageService).deleteFiles(captor.capture());
+        assertThat(captor.getValue()).containsExactly("http://media/black-s.png");
+        assertThat(existing.getColorSwatches()).containsEntry("black", "http://media/black-swatch.png");
+    }
+
+    @Test
+    void deleteVariant_throwsBadRequest_whenItIsTheProductsOnlyVariant() {
+        Product existing = Product.builder().id(1L).name("Custom Tumbler").build();
+        existing.setVariants(new java.util.ArrayList<>(List.of(
+                variantWith(10L, "black", BigDecimal.TEN, List.of())
+        )));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> catalogService.deleteVariant(1L, 10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+
+        verify(productRepository, never()).save(any(Product.class));
+        verifyNoInteractions(s3StorageService);
+    }
+
+    @Test
+    void deleteVariant_throwsNotFound_whenTheVariantBelongsToAnotherProduct() {
+        Product existing = productWithTwoVariants();
+        when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> catalogService.deleteVariant(1L, 999L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
+    }
+
+    @Test
+    void deleteVariant_throwsNotFound_whenProductMissing() {
+        when(productRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> catalogService.deleteVariant(99L, 10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
+    }
+
+    private Product productWithTwoVariants() {
+        Product product = Product.builder()
+                .id(1L)
+                .name("Custom Tumbler")
+                .colorSwatches(new java.util.HashMap<>(Map.of(
+                        "black", "http://media/black-swatch.png",
+                        "white", "http://media/white-swatch.png")))
+                .build();
+        product.setVariants(new java.util.ArrayList<>(List.of(
+                variantWith(10L, "black", BigDecimal.TEN, List.of("http://media/black.png")),
+                variantWith(11L, "white", BigDecimal.valueOf(20), List.of("http://media/white.png"))
+        )));
+        return product;
+    }
+
+    private Variant variantWith(Long id, String colour, BigDecimal price, List<String> imageUrls) {
+        return Variant.builder()
+                .id(id)
+                .sku("SKU-" + id)
+                .attributes(Map.of("color", colour))
+                .priceOverride(price)
+                .stockQuantity(1)
+                .active(true)
+                .status(VariantStatus.IN_STOCK)
+                .imageUrls(new java.util.ArrayList<>(imageUrls))
+                .build();
+    }
+
+    private ProductDto sampleDto() {
+        return new ProductDto(1L, "Custom Tumbler", "desc", "Drinkware", BigDecimal.valueOf(20), null, true,
+                null, null, null, false, null, List.of());
     }
 }
