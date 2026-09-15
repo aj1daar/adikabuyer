@@ -587,7 +587,7 @@ class CatalogServiceTest {
 
         catalogService.deleteProduct(1L);
 
-        ArgumentCaptor<java.util.Collection<String>> captor = ArgumentCaptor.forClass(java.util.Collection.class);
+        ArgumentCaptor<java.util.Collection<String>> captor = ArgumentCaptor.captor();
         verify(s3StorageService).deleteFiles(captor.capture());
         assertThat(captor.getValue()).containsExactlyInAnyOrder(
                 "http://media/a.png", "http://media/b.png", "http://media/c.png", "http://media/black-swatch.png");
@@ -618,7 +618,7 @@ class CatalogServiceTest {
 
         catalogService.deleteVariant(1L, 10L);
 
-        ArgumentCaptor<java.util.Collection<String>> captor = ArgumentCaptor.forClass(java.util.Collection.class);
+        ArgumentCaptor<java.util.Collection<String>> captor = ArgumentCaptor.captor();
         verify(s3StorageService).deleteFiles(captor.capture());
         // the black variant's own photo plus the black swatch, which no variant uses now
         assertThat(captor.getValue())
@@ -643,7 +643,7 @@ class CatalogServiceTest {
 
         catalogService.deleteVariant(1L, 10L);
 
-        ArgumentCaptor<java.util.Collection<String>> captor = ArgumentCaptor.forClass(java.util.Collection.class);
+        ArgumentCaptor<java.util.Collection<String>> captor = ArgumentCaptor.captor();
         verify(s3StorageService).deleteFiles(captor.capture());
         assertThat(captor.getValue()).containsExactly("http://media/black-s.png");
         assertThat(existing.getColorSwatches()).containsEntry("black", "http://media/black-swatch.png");
