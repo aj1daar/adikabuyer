@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import getOrders from '../api/adminOrders'
 import type { OrderDto } from '../types/order'
+import apiErrorMessage from '../utils/apiErrorMessage'
 
 type UseOrdersResult = {
   orders: OrderDto[]
@@ -21,7 +22,7 @@ export default function useOrders(enabled: boolean): UseOrdersResult {
       const data = await getOrders()
       setOrders(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось загрузить заказы')
+      setError(apiErrorMessage(err))
     } finally {
       setLoading(false)
     }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import getTelegramAdmins from '../api/telegramAdmins'
 import type { TelegramAdminDto } from '../types/telegramAdmin'
+import apiErrorMessage from '../utils/apiErrorMessage'
 
 type UseTelegramAdminsResult = {
   admins: TelegramAdminDto[]
@@ -21,7 +22,7 @@ export default function useTelegramAdmins(enabled: boolean): UseTelegramAdminsRe
       const data = await getTelegramAdmins()
       setAdmins(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось загрузить список подписчиков')
+      setError(apiErrorMessage(err))
     } finally {
       setLoading(false)
     }

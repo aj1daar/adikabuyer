@@ -341,12 +341,12 @@ describe('AdminDashboard', () => {
   })
 
   it('shows an error when fetching orders fails', async () => {
-    mockedGetOrders.mockRejectedValueOnce(new Error('Orders down'))
+    mockedGetOrders.mockRejectedValueOnce({ isAxiosError: true, message: 'Request failed with status code 503', response: { status: 503, data: {} } })
     renderDashboard()
 
     fireEvent.click(screen.getByRole('button', { name: 'Заказы' }))
 
-    await waitFor(() => expect(screen.getByText('Orders down')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Сервис временно недоступен. Попробуйте ещё раз.')).toBeInTheDocument())
   })
 
   it('deletes an order and refetches on success', async () => {
