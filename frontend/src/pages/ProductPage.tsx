@@ -567,7 +567,7 @@ export default function ProductPage() {
                     disabled={!selectedVariant}
                     whileTap={{ scale: 0.93, rotate: -1 }}
                     transition={{ type: 'spring', stiffness: 500, damping: 14 }}
-                    className="flex-1 overflow-hidden rounded-pill border-2 border-black bg-ink px-6 py-3 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="flex-1 overflow-hidden whitespace-nowrap rounded-pill border-2 border-black bg-ink px-4 py-3 font-grotesk min-[380px]:px-6 text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <AnimatePresence mode="wait" initial={false}>
                       <motion.span

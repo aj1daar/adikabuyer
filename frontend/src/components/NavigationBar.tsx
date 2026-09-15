@@ -101,7 +101,7 @@ export default function NavigationBar() {
           <motion.button
             type="button"
             onClick={toggleCart}
-            className="relative rounded-pill border-2 border-black bg-silver px-4 py-2 font-grotesk text-sm font-bold tabular-nums text-ink shadow-[3px_3px_0_0_#000] transition-[background-color,color] hover:bg-bubblegum hover:text-white"
+            className="relative whitespace-nowrap rounded-pill border-2 border-black bg-silver px-3 py-2 font-grotesk text-sm font-bold tabular-nums min-[380px]:px-4 text-ink shadow-[3px_3px_0_0_#000] transition-[background-color,color] hover:bg-bubblegum hover:text-white"
             whileHover={reduceMotion ? { scale: 1.03 } : { y: -3 }}
             whileTap={{ y: 0, scale: 0.95 }}
             transition={springy}
