@@ -263,15 +263,20 @@ describe('CartDrawer', () => {
     await waitFor(() => expect(useCartStore.getState().items).toHaveLength(0))
   })
 
-  it('on failure shows an error message and does not clear the cart', async () => {
+  it('on failure shows a Russian error message and does not clear the cart', async () => {
     useCartStore.setState({ items: [cartItem()], isOpen: true })
-    mockedSubmitCheckout.mockRejectedValueOnce(new Error('Server exploded'))
+    mockedSubmitCheckout.mockRejectedValueOnce({
+      isAxiosError: true,
+      message: 'Request failed with status code 409',
+      response: { status: 409, data: { message: 'Not enough stock for variant: 1' } },
+    })
 
     render(<CartDrawer />)
     fillCheckoutForm()
     fireEvent.click(screen.getByRole('button', { name: /оформить заказ/i }))
 
-    await waitFor(() => expect(screen.getByText('Server exploded')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Столько нет в наличии — уменьшите количество в корзине.')).toBeInTheDocument())
+    expect(screen.queryByText(/Request failed/)).not.toBeInTheDocument()
 
     expect(useCartStore.getState().items).toHaveLength(1)
     expect(useCartStore.getState().isOpen).toBe(true)

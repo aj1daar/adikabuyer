@@ -6,6 +6,7 @@ import formatPrice from '../utils/formatPrice'
 import resolveDeliveryFee, { COURIER, DELIVERY_OPTIONS, PICKUP } from '../utils/deliveryFee'
 import WeightTariffNote from './WeightTariffNote'
 import { popIn } from '../utils/motion'
+import apiErrorMessage from '../utils/apiErrorMessage'
 
 type DeliveryMode = 'together' | 'separate'
 
@@ -144,7 +145,7 @@ export default function CartDrawer() {
       clearCart()
       setOrderPlaced(true)
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Не удалось оформить заказ. Попробуйте ещё раз.')
+      setSubmitError(apiErrorMessage(err))
     } finally {
       isSubmittingRef.current = false
       setIsSubmitting(false)
