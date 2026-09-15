@@ -65,6 +65,7 @@ class OrderServiceTest {
         orderService = new OrderService(orderRepository, rabbitTemplate, deliveryFeeProperties, telegramNotifier, catalogClient);
         ReflectionTestUtils.setField(orderService, "exchangeName", "order.exchange");
         ReflectionTestUtils.setField(orderService, "routingKey", "order.new");
+        lenient().when(orderRepository.nextOrderNumber()).thenReturn(1042L);
         lenient().when(catalogClient.fetchPricing(any())).thenAnswer(invocation -> {
             Collection<Long> ids = invocation.getArgument(0);
             Map<Long, VariantPricing> out = new HashMap<>();
@@ -142,6 +143,19 @@ class OrderServiceTest {
         assertThat(saved.getItems()).hasSize(1);
         assertThat(saved.getItems().get(0).getSku()).isEqualTo("TUM-BLK-500");
         assertThat(saved.getItems().get(0).getOrder()).isSameAs(saved);
+    }
+
+    @Test
+    void checkout_givesTheOrderAHumanReadableNumber_inTheResponseRecordAndTelegramMessage() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+
+        CheckoutResponseDto response = orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.TEN, 1)));
+
+        assertThat(response.orderNumber()).isEqualTo(1042L);
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(orderCaptor.capture());
+        assertThat(orderCaptor.getValue().getNumber()).isEqualTo(1042L);
+        assertThat(captureTelegramMessage()).startsWith("Новый заказ №1042\n");
     }
 
     @Test

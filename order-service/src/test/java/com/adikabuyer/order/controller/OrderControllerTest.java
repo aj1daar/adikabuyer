@@ -79,7 +79,7 @@ class OrderControllerTest {
     @Test
     void checkout_returns200_whenPayloadIsValid() throws Exception {
         CheckoutResponseDto response = new CheckoutResponseDto(
-                "order-1", BigDecimal.valueOf(50), BigDecimal.valueOf(150), BigDecimal.valueOf(200)
+                "order-1", 1042L, BigDecimal.valueOf(50), BigDecimal.valueOf(150), BigDecimal.valueOf(200)
         );
         when(orderService.checkout(any())).thenReturn(response);
 
@@ -88,6 +88,7 @@ class OrderControllerTest {
                         .content(validCartJson()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderId").value("order-1"))
+                .andExpect(jsonPath("$.orderNumber").value(1042))
                 .andExpect(jsonPath("$.grandTotal").value(200));
     }
 
@@ -106,7 +107,7 @@ class OrderControllerTest {
 
     @Test
     void checkout_keysTheLimitOnTheRealClientIp() throws Exception {
-        when(orderService.checkout(any())).thenReturn(new CheckoutResponseDto("order-1", BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE));
+        when(orderService.checkout(any())).thenReturn(new CheckoutResponseDto("order-1", 1042L, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE));
 
         mockMvc.perform(post("/api/orders/checkout")
                         .header("X-Real-Ip", " 198.51.100.4 ")
@@ -132,7 +133,7 @@ class OrderControllerTest {
 
     @Test
     void checkout_acceptsPickup_inAnyCase() throws Exception {
-        when(orderService.checkout(any())).thenReturn(new CheckoutResponseDto("order-1", BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE));
+        when(orderService.checkout(any())).thenReturn(new CheckoutResponseDto("order-1", 1042L, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE));
         String payload = validCartJson().replace("\"Бишкек\"", "\"Самовывоз\"");
 
         mockMvc.perform(post("/api/orders/checkout")
@@ -288,7 +289,7 @@ class OrderControllerTest {
     @Test
     void getAllOrders_returns200WithOrderList() throws Exception {
         OrderDto order = new OrderDto(
-                "order-1", "John Doe", "996700123456", "bishkek",
+                "order-1", 1042L, "John Doe", "996700123456", "bishkek",
                 BigDecimal.valueOf(50), BigDecimal.valueOf(150), BigDecimal.valueOf(200),
                 Instant.parse("2026-01-01T00:00:00Z"), List.of()
         );

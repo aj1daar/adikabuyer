@@ -65,9 +65,10 @@ public class OrderService {
         BigDecimal deliveryFee = resolveDeliveryFee(cart.region());
         BigDecimal grandTotal = itemsTotal.add(deliveryFee);
         String orderId = UUID.randomUUID().toString();
+        long orderNumber = orderRepository.nextOrderNumber();
         Instant now = Instant.now();
 
-        Order order = buildOrder(orderId, cart, items, itemsTotal, deliveryFee, grandTotal, now);
+        Order order = buildOrder(orderId, orderNumber, cart, items, itemsTotal, deliveryFee, grandTotal, now);
         orderRepository.save(order);
 
         OrderPlacedEvent event = new OrderPlacedEvent(
@@ -83,14 +84,14 @@ public class OrderService {
         );
         rabbitTemplate.convertAndSend(exchangeName, routingKey, event);
 
-        String message = OrderNotificationMessageBuilder.buildOrderMessage(orderId, cart, items, itemsTotal, deliveryFee, grandTotal);
+        String message = OrderNotificationMessageBuilder.buildOrderMessage("№" + orderNumber, cart, items, itemsTotal, deliveryFee, grandTotal);
         try {
             telegramNotifier.notifyAdmins(message);
         } catch (Exception e) {
             log.warn("Failed to send telegram notification for order {}", orderId, e);
         }
 
-        return new CheckoutResponseDto(orderId, itemsTotal, deliveryFee, grandTotal);
+        return new CheckoutResponseDto(orderId, orderNumber, itemsTotal, deliveryFee, grandTotal);
     }
 
     /**
@@ -160,11 +161,12 @@ public class OrderService {
     }
 
     private Order buildOrder(
-            String orderId, CartDto cart, List<CartItemDto> items,
+            String orderId, long orderNumber, CartDto cart, List<CartItemDto> items,
             BigDecimal itemsTotal, BigDecimal deliveryFee, BigDecimal grandTotal, Instant now
     ) {
         Order order = Order.builder()
                 .id(orderId)
+                .number(orderNumber)
                 .customerName(cart.customerName())
                 .customerPhone(cart.customerPhone())
                 .region(cart.region())
@@ -204,6 +206,7 @@ public class OrderService {
 
         return new OrderDto(
                 order.getId(),
+                order.getNumber(),
                 order.getCustomerName(),
                 order.getCustomerPhone(),
                 order.getRegion(),

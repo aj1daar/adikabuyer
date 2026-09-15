@@ -31,6 +31,10 @@ public class Order {
     @Id
     private String id;
 
+    /** Short, sequential number customers and admins actually say out loud ("№1042"). */
+    @Column(nullable = false, unique = true, updatable = false)
+    private Long number;
+
     @Column(name = "customer_name", nullable = false)
     private String customerName;
 

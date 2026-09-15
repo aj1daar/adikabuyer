@@ -22,11 +22,11 @@ public final class OrderNotificationMessageBuilder {
     }
 
     public static String buildOrderMessage(
-            String orderId, CartDto cart, List<CartItemDto> items,
+            String orderLabel, CartDto cart, List<CartItemDto> items,
             BigDecimal itemsTotal, BigDecimal deliveryFee, BigDecimal grandTotal
     ) {
         StringBuilder message = new StringBuilder();
-        message.append("Новый заказ ").append(orderId).append('\n');
+        message.append("Новый заказ ").append(orderLabel).append('\n');
         message.append("Имя: ").append(cart.customerName()).append('\n');
         message.append("Телефон: ").append(cart.customerPhone()).append('\n');
         message.append("Город: ").append(cart.region()).append("\n\n");
