@@ -53,7 +53,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 
 ## Backups
 
-The full stack runs a `db-backup` sidecar (`scripts/backup-db.sh`): one `pg_dump` of **both** databases on boot and every `BACKUP_INTERVAL_SECONDS` (default 24h), gzipped into the `db-backups` volume, pruned after `BACKUP_RETENTION_DAYS` (default 14). It ships with the stack — a normal deploy starts it, nothing to install on the server.
+The full stack runs a `db-backup` sidecar (`scripts/backup-db.sh`, invoked through `sh` so it runs regardless of the file's exec bit; `.gitattributes` keeps every `*.sh` on LF so Windows checkouts bind-mount a runnable script): one `pg_dump` of **both** databases on boot and every `BACKUP_INTERVAL_SECONDS` (default 24h), gzipped into the `db-backups` volume, pruned after `BACKUP_RETENTION_DAYS` (default 14). It ships with the stack — a normal deploy starts it, nothing to install on the server.
 
 ```bash
 docker compose -f docker-compose.prod.yml exec db-backup ls -la /backups     # what's there

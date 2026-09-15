@@ -38,7 +38,7 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     # one pass on boot (so a fresh deploy has a backup immediately), then on the interval
     command:
-      - 'while true; do /scripts/backup-db.sh || echo "[backup] pass failed"; sleep "$${BACKUP_INTERVAL_SECONDS}"; done'
+      - 'while true; do sh /scripts/backup-db.sh || echo "[backup] pass failed"; sleep "$${BACKUP_INTERVAL_SECONDS}"; done'
     volumes:
       - ./scripts:/scripts:ro
       - db-backups:/backups
