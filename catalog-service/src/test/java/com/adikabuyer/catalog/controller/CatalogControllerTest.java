@@ -198,7 +198,7 @@ class CatalogControllerTest {
     void getVariantPricing_returns200WithPricingForRequestedIds() throws Exception {
         when(catalogService.getVariantPricing(List.of(1L, 2L))).thenReturn(List.of(
                 new com.adikabuyer.catalog.dto.VariantPricingDto(
-                        1L, "Mug", "MUG-1", BigDecimal.valueOf(1200), 3, true,
+                        1L, "Mug", "MUG-1", java.util.Map.of("color", "Чёрный"), BigDecimal.valueOf(1200), 3, true,
                         com.adikabuyer.catalog.domain.VariantStatus.IN_STOCK)
         ));
 
@@ -206,7 +206,8 @@ class CatalogControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].variantId").value(1))
                 .andExpect(jsonPath("$[0].unitPrice").value(1200))
-                .andExpect(jsonPath("$[0].productName").value("Mug"));
+                .andExpect(jsonPath("$[0].productName").value("Mug"))
+                .andExpect(jsonPath("$[0].attributes.color").value("Чёрный"));
 
         verify(catalogService).getVariantPricing(List.of(1L, 2L));
     }

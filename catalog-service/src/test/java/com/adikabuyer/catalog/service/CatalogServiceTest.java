@@ -232,6 +232,7 @@ class CatalogServiceTest {
         Product product = Product.builder().name("Real Tumbler").build();
         Variant variant = Variant.builder()
                 .id(7L).sku("REAL-7").product(product)
+                .attributes(Map.of("color", "Чёрный", "volume", 500))
                 .priceOverride(BigDecimal.valueOf(1499)).stockQuantity(4)
                 .active(true).status(VariantStatus.IN_STOCK)
                 .build();
@@ -243,6 +244,7 @@ class CatalogServiceTest {
         assertThat(result.get(0).variantId()).isEqualTo(7L);
         assertThat(result.get(0).productName()).isEqualTo("Real Tumbler");
         assertThat(result.get(0).sku()).isEqualTo("REAL-7");
+        assertThat(result.get(0).attributes()).containsEntry("color", "Чёрный").containsEntry("volume", 500);
         assertThat(result.get(0).unitPrice()).isEqualByComparingTo(BigDecimal.valueOf(1499));
         assertThat(result.get(0).stockQuantity()).isEqualTo(4);
         assertThat(result.get(0).active()).isTrue();

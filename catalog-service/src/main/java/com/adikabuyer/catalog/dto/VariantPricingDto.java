@@ -3,6 +3,7 @@ package com.adikabuyer.catalog.dto;
 import com.adikabuyer.catalog.domain.VariantStatus;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * Authoritative pricing/availability for a single variant, used by order-service to
@@ -12,6 +13,7 @@ public record VariantPricingDto(
         Long variantId,
         String productName,
         String sku,
+        Map<String, Object> attributes,
         BigDecimal unitPrice,
         Integer stockQuantity,
         boolean active,
