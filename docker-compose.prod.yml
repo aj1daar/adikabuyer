@@ -1,10 +1,19 @@
 name: adikabuyer
 
+# Docker keeps json-file logs forever by default, which slowly fills the VPS disk.
+# Every service rotates at 10MB and keeps 3 files (≤30MB of logs per container).
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres-db:
     image: postgres:16-alpine
     container_name: adikabuyer-postgres
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 512m
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-adikabuyer}
@@ -26,6 +35,7 @@ services:
     image: postgres:16-alpine
     container_name: adikabuyer-db-backup
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 128m
     depends_on:
       - postgres-db
@@ -49,6 +59,7 @@ services:
     image: rabbitmq:3.13-management-alpine
     container_name: adikabuyer-rabbitmq
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 256m
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-adikabuyer}
@@ -67,6 +78,7 @@ services:
     image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
     container_name: adikabuyer-minio
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 512m
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-adikabuyer}
@@ -88,6 +100,7 @@ services:
       context: ./catalog-service
     container_name: adikabuyer-catalog-service
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 384m
     depends_on:
       - postgres-db
@@ -120,6 +133,7 @@ services:
       context: ./order-service
     container_name: adikabuyer-order-service
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 384m
     depends_on:
       - postgres-db
@@ -147,6 +161,7 @@ services:
       context: ./api-gateway
     container_name: adikabuyer-api-gateway
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 384m
     depends_on:
       - catalog-service
@@ -164,6 +179,7 @@ services:
       context: ./frontend
     container_name: adikabuyer-caddy
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 128m
     depends_on:
       - api-gateway
