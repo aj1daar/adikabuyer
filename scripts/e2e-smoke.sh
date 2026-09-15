@@ -76,8 +76,16 @@ OID=$(jstr "$R" orderId)
 [ -n "$OID" ] && ok "checkout -> $OID" || no "checkout ($R)"
 echo "$R" | grep -q '"itemsTotal":2400' && ok "server re-prices to catalog 1200x2=2400 (ignores client price)" || no "re-pricing ($R)"
 echo "$R" | grep -q '"deliveryFee":300' && ok "courier delivery fee 300" || no "delivery fee"
-chk "$($C -o /dev/null -w '%{http_code}' -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json' -d '{"customerName":"x","customerPhone":"+996700000000","region":"Бишкек","items":[{"variantId":999999,"productName":"x","sku":"x","attributes":{},"unitPrice":1,"quantity":1}]}')" 400 "checkout unknown variant -> 400"
-chk "$($C -o /dev/null -w '%{http_code}' -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json' -d "{\"customerName\":\"x\",\"customerPhone\":\"+996700000000\",\"region\":\"Бишкек\",\"items\":[{\"variantId\":$VID,\"productName\":\"x\",\"sku\":\"x\",\"attributes\":{},\"unitPrice\":1,\"quantity\":99999}]}")" 409 "checkout over-stock -> 409"
+# Same file route for the negative cases: the service now rejects a mangled region with 400,
+# which would mask the unknown-variant / over-stock answers these checks are after.
+cat > "$WORK/cart-unknown.json" <<EOF
+{"customerName":"x","customerPhone":"+996700000000","region":"Бишкек","items":[{"variantId":999999,"productName":"x","sku":"x","attributes":{},"unitPrice":1,"quantity":1}]}
+EOF
+cat > "$WORK/cart-overstock.json" <<EOF
+{"customerName":"x","customerPhone":"+996700000000","region":"Бишкек","items":[{"variantId":$VID,"productName":"x","sku":"x","attributes":{},"unitPrice":1,"quantity":99999}]}
+EOF
+chk "$($C -o /dev/null -w '%{http_code}' -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json; charset=utf-8' --data-binary "@$WORK/cart-unknown.json")" 400 "checkout unknown variant -> 400"
+chk "$($C -o /dev/null -w '%{http_code}' -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json; charset=utf-8' --data-binary "@$WORK/cart-overstock.json")" 409 "checkout over-stock -> 409"
 
 echo "== inventory deduction (RabbitMQ round-trip) =="
 STK=""
