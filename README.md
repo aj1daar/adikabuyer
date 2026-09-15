@@ -51,6 +51,12 @@ cp .env.prod.example .env.prod
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 
+## Monitoring
+
+A `monitor` sidecar (`scripts/monitor.sh`, same postgres image as the backups) checks every minute: catalog-service, order-service, api-gateway, Caddy, Postgres, RabbitMQ, MinIO, disk usage (alert at 85%, `MONITOR_DISK_ALERT_PERCENT`) and whether a database backup newer than two backup intervals exists. It messages every registered Telegram admin chat (the same bot and `telegram_admin` table as order notifications) only when a check changes state — one "⚠️ … не отвечает" when it breaks, one "✅ … снова работает" when it recovers. Without `TELEGRAM_BOT_TOKEN` it just logs (`docker compose -f docker-compose.prod.yml logs monitor`); one pass by hand: `docker compose -f docker-compose.prod.yml exec monitor sh /scripts/monitor.sh --once`.
+
+The sidecar can't report the whole VPS going down, so add one free external check as well: e.g. UptimeRobot → HTTP(s) monitor on `https://adikabuyer.kg` every 5 minutes, with its Telegram integration pointed at your chat.
+
 ## Backups
 
 The full stack runs a `db-backup` sidecar (`scripts/backup-db.sh`, invoked through `sh` so it runs regardless of the file's exec bit; `.gitattributes` keeps every `*.sh` on LF so Windows checkouts bind-mount a runnable script): one `pg_dump` of **both** databases on boot and every `BACKUP_INTERVAL_SECONDS` (default 24h), gzipped into the `db-backups` volume, pruned after `BACKUP_RETENTION_DAYS` (default 14). It ships with the stack — a normal deploy starts it, nothing to install on the server.

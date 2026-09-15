@@ -55,6 +55,33 @@ services:
     networks:
       - adikabuyer-network
 
+  # Watchdog: checks every service, Postgres, disk and backup freshness each minute and
+  # messages the registered Telegram admin chats when something breaks or recovers
+  # (scripts/monitor.sh). Silent — logs only — while TELEGRAM_BOT_TOKEN is unset.
+  monitor:
+    image: postgres:16-alpine
+    container_name: adikabuyer-monitor
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 64m
+    depends_on:
+      - postgres-db
+    environment:
+      DOMAIN: ${DOMAIN}
+      POSTGRES_USER: ${POSTGRES_USER:-adikabuyer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-adikabuyer}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      MONITOR_INTERVAL_SECONDS: ${MONITOR_INTERVAL_SECONDS:-60}
+      MONITOR_DISK_ALERT_PERCENT: ${MONITOR_DISK_ALERT_PERCENT:-85}
+    entrypoint: ["sh", "/scripts/monitor.sh"]
+    volumes:
+      - ./scripts:/scripts:ro
+      - db-backups:/backups:ro
+    networks:
+      - adikabuyer-network
+
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: adikabuyer-rabbitmq
