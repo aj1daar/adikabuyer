@@ -39,6 +39,11 @@ app:
     # Bishkek-only shop: courier inside the city, or the customer picks the order up.
     bishkek-fee: 300
     pickup-fee: 0
+  security:
+    checkout:
+      # Anonymous checkouts per client IP per window; prod default 5 per 10 minutes.
+      max-per-ip: ${APP_SECURITY_CHECKOUT_MAX_PER_IP:5}
+      window-seconds: ${APP_SECURITY_CHECKOUT_WINDOW_SECONDS:600}
   jwt:
     # Dev-only fallback; must match catalog-service. Real value comes from APP_JWT_SECRET
     # (enforced in prod by docker-compose.prod.yml `:?`). Never deploy the fallback.

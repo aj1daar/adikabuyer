@@ -42,6 +42,9 @@ class SecurityConfigTest {
     @MockitoBean
     private TelegramAdminService telegramAdminService;
 
+    @MockitoBean
+    private CheckoutRateLimiter checkoutRateLimiter;
+
     private String token(String role) {
         SecretKey key = Keys.hmacShaKeyFor(JWT_SECRET.getBytes(StandardCharsets.UTF_8));
         Instant now = Instant.now();

@@ -13,6 +13,7 @@ what got fixed, and what is a known limitation with the reasoning for leaving it
 | Media upload (stored XSS) | `S3StorageService` validates the file's magic bytes (JPEG/PNG/GIF/WebP) and rejects anything else — an `image/svg+xml` or HTML payload can no longer be stored. Stored content type is derived from the bytes, never the client header. `MediaController` allowlists declared types. Caddy serves `/media/*` with `Content-Disposition: attachment` + `nosniff`. |
 | Request body cap | Caddy rejects `/api/orders/*` bodies over 256KB with 413 (a 50-line cart is ~24KB), so the anonymous checkout endpoint can't be fed megabytes of JSON to parse. |
 | Response headers | Caddy sends CSP (`script-src 'self'`; `style-src`/`font-src` also allow Google Fonts for the Unbounded typeface; `frame-ancestors 'none'`), `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, explicit HSTS with `includeSubDomains`; drops `Server`. |
+| Checkout throttle | `POST /api/orders/checkout` is anonymous, so `CheckoutRateLimiter` caps it per client IP (keyed on the Caddy-stamped `X-Real-Ip`): 5 orders per 10 minutes by default (`APP_SECURITY_CHECKOUT_MAX_PER_IP` / `_WINDOW_SECONDS`), then 429. No global cap on purpose — one noisy client must not block every real customer. Local dev and CI raise it to 100. |
 | Auth logging | Failed logins (with sanitised username + client IP), successful logins, and rate-limit rejections are logged. `LoginRequest` now bounds field sizes (username ≤ 100, password ≤ 72 — bcrypt's limit). |
 | Mutation audit log | `AuditLoggingFilter` (both services, inside the security chain) logs one line per POST/PUT/PATCH/DELETE to `/api/**` — `method path by <principal> -> <status>` — so allowed *and* denied (401/403) admin actions leave a trail on the `audit` logger. |
 | Dependency visibility | `.github/dependabot.yml` (maven/npm/docker/actions, weekly) + a Trivy `fs` scan and `npm audit --audit-level=high` in CI. |
@@ -52,7 +53,7 @@ what got fixed, and what is a known limitation with the reasoning for leaving it
   raw-HTML sink in the frontend. Conscious trade-off vs. an httpOnly cookie + CSRF machinery for a
   single-admin app.
 - **Non-revocable JWT, no refresh token, no MFA.** Single-admin simplicity; 1h expiry caps exposure.
-- **In-memory rate limiter.** Fine for one instance; needs shared state (Redis) or a gateway/Caddy
+- **In-memory rate limiters** (login and checkout). Fine for one instance; needs shared state (Redis) or a gateway/Caddy
   limiter before scaling out.
 - **`postgres`, `rabbitmq`, `caddy`** base images are pinned to a major/minor tag, not a digest
   (MinIO is digest-pinned; `appleboy/ssh-action` is SHA-pinned). Dependabot's docker ecosystem
