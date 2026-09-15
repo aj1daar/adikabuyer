@@ -3,7 +3,7 @@ import type { AxiosError } from 'axios'
 import apiErrorMessage, { type ApiErrorBody } from '../utils/apiErrorMessage'
 
 export default function notifyApiError(error: AxiosError<ApiErrorBody>): Promise<never> {
-  if (error.code === 'ERR_CANCELED') {
+  if (error.code === 'ERR_CANCELED' || error.config?.skipErrorToast) {
     return Promise.reject(error)
   }
 

@@ -188,12 +188,32 @@ describe('ProductPage', () => {
     expect(screen.queryByRole('button', { name: 'Показать ещё 9' })).not.toBeInTheDocument()
   })
 
-  it('shows an error message when loading fails', async () => {
-    mockedGet.mockRejectedValue(new Error('boom'))
+  it('shows a Russian error message when loading fails', async () => {
+    mockedGet.mockRejectedValue({ isAxiosError: true, message: 'Request failed with status code 502', response: { status: 502, data: {} } })
 
     renderPage()
 
-    await waitFor(() => expect(screen.getByText('boom')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Сервис временно недоступен. Попробуйте ещё раз.'))
+    expect(screen.queryByText(/Request failed/)).not.toBeInTheDocument()
+  })
+
+  it.each([404, 400])('shows the not-found block instead of an error when the API answers %i', async (status) => {
+    mockedGet.mockRejectedValue({ isAxiosError: true, message: 'Request failed', response: { status, data: { message: 'Product not found: 7' } } })
+
+    renderPage()
+
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('товарне найден'))
+    expect(screen.getByRole('link', { name: 'В каталог' })).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('asks the client not to toast, since the page shows the failure itself', async () => {
+    mockedGet.mockResolvedValue({ data: product })
+
+    renderPage()
+
+    await waitFor(() => expect(mockedGet).toHaveBeenCalled())
+    expect(mockedGet.mock.calls[0][1]).toMatchObject({ skipErrorToast: true })
   })
 
   it('falls back to a flat variant list when variants carry no attributes', async () => {

@@ -37,12 +37,12 @@ beforeEach(() => {
 })
 
 describe('submitCheckout', () => {
-  it('posts the cart payload to the checkout endpoint', async () => {
+  it('posts the cart payload to the checkout endpoint without a toast, since the drawer shows errors inline', async () => {
     mockedPost.mockResolvedValueOnce({ data: response } as never)
 
     await submitCheckout(payload)
 
-    expect(mockedPost).toHaveBeenCalledWith('/checkout', payload)
+    expect(mockedPost).toHaveBeenCalledWith('/checkout', payload, { skipErrorToast: true })
   })
 
   it('resolves with the response data', async () => {

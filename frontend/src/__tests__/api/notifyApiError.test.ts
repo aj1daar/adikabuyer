@@ -70,6 +70,14 @@ describe('notifyApiError', () => {
     await expect(notifyApiError(error)).rejects.toBe(error)
   })
 
+  it('does not show a toast when the caller handles the error inline', async () => {
+    const error = { ...buildError(404, 'Product not found: 7'), config: { skipErrorToast: true } } as AxiosError<ApiErrorBody>
+
+    await expect(notifyApiError(error)).rejects.toBe(error)
+
+    expect(mockedToastError).not.toHaveBeenCalled()
+  })
+
   it('does not show a toast when the request was canceled', async () => {
     const error = { ...buildError(undefined), code: 'ERR_CANCELED' }
 
