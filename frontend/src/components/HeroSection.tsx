@@ -73,7 +73,7 @@ export default function HeroSection() {
             <div className="relative sm:contents">
               <HeroBubbles
                 overlay
-                bubbles={[{ text: 'жми сюда 🔥', rotate: -6, className: 'right-1 -top-2' }]}
+                bubbles={[{ text: 'жми сюда 🔥', rotate: -6, className: 'right-1 bottom-full -mb-2' }]}
               />
               <MotionLink
                 to="/catalog"
@@ -90,7 +90,7 @@ export default function HeroSection() {
             <div className="relative sm:contents">
               <HeroBubbles
                 overlay
-                bubbles={[{ text: 'а тут инфа 👀', tone: 'pink', rotate: 5, className: 'left-1 -top-2' }]}
+                bubbles={[{ text: 'а тут инфа 👀', tone: 'pink', rotate: 5, className: 'left-1 bottom-full -mb-2' }]}
               />
               <MotionLink
                 to="/about"
