@@ -30,14 +30,14 @@ export default function NavigationBar() {
     : { duration: 0.2, ease: [0.16, 1, 0.3, 1] as const }
 
   const desktopLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `relative font-grotesk text-sm font-bold transition after:absolute after:-bottom-1.5 after:left-0 after:h-[3px] after:w-full after:origin-left after:rounded-full after:bg-bubblegum after:transition-transform after:duration-200 after:content-[''] ${
+    `relative font-grotesk text-sm font-bold transition before:absolute before:-inset-x-2 before:-inset-y-3 before:content-[''] after:absolute after:-bottom-1.5 after:left-0 after:h-[3px] after:w-full after:origin-left after:rounded-full after:bg-bubblegum after:transition-transform after:duration-200 after:content-[''] ${
       isActive
         ? 'text-bubblegum-dark after:scale-x-100'
         : 'text-ink/60 hover:text-ink after:scale-x-0 hover:after:scale-x-100'
     }`
 
   const tabLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex flex-1 flex-col items-center gap-1 py-3 font-grotesk text-xs font-bold transition ${
+    `flex min-h-11 flex-1 flex-col items-center justify-center gap-1 py-3 font-grotesk text-xs font-bold transition ${
       isActive ? 'text-bubblegum-dark' : 'text-ink/50'
     }`
 
@@ -101,7 +101,7 @@ export default function NavigationBar() {
           <motion.button
             type="button"
             onClick={toggleCart}
-            className="relative whitespace-nowrap rounded-pill border-2 border-black bg-silver px-3 py-2 font-grotesk text-sm font-bold tabular-nums min-[380px]:px-4 text-ink shadow-[3px_3px_0_0_#000] transition-[background-color,color] hover:bg-bubblegum hover:text-white"
+            className="relative whitespace-nowrap rounded-pill border-2 border-black bg-silver px-3 py-2 font-grotesk text-sm font-bold tabular-nums after:absolute after:inset-x-0 after:-inset-y-1.5 after:content-[''] min-[380px]:px-4 text-ink shadow-[3px_3px_0_0_#000] transition-[background-color,color] hover:bg-bubblegum hover:text-white"
             whileHover={reduceMotion ? { scale: 1.03 } : { y: -3 }}
             whileTap={{ y: 0, scale: 0.95 }}
             transition={springy}
