@@ -210,7 +210,7 @@ export default function ProductPage() {
           {error && (
             <p
               role="alert"
-              className="mt-8 inline-block rounded-2xl border-2 border-black bg-bubblegum-light px-5 py-3 font-grotesk text-sm font-bold text-ink shadow-[4px_4px_0_0_#000]"
+              className="mt-8 block w-fit max-w-full rounded-2xl border-2 border-black bg-bubblegum-light px-5 py-3 font-grotesk text-sm font-bold text-ink shadow-[4px_4px_0_0_#000]"
             >
               {error}
             </p>
