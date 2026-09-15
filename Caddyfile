@@ -23,6 +23,14 @@
     }
 
     handle /api/* {
+        # A real cart (at most 50 lines) is a few KB; cap public order bodies well above
+        # that so an anonymous client can't make the services parse megabytes of JSON.
+        # Media uploads keep their own 5MB Spring multipart limit.
+        @orders path /api/orders/*
+        request_body @orders {
+            max_size 256KB
+        }
+
         reverse_proxy api-gateway:8080 {
             # Caddy is the only ingress (gateway/services publish no host ports).
             # Overwrite the client's forwarding headers with the real TCP peer, and
