@@ -46,7 +46,7 @@ app:
       window-seconds: ${APP_SECURITY_CHECKOUT_WINDOW_SECONDS:600}
   jwt:
     # Dev-only fallback; must match catalog-service. Real value comes from APP_JWT_SECRET
-    # (enforced in prod by docker-compose.prod.yml `:?`). Never deploy the fallback.
+    # (enforced in prod by docker-compose.prod.yml `:?` and by application-prod.yml, which has no fallback). Never deploy the fallback.
     secret: ${APP_JWT_SECRET:dev-only-insecure-jwt-secret-not-for-production-000000000000}
   telegram:
     bot-token: ${TELEGRAM_BOT_TOKEN:}

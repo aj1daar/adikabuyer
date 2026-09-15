@@ -57,7 +57,7 @@ app:
     dead-letter-routing-key: order.new.dlq
   jwt:
     # Dev-only fallback. Real value MUST come from APP_JWT_SECRET (enforced in prod by
-    # docker-compose.prod.yml `:?` and application-prod.yml). Never deploy the fallback.
+    # docker-compose.prod.yml `:?` and by application-prod.yml, which has no fallback). Never deploy the fallback.
     secret: ${APP_JWT_SECRET:dev-only-insecure-jwt-secret-not-for-production-000000000000}
     expiration-ms: 3600000
   security:
