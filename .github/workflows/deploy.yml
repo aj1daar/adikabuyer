@@ -1,7 +1,11 @@
 name: Deploy
 
+# Deploys only after CI has passed for a push to main — a red build or a failing
+# e2e smoke never reaches production. workflow_dispatch stays as a manual escape hatch.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -11,6 +15,9 @@ concurrency:
 
 jobs:
   deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     steps:
       - name: Deploy over SSH
@@ -24,7 +31,8 @@ jobs:
           script: |
             cd /opt/adikabuyer
             git fetch origin main
-            git reset --hard origin/main
+            # the exact commit CI just verified, not whatever main points at by now
+            git reset --hard ${{ github.event.workflow_run.head_sha || 'origin/main' }}
             echo '${{ secrets.ENV_PROD_B64 }}' | base64 -d > .env.prod
             docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build --remove-orphans
             # Force-recreate the components that resolve other containers by name, so a
