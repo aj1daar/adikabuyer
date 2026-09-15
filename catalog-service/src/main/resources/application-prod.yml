@@ -4,6 +4,8 @@ spring:
 
 app:
   jwt:
-    secret: ${APP_JWT_SECRET:?APP_JWT_SECRET must be set in production}
+    # No default on purpose: an unset variable fails startup with "Could not resolve placeholder".
+    # (Spring has no shell-style `:?` — `${X:?msg}` would silently use "?msg" as the secret.)
+    secret: ${APP_JWT_SECRET}
   security:
-    admin-password-hash: ${APP_SECURITY_ADMIN_PASSWORD_HASH:?APP_SECURITY_ADMIN_PASSWORD_HASH must be set in production}
+    admin-password-hash: ${APP_SECURITY_ADMIN_PASSWORD_HASH}

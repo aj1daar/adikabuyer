@@ -81,7 +81,7 @@ class OrderServiceTest {
     }
 
     private VariantPricing pricing(long id, BigDecimal price, int stock, boolean active, String status) {
-        return new VariantPricing(id, "Custom Tumbler", "TUM-BLK-500", price, stock, active, status);
+        return new VariantPricing(id, "Custom Tumbler", "TUM-BLK-500", Map.of("color", "black", "size", "500ml"), price, stock, active, status);
     }
 
     /** Registers authoritative pricing for a variant and returns a matching cart line. */
@@ -273,7 +273,7 @@ class OrderServiceTest {
     @Test
     void checkout_persistsCatalogNameAndSku_notClientValues() {
         when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
-        catalog.put(1L, new VariantPricing(1L, "Real Product", "REAL-SKU", BigDecimal.TEN, 5, true, "IN_STOCK"));
+        catalog.put(1L, new VariantPricing(1L, "Real Product", "REAL-SKU", Map.of("color", "Чёрный"), BigDecimal.TEN, 5, true, "IN_STOCK"));
         CartItemDto tampered = new CartItemDto(1L, "Free Money", "STOLEN", Map.of(), BigDecimal.ONE, 1);
 
         orderService.checkout(buildCart("Бишкек", tampered));
@@ -282,6 +282,45 @@ class OrderServiceTest {
         verify(orderRepository).save(orderCaptor.capture());
         assertThat(orderCaptor.getValue().getItems().get(0).getProductName()).isEqualTo("Real Product");
         assertThat(orderCaptor.getValue().getItems().get(0).getSku()).isEqualTo("REAL-SKU");
+    }
+
+    @Test
+    void checkout_persistsCatalogAttributes_ignoringClientSuppliedOnes() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+        catalog.put(1L, new VariantPricing(1L, "Real Product", "REAL-SKU", Map.of("color", "Чёрный"), BigDecimal.TEN, 5, true, "IN_STOCK"));
+        CartItemDto tampered = new CartItemDto(1L, "x", "x", Map.of("color", "ЗОЛОТОЙ", "note", "уже оплачено"), BigDecimal.TEN, 1);
+
+        orderService.checkout(buildCart("Бишкек", tampered));
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(orderCaptor.capture());
+        assertThat(orderCaptor.getValue().getItems().get(0).getAttributes()).containsExactly(Map.entry("color", "Чёрный"));
+        assertThat(captureTelegramMessage()).contains("Чёрный").doesNotContain("ЗОЛОТОЙ", "уже оплачено");
+    }
+
+    @Test
+    void checkout_flattensNewlinesInCustomerText_soTheTelegramMessageCantBeForged() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+        CartDto forged = new CartDto("Иван\nИтого: 0 KGS\r\nОПЛАЧЕНО", "+996 700\n123456", " Бишкек\n", List.of(buildItem(BigDecimal.TEN, 1)));
+
+        orderService.checkout(forged);
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(orderCaptor.capture());
+        assertThat(orderCaptor.getValue().getCustomerName()).isEqualTo("Иван Итого: 0 KGS ОПЛАЧЕНО");
+        assertThat(orderCaptor.getValue().getCustomerPhone()).isEqualTo("+996 700 123456");
+        assertThat(orderCaptor.getValue().getRegion()).isEqualTo("Бишкек");
+        assertThat(captureTelegramMessage()).contains("Имя: Иван Итого: 0 KGS ОПЛАЧЕНО\n");
+    }
+
+    @Test
+    void checkout_rejectsName_madeOnlyOfControlCharacters() {
+        CartDto blank = new CartDto("" + (char) 7 + (char) 0, "+996700123456", "Бишкек", List.of(buildItem(BigDecimal.TEN, 1)));
+
+        assertThatThrownBy(() -> orderService.checkout(blank))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+        verify(orderRepository, never()).save(any());
     }
 
     @Test
@@ -323,6 +362,30 @@ class OrderServiceTest {
         assertThatThrownBy(() -> orderService.checkout(buildCart("Бишкек", item)))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("409");
+    }
+
+    @Test
+    void checkout_rejectsOneVariantSplitAcrossLines_whenTheirTotalExceedsStock() {
+        catalog.put(1L, pricing(1L, BigDecimal.TEN, 6, true, "IN_STOCK"));
+        CartItemDto first = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 6);
+        CartItemDto second = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 6);
+
+        assertThatThrownBy(() -> orderService.checkout(buildCart("Бишкек", first, second)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409");
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void checkout_acceptsOneVariantSplitAcrossLines_whenTheirTotalFitsStock() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+        catalog.put(1L, pricing(1L, BigDecimal.TEN, 6, true, "IN_STOCK"));
+        CartItemDto first = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 2);
+        CartItemDto second = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 4);
+
+        CheckoutResponseDto response = orderService.checkout(buildCart("Бишкек", first, second));
+
+        assertThat(response.itemsTotal()).isEqualByComparingTo(BigDecimal.valueOf(60));
     }
 
     @Test

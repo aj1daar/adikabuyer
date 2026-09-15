@@ -40,28 +40,42 @@ describe('notifyApiError', () => {
     expect(mockedToastError).toHaveBeenCalledWith('Сессия истекла. Войдите снова.')
   })
 
-  it('shows the server-provided message for non-401 errors', async () => {
+  it('translates a known server message instead of showing the English text', async () => {
     await expect(notifyApiError(buildError(409, 'One or more variant SKUs already exist'))).rejects.toBeDefined()
 
-    expect(mockedToastError).toHaveBeenCalledWith('One or more variant SKUs already exist')
+    expect(mockedToastError).toHaveBeenCalledWith('Такой артикул (SKU) уже есть у другого варианта.')
   })
 
-  it('shows a generic fallback message when the server provides none', async () => {
+  it('never shows an unknown English server message, falling back by status instead', async () => {
+    await expect(notifyApiError(buildError(409, 'Something brand new went wrong'))).rejects.toBeDefined()
+
+    expect(mockedToastError).toHaveBeenCalledWith('Данные изменились — обновите страницу и попробуйте снова.')
+  })
+
+  it('shows a service-unavailable message for server errors', async () => {
     await expect(notifyApiError(buildError(500))).rejects.toBeDefined()
 
-    expect(mockedToastError).toHaveBeenCalledWith('Произошла ошибка. Попробуйте ещё раз.')
+    expect(mockedToastError).toHaveBeenCalledWith('Сервис временно недоступен. Попробуйте ещё раз.')
   })
 
-  it('shows the fallback message when there is no response at all', async () => {
+  it('shows a connection message when there is no response at all', async () => {
     await expect(notifyApiError(buildError(undefined))).rejects.toBeDefined()
 
-    expect(mockedToastError).toHaveBeenCalledWith('Произошла ошибка. Попробуйте ещё раз.')
+    expect(mockedToastError).toHaveBeenCalledWith('Нет связи с сервером. Проверьте интернет и попробуйте ещё раз.')
   })
 
   it('always rejects with the original error', async () => {
     const error = buildError(404, 'Product not found: 99')
 
     await expect(notifyApiError(error)).rejects.toBe(error)
+  })
+
+  it('does not show a toast when the caller handles the error inline', async () => {
+    const error = { ...buildError(404, 'Product not found: 7'), config: { skipErrorToast: true } } as AxiosError<ApiErrorBody>
+
+    await expect(notifyApiError(error)).rejects.toBe(error)
+
+    expect(mockedToastError).not.toHaveBeenCalled()
   })
 
   it('does not show a toast when the request was canceled', async () => {

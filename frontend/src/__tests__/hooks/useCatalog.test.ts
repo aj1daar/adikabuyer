@@ -140,12 +140,12 @@ describe('useCatalog', () => {
   })
 
   it('sets an error message when the request fails', async () => {
-    mockedGet.mockRejectedValueOnce(new Error('Network Error'))
+    mockedGet.mockRejectedValueOnce({ isAxiosError: true, message: 'Network Error' })
 
     const { result } = renderHook(() => useCatalog())
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
-    expect(result.current.error).toBe('Network Error')
+    expect(result.current.error).toBe('Нет связи с сервером. Проверьте интернет и попробуйте ещё раз.')
   })
 })

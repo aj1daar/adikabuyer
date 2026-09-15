@@ -162,7 +162,7 @@ class S3StorageServiceTest {
 
         assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/png");
         assertThat(requestCaptor.getValue().key()).endsWith("-photo.png");
-        assertThat(bodyCaptor.getValue().contentLength()).isEqualTo(smallImageBytes.length);
+        assertThat(bodyCaptor.getValue().optionalContentLength()).contains((long) smallImageBytes.length);
     }
 
     private byte[] pngBytes(int width, int height) {

@@ -1,7 +1,10 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import OrdersTable from '../../../components/admin/OrdersTable'
+import useIsMobileViewport from '../../../hooks/useIsMobileViewport'
 import type { OrderDto } from '../../../types/order'
+
+vi.mock('../../../hooks/useIsMobileViewport')
 
 const order: OrderDto = {
   id: 'order-1',
@@ -18,6 +21,24 @@ const order: OrderDto = {
 const noop = () => {}
 
 describe('OrdersTable', () => {
+  beforeEach(() => {
+    vi.mocked(useIsMobileViewport).mockReturnValue(false)
+  })
+
+  it('shows each order as a card with a tap-to-call phone and a delete button on phones', () => {
+    vi.mocked(useIsMobileViewport).mockReturnValue(true)
+    const onDelete = vi.fn()
+    render(<OrdersTable orders={[{ ...order, customerPhone: '+996 (700) 00-00-00' }]} loading={false} error={null} onDelete={onDelete} />)
+
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    expect(screen.getByText('Jane Doe')).toBeInTheDocument()
+    expect(screen.getByText('2x Tumbler')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '+996 (700) 00-00-00' })).toHaveAttribute('href', 'tel:+996700000000')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }))
+    expect(onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 'order-1' }))
+  })
+
   it('shows a loading message on first load', () => {
     render(<OrdersTable orders={[]} loading error={null} onDelete={noop} />)
 

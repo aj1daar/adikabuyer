@@ -3,8 +3,10 @@ package com.adikabuyer.order.controller;
 import com.adikabuyer.order.dto.CheckoutResponseDto;
 import com.adikabuyer.order.dto.OrderDto;
 import com.adikabuyer.order.dto.TelegramAdminDto;
+import com.adikabuyer.order.security.CheckoutRateLimiter;
 import com.adikabuyer.order.service.OrderService;
 import com.adikabuyer.order.telegram.TelegramAdminService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
@@ -16,11 +18,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -45,12 +48,20 @@ class OrderControllerTest {
     @MockitoBean
     private TelegramAdminService telegramAdminService;
 
+    @MockitoBean
+    private CheckoutRateLimiter checkoutRateLimiter;
+
+    @BeforeEach
+    void allowCheckoutsByDefault() {
+        when(checkoutRateLimiter.isAllowed(anyString())).thenReturn(true);
+    }
+
     private String validCartJson() {
         return """
                 {
                   "customerName": "John Doe",
                   "customerPhone": "996700123456",
-                  "region": "bishkek",
+                  "region": "Бишкек",
                   "items": [
                     {
                       "variantId": 1,
@@ -78,6 +89,69 @@ class OrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderId").value("order-1"))
                 .andExpect(jsonPath("$.grandTotal").value(200));
+    }
+
+    @Test
+    void checkout_returns429_andSkipsTheOrder_whenTheClientIsOverTheLimit() throws Exception {
+        when(checkoutRateLimiter.isAllowed("203.0.113.7")).thenReturn(false);
+
+        mockMvc.perform(post("/api/orders/checkout")
+                        .header("X-Real-Ip", "203.0.113.7")
+                        .contentType("application/json")
+                        .content(validCartJson()))
+                .andExpect(status().isTooManyRequests());
+
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void checkout_keysTheLimitOnTheRealClientIp() throws Exception {
+        when(orderService.checkout(any())).thenReturn(new CheckoutResponseDto("order-1", BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE));
+
+        mockMvc.perform(post("/api/orders/checkout")
+                        .header("X-Real-Ip", " 198.51.100.4 ")
+                        .contentType("application/json")
+                        .content(validCartJson()))
+                .andExpect(status().isOk());
+
+        verify(checkoutRateLimiter).isAllowed(eq("198.51.100.4"));
+    }
+
+    @Test
+    void checkout_returns400_whenRegionIsNotBishkekOrPickup() throws Exception {
+        String payload = validCartJson().replace("\"Бишкек\"", "\"Ош\"");
+
+        mockMvc.perform(post("/api/orders/checkout")
+                        .contentType("application/json;charset=UTF-8")
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.region").exists());
+
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void checkout_acceptsPickup_inAnyCase() throws Exception {
+        when(orderService.checkout(any())).thenReturn(new CheckoutResponseDto("order-1", BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE));
+        String payload = validCartJson().replace("\"Бишкек\"", "\"Самовывоз\"");
+
+        mockMvc.perform(post("/api/orders/checkout")
+                        .contentType("application/json;charset=UTF-8")
+                        .content(payload))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void checkout_returns400_whenPhoneContainsLettersOrMarkup() throws Exception {
+        String payload = validCartJson().replace("\"996700123456\"", "\"<script>alert(1)</script>\"");
+
+        mockMvc.perform(post("/api/orders/checkout")
+                        .contentType("application/json;charset=UTF-8")
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.customerPhone").exists());
+
+        verifyNoInteractions(orderService);
     }
 
     @Test
@@ -197,7 +271,7 @@ class OrderControllerTest {
                 {
                   "customerName": "John Doe",
                   "customerPhone": "996700123456",
-                  "region": "bishkek",
+                  "region": "Бишкек",
                   "items": [%s]
                 }
                 """.formatted(items);

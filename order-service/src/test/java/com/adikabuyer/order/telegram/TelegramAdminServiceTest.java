@@ -13,6 +13,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.List;
 
+import static com.adikabuyer.order.telegram.TelegramAdminService.RegistrationResult.ALREADY_REGISTERED;
+import static com.adikabuyer.order.telegram.TelegramAdminService.RegistrationResult.REGISTERED;
+import static com.adikabuyer.order.telegram.TelegramAdminService.RegistrationResult.REJECTED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -31,16 +34,16 @@ class TelegramAdminServiceTest {
     void setUp() {
         telegramProperties = new TelegramProperties();
         telegramProperties.setRegistrationPassword("secret123");
-        telegramAdminService = new TelegramAdminService(telegramAdminRepository, telegramProperties);
+        telegramAdminService = new TelegramAdminService(telegramAdminRepository, telegramProperties, new RegistrationAttemptLimiter(5, 30, 3600));
     }
 
     @Test
     void tryRegister_savesNewAdmin_whenPasswordMatches() {
         when(telegramAdminRepository.existsById(42L)).thenReturn(false);
 
-        boolean result = telegramAdminService.tryRegister(42L, "john", "secret123");
+        TelegramAdminService.RegistrationResult result = telegramAdminService.tryRegister(42L, "john", "secret123");
 
-        assertThat(result).isTrue();
+        assertThat(result).isEqualTo(REGISTERED);
         ArgumentCaptor<TelegramAdmin> captor = ArgumentCaptor.forClass(TelegramAdmin.class);
         verify(telegramAdminRepository).save(captor.capture());
         assertThat(captor.getValue().getChatId()).isEqualTo(42L);
@@ -51,37 +54,66 @@ class TelegramAdminServiceTest {
     void tryRegister_trimsWhitespace_beforeMatching() {
         when(telegramAdminRepository.existsById(1L)).thenReturn(false);
 
-        assertThat(telegramAdminService.tryRegister(1L, "john", "  secret123  ")).isTrue();
+        assertThat(telegramAdminService.tryRegister(1L, "john", "  secret123  ")).isEqualTo(REGISTERED);
     }
 
     @Test
     void tryRegister_returnsFalse_whenPasswordDoesNotMatch() {
-        boolean result = telegramAdminService.tryRegister(42L, "john", "wrong-password");
+        TelegramAdminService.RegistrationResult result = telegramAdminService.tryRegister(42L, "john", "wrong-password");
 
-        assertThat(result).isFalse();
+        assertThat(result).isEqualTo(REJECTED);
         verify(telegramAdminRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
     void tryRegister_returnsFalse_whenMessageTextIsNull() {
-        assertThat(telegramAdminService.tryRegister(42L, "john", null)).isFalse();
+        assertThat(telegramAdminService.tryRegister(42L, "john", null)).isEqualTo(REJECTED);
     }
 
     @Test
     void tryRegister_returnsFalse_whenRegistrationPasswordIsNotConfigured() {
         telegramProperties.setRegistrationPassword("");
 
-        assertThat(telegramAdminService.tryRegister(42L, "john", "")).isFalse();
+        assertThat(telegramAdminService.tryRegister(42L, "john", "")).isEqualTo(REJECTED);
     }
 
     @Test
     void tryRegister_isIdempotent_whenAlreadyRegistered() {
         when(telegramAdminRepository.existsById(42L)).thenReturn(true);
 
-        boolean result = telegramAdminService.tryRegister(42L, "john", "secret123");
+        TelegramAdminService.RegistrationResult result = telegramAdminService.tryRegister(42L, "john", "secret123");
 
-        assertThat(result).isTrue();
+        assertThat(result).isEqualTo(ALREADY_REGISTERED);
         verify(telegramAdminRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void tryRegister_locksTheChatOut_afterFiveWrongGuesses_evenForTheRightPassword() {
+        for (int i = 0; i < 5; i++) {
+            assertThat(telegramAdminService.tryRegister(42L, "attacker", "guess-" + i)).isEqualTo(REJECTED);
+        }
+
+        assertThat(telegramAdminService.tryRegister(42L, "attacker", "secret123")).isEqualTo(REJECTED);
+        verify(telegramAdminRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void tryRegister_stopsAllRegistrations_onceTheGlobalCapIsSpentAcrossManyChats() {
+        for (long chat = 1; chat <= 30; chat++) {
+            telegramAdminService.tryRegister(chat, null, "guess");
+        }
+
+        assertThat(telegramAdminService.tryRegister(999L, "late", "secret123")).isEqualTo(REJECTED);
+    }
+
+    @Test
+    void tryRegister_doesNotCountBotCommands_asPasswordGuesses() {
+        when(telegramAdminRepository.existsById(42L)).thenReturn(false);
+        for (int i = 0; i < 10; i++) {
+            assertThat(telegramAdminService.tryRegister(42L, "john", "/start")).isEqualTo(REJECTED);
+        }
+
+        assertThat(telegramAdminService.tryRegister(42L, "john", "secret123")).isEqualTo(REGISTERED);
     }
 
     @Test

@@ -36,11 +36,11 @@ describe('useTelegramAdmins', () => {
   })
 
   it('sets an error message when the fetch fails', async () => {
-    mockedGetTelegramAdmins.mockRejectedValueOnce(new Error('boom'))
+    mockedGetTelegramAdmins.mockRejectedValueOnce({ isAxiosError: true, message: 'Request failed with status code 503', response: { status: 503, data: {} } })
 
     const { result } = renderHook(() => useTelegramAdmins(true))
 
-    await waitFor(() => expect(result.current.error).toBe('boom'))
+    await waitFor(() => expect(result.current.error).toBe('Сервис временно недоступен. Попробуйте ещё раз.'))
     expect(result.current.admins).toEqual([])
   })
 })

@@ -22,6 +22,9 @@ public class TelegramUpdatePoller {
             "Вы отключены от уведомлений о заказах Adika Buyer.";
     private static final String NOT_REGISTERED_MESSAGE =
             "Вы и так не подписаны на уведомления.";
+    private static final String NEW_ADMIN_ALERT =
+            "К уведомлениям о заказах подключился новый чат: %s (id %d). "
+                    + "Если это не ваш коллега — смените пароль регистрации бота и отключите этот чат.";
 
     private final TelegramApiClient telegramApiClient;
     private final TelegramAdminService telegramAdminService;
@@ -79,10 +82,33 @@ public class TelegramUpdatePoller {
         if (text != null && text.equalsIgnoreCase("/stop")) {
             boolean removed = telegramAdminService.unregister(chatId);
             telegramApiClient.sendMessage(chatId, removed ? DISCONNECTED_MESSAGE : NOT_REGISTERED_MESSAGE);
-        } else if (telegramAdminService.tryRegister(chatId, username, message.text())) {
+            return;
+        }
+
+        TelegramAdminService.RegistrationResult result = telegramAdminService.tryRegister(chatId, username, message.text());
+        if (result == TelegramAdminService.RegistrationResult.REGISTERED) {
+            telegramApiClient.sendMessage(chatId, CONNECTED_MESSAGE);
+            alertOtherAdmins(chatId, username);
+        } else if (result == TelegramAdminService.RegistrationResult.ALREADY_REGISTERED) {
             telegramApiClient.sendMessage(chatId, CONNECTED_MESSAGE);
         } else if (text != null && text.equalsIgnoreCase("/start")) {
             telegramApiClient.sendMessage(chatId, PROMPT_MESSAGE);
+        }
+    }
+
+    /** Every new subscriber receives customer names and phones, so the existing admins hear about it. */
+    private void alertOtherAdmins(long newChatId, String username) {
+        String who = username != null && !username.isBlank() ? "@" + username : "без имени пользователя";
+        String alert = NEW_ADMIN_ALERT.formatted(who, newChatId);
+        for (Long adminChatId : telegramAdminService.getAdminChatIds()) {
+            if (adminChatId == newChatId) {
+                continue;
+            }
+            try {
+                telegramApiClient.sendMessage(adminChatId, alert);
+            } catch (Exception e) {
+                log.warn("Failed to alert telegram admin chat {} about new registration", adminChatId, e);
+            }
         }
     }
 

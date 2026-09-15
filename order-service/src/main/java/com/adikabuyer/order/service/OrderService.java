@@ -55,8 +55,9 @@ public class OrderService {
     private String routingKey;
 
     @Transactional
-    public CheckoutResponseDto checkout(CartDto cart) {
-        // Never trust the client's prices/names/SKUs — re-resolve every line against
+    public CheckoutResponseDto checkout(CartDto submitted) {
+        CartDto cart = sanitize(submitted);
+        // Never trust the client's prices/names/SKUs/attributes — re-resolve every line against
         // catalog-service and reject anything unknown, inactive or out of stock.
         List<CartItemDto> items = repriceAgainstCatalog(cart.items());
 
@@ -92,9 +93,30 @@ public class OrderService {
         return new CheckoutResponseDto(orderId, itemsTotal, deliveryFee, grandTotal);
     }
 
+    /**
+     * Customer text lands in the admin panel and the Telegram message verbatim, so control
+     * characters (newlines included) are flattened to spaces — a name can't forge extra lines
+     * like "Итого: 0 KGS" into the notification.
+     */
+    private CartDto sanitize(CartDto cart) {
+        String name = singleLine(cart.customerName());
+        if (name == null || name.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Customer name is required");
+        }
+        return new CartDto(name, singleLine(cart.customerPhone()), singleLine(cart.region()), cart.items());
+    }
+
+    private static String singleLine(String value) {
+        return value == null ? null : value.replaceAll("\\p{Cntrl}", " ").replaceAll("\\s+", " ").strip();
+    }
+
     private List<CartItemDto> repriceAgainstCatalog(List<CartItemDto> requested) {
         Set<Long> variantIds = requested.stream().map(CartItemDto::variantId).collect(Collectors.toSet());
         Map<Long, VariantPricing> pricing = catalogClient.fetchPricing(variantIds);
+        // Stock is checked against the variant's total across every line, so splitting one
+        // variant over several cart lines can't slip past the check line by line.
+        Map<Long, Long> requestedPerVariant = requested.stream()
+                .collect(Collectors.groupingBy(CartItemDto::variantId, Collectors.summingLong(CartItemDto::quantity)));
 
         List<CartItemDto> priced = new ArrayList<>();
         for (CartItemDto item : requested) {
@@ -106,14 +128,15 @@ public class OrderService {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Variant is no longer available: " + item.variantId());
             }
             boolean stockChecked = !STATUS_PRE_ORDER.equals(variant.status());
-            if (stockChecked && (variant.stockQuantity() == null || variant.stockQuantity() < item.quantity())) {
+            if (stockChecked && (variant.stockQuantity() == null
+                    || variant.stockQuantity() < requestedPerVariant.get(item.variantId()))) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Not enough stock for variant: " + item.variantId());
             }
             priced.add(new CartItemDto(
                     item.variantId(),
                     variant.productName(),
                     variant.sku(),
-                    item.attributes(),
+                    variant.attributes(),
                     variant.unitPrice(),
                     item.quantity()
             ));

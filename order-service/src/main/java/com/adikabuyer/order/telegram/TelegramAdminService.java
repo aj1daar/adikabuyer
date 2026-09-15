@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.List;
 
@@ -14,27 +16,42 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TelegramAdminService {
 
+    public enum RegistrationResult {
+        /** The chat was just added to the admin list. */
+        REGISTERED,
+        /** The password matched a chat that was already subscribed. */
+        ALREADY_REGISTERED,
+        REJECTED
+    }
+
     private final TelegramAdminRepository telegramAdminRepository;
     private final TelegramProperties telegramProperties;
+    private final RegistrationAttemptLimiter registrationAttemptLimiter;
 
     @Transactional
-    public boolean tryRegister(long chatId, String username, String messageText) {
+    public RegistrationResult tryRegister(long chatId, String username, String messageText) {
         String password = telegramProperties.getRegistrationPassword();
-        if (password == null || password.isBlank()) {
-            return false;
+        if (password == null || password.isBlank() || messageText == null) {
+            return RegistrationResult.REJECTED;
         }
-        if (messageText == null || !messageText.strip().equals(password)) {
-            return false;
+        String candidate = messageText.strip();
+        // Bot commands (/start, /help, ...) are never password guesses, so they don't burn attempts.
+        if (candidate.startsWith("/") || !registrationAttemptLimiter.tryAcquire(chatId)) {
+            return RegistrationResult.REJECTED;
+        }
+        if (!MessageDigest.isEqual(candidate.getBytes(StandardCharsets.UTF_8), password.getBytes(StandardCharsets.UTF_8))) {
+            return RegistrationResult.REJECTED;
         }
 
-        if (!telegramAdminRepository.existsById(chatId)) {
-            telegramAdminRepository.save(TelegramAdmin.builder()
-                    .chatId(chatId)
-                    .username(username)
-                    .registeredAt(Instant.now())
-                    .build());
+        if (telegramAdminRepository.existsById(chatId)) {
+            return RegistrationResult.ALREADY_REGISTERED;
         }
-        return true;
+        telegramAdminRepository.save(TelegramAdmin.builder()
+                .chatId(chatId)
+                .username(username)
+                .registeredAt(Instant.now())
+                .build());
+        return RegistrationResult.REGISTERED;
     }
 
     @Transactional

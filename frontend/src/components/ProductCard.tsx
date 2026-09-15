@@ -172,7 +172,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
               type="button"
               onClick={stepImage(-1)}
               aria-label="Предыдущее фото"
-              className="absolute left-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[2px_2px_0_0_#000] transition hover:bg-bubblegum hover:text-white active:scale-90 max-sm:h-7 max-sm:w-7"
+              className="absolute left-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 after:absolute after:-inset-3 after:content-[''] items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[2px_2px_0_0_#000] transition hover:bg-bubblegum hover:text-white active:scale-90 max-sm:h-7 max-sm:w-7"
             >
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
                 <path d="M15 18l-6-6 6-6" />
@@ -182,7 +182,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
               type="button"
               onClick={stepImage(1)}
               aria-label="Следующее фото"
-              className="absolute right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[2px_2px_0_0_#000] transition hover:bg-bubblegum hover:text-white active:scale-90 max-sm:h-7 max-sm:w-7"
+              className="absolute right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 after:absolute after:-inset-3 after:content-[''] items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[2px_2px_0_0_#000] transition hover:bg-bubblegum hover:text-white active:scale-90 max-sm:h-7 max-sm:w-7"
             >
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
                 <path d="M9 6l6 6-6 6" />
@@ -222,7 +222,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
 
         <Link
           to={`/catalog/${product.id}`}
-          className={hideNameOnMobile ? 'max-sm:hidden' : ''}
+          className={`relative block after:absolute after:-inset-y-3.5 after:inset-x-0 after:content-[''] ${hideNameOnMobile ? 'max-sm:hidden' : ''}`}
         >
           <h3
             className={`line-clamp-2 min-h-[3.5rem] font-grotesk text-lg font-bold text-ink transition hover:text-bubblegum-dark ${
@@ -268,20 +268,20 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
                 aria-label={color}
                 title={color}
                 aria-pressed={activeColor === color}
-                className={`h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 transition active:scale-90 ${swatchSizeClass} ${
+                className={`relative h-9 w-9 shrink-0 rounded-full border-2 transition after:absolute after:-inset-x-[3px] after:-inset-y-3.5 after:content-[''] active:scale-90 ${swatchSizeClass} ${
                   activeColor === color
                     ? 'border-bubblegum-dark shadow-[2px_2px_0_0_#E8799F]'
                     : 'border-black hover:border-bubblegum-dark'
                 }`}
               >
-                <img src={colorSwatches[color]} alt="" className="h-full w-full object-cover" />
+                <img src={colorSwatches[color]} alt="" className="h-full w-full rounded-full object-cover" />
               </button>
             ))}
             {hiddenSwatchCount > 0 && (
               <Link
                 to={`/catalog/${product.id}`}
                 aria-label={`Ещё ${hiddenSwatchCount} цвет(а/ов)`}
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-silver font-grotesk text-xs font-bold text-ink transition hover:border-bubblegum-dark hover:bg-bubblegum hover:text-white max-sm:text-[10px] ${swatchSizeClass}`}
+                className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-silver font-grotesk after:absolute after:-inset-x-[3px] after:-inset-y-3.5 after:content-[''] text-xs font-bold text-ink transition hover:border-bubblegum-dark hover:bg-bubblegum hover:text-white max-sm:text-[10px] ${swatchSizeClass}`}
               >
                 +{hiddenSwatchCount}
               </Link>
@@ -309,7 +309,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
             onClick={handleAddToCart}
             disabled={!shownVariant}
             aria-label="Добавить в корзину"
-            className="hidden w-full items-center justify-center rounded-pill border-2 border-black bg-ink py-2 text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40 max-sm:flex"
+            className="relative hidden w-full items-center justify-center rounded-pill border-2 border-black bg-ink py-2 text-white transition after:absolute after:inset-x-0 after:-inset-y-2 after:content-[''] hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40 max-sm:flex"
           >
             <svg
               aria-hidden="true"
@@ -333,7 +333,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
             onClick={() => setQuantity((current) => Math.max(1, current - 1))}
             disabled={!shownVariant || quantity <= 1}
             aria-label="Уменьшить количество"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white active:scale-90 active:bg-bubblegum-dark active:text-white disabled:cursor-not-allowed disabled:opacity-30"
+            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum hover:text-white active:scale-90 active:bg-bubblegum-dark active:text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
             −
           </button>
@@ -345,7 +345,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
             onClick={() => setQuantity((current) => current + 1)}
             disabled={!shownVariant}
             aria-label="Увеличить количество"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white active:scale-90 active:bg-bubblegum-dark active:text-white disabled:cursor-not-allowed disabled:opacity-30"
+            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum hover:text-white active:scale-90 active:bg-bubblegum-dark active:text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
             +
           </button>

@@ -53,7 +53,7 @@ export default function WeightTariffNote({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className={`relative inline-flex items-center gap-1 font-grotesk text-xs font-bold text-ink/50 underline decoration-dotted underline-offset-4 transition after:absolute after:-inset-3 after:content-[''] hover:text-bubblegum-dark ${className}`}
+        className={`relative inline-flex items-center gap-1 font-grotesk text-xs font-bold text-ink/50 underline decoration-dotted underline-offset-4 transition after:absolute after:-inset-x-3 after:-inset-y-3.5 after:content-[''] hover:text-bubblegum-dark ${className}`}
       >
         {label}
         <span aria-hidden className="text-[0.9em]">?</span>

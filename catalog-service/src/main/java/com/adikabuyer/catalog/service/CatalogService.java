@@ -100,6 +100,7 @@ public class CatalogService {
                         variant.getId(),
                         variant.getProduct().getName(),
                         variant.getSku(),
+                        variant.getAttributes(),
                         variant.getPriceOverride(),
                         variant.getStockQuantity(),
                         variant.isActive(),

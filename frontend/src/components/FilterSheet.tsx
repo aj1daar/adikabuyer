@@ -280,7 +280,7 @@ export default function FilterSheet({
                 </AccordionSection>
               </div>
 
-              <div className="flex items-center justify-between gap-2 border-t-2 border-black px-6 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+              <div className="flex items-center justify-between gap-2 border-t-2 border-black px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] min-[380px]:px-6">
                 <button
                   type="button"
                   onClick={handleReset}
@@ -291,7 +291,7 @@ export default function FilterSheet({
                 <button
                   type="button"
                   onClick={handleApply}
-                  className="flex-1 rounded-pill border-2 border-black bg-ink px-4 py-3 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark"
+                  className="flex-1 whitespace-nowrap rounded-pill border-2 border-black bg-ink px-3 py-3 font-grotesk text-sm font-bold text-white min-[380px]:px-4 transition hover:bg-bubblegum-dark"
                 >
                   Показать товары
                 </button>

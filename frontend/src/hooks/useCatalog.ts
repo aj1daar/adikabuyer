@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import catalogClient from '../api/catalogClient'
 import type { ProductDto, ProductPageResponse } from '../types/catalog'
+import apiErrorMessage from '../utils/apiErrorMessage'
 
 export type CatalogFilters = {
   search?: string
@@ -62,7 +63,7 @@ export default function useCatalog(
         setTotalCount(response.data.totalCount)
       } catch (err) {
         if (!signal?.aborted) {
-          setError(err instanceof Error ? err.message : 'Не удалось загрузить товары')
+          setError(apiErrorMessage(err))
         }
       } finally {
         if (!signal?.aborted) {

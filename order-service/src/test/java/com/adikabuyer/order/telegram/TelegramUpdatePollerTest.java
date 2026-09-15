@@ -8,6 +8,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static com.adikabuyer.order.telegram.TelegramAdminService.RegistrationResult.ALREADY_REGISTERED;
+import static com.adikabuyer.order.telegram.TelegramAdminService.RegistrationResult.REGISTERED;
+import static com.adikabuyer.order.telegram.TelegramAdminService.RegistrationResult.REJECTED;
+
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -90,7 +94,7 @@ class TelegramUpdatePollerTest {
     @Test
     void handleUpdate_confirmsConnection_whenPasswordMatches() {
         TelegramMessage message = new TelegramMessage(new TelegramChat(42L), new TelegramUser(7L, "jane"), "secret");
-        when(telegramAdminService.tryRegister(42L, "jane", "secret")).thenReturn(true);
+        when(telegramAdminService.tryRegister(42L, "jane", "secret")).thenReturn(REGISTERED);
 
         poller.handleUpdate(new TelegramUpdate(1L, message));
 
@@ -98,9 +102,48 @@ class TelegramUpdatePollerTest {
     }
 
     @Test
+    void handleUpdate_alertsTheOtherAdmins_whenANewChatRegisters() {
+        TelegramMessage message = new TelegramMessage(new TelegramChat(42L), new TelegramUser(7L, "jane"), "secret");
+        when(telegramAdminService.tryRegister(42L, "jane", "secret")).thenReturn(REGISTERED);
+        when(telegramAdminService.getAdminChatIds()).thenReturn(List.of(1L, 2L, 42L));
+
+        poller.handleUpdate(new TelegramUpdate(1L, message));
+
+        org.mockito.ArgumentCaptor<String> alert = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(telegramApiClient).sendMessage(org.mockito.ArgumentMatchers.eq(1L), alert.capture());
+        verify(telegramApiClient).sendMessage(org.mockito.ArgumentMatchers.eq(2L), org.mockito.ArgumentMatchers.anyString());
+        verify(telegramApiClient, never()).sendMessage(org.mockito.ArgumentMatchers.eq(42L), org.mockito.ArgumentMatchers.startsWith("К уведомлениям"));
+        org.assertj.core.api.Assertions.assertThat(alert.getValue()).contains("@jane", "42");
+    }
+
+    @Test
+    void handleUpdate_stillAlertsRemainingAdmins_whenOneAlertFails() {
+        TelegramMessage message = new TelegramMessage(new TelegramChat(42L), null, "secret");
+        when(telegramAdminService.tryRegister(42L, null, "secret")).thenReturn(REGISTERED);
+        when(telegramAdminService.getAdminChatIds()).thenReturn(List.of(1L, 2L));
+        org.mockito.Mockito.lenient().doThrow(new RuntimeException("blocked by user"))
+                .when(telegramApiClient).sendMessage(org.mockito.ArgumentMatchers.eq(1L), org.mockito.ArgumentMatchers.anyString());
+
+        poller.handleUpdate(new TelegramUpdate(1L, message));
+
+        verify(telegramApiClient).sendMessage(org.mockito.ArgumentMatchers.eq(2L), org.mockito.ArgumentMatchers.contains("без имени"));
+    }
+
+    @Test
+    void handleUpdate_confirmsWithoutAlerting_whenTheChatWasAlreadyRegistered() {
+        TelegramMessage message = new TelegramMessage(new TelegramChat(42L), null, "secret");
+        when(telegramAdminService.tryRegister(42L, null, "secret")).thenReturn(ALREADY_REGISTERED);
+
+        poller.handleUpdate(new TelegramUpdate(1L, message));
+
+        verify(telegramApiClient).sendMessage(42L, "Вы подключены к уведомлениям о заказах Adika Buyer.");
+        verify(telegramAdminService, never()).getAdminChatIds();
+    }
+
+    @Test
     void handleUpdate_promptsForPassword_whenStartCommandSent() {
         TelegramMessage message = new TelegramMessage(new TelegramChat(42L), null, "/start");
-        when(telegramAdminService.tryRegister(42L, null, "/start")).thenReturn(false);
+        when(telegramAdminService.tryRegister(42L, null, "/start")).thenReturn(REJECTED);
 
         poller.handleUpdate(new TelegramUpdate(1L, message));
 
@@ -110,7 +153,7 @@ class TelegramUpdatePollerTest {
     @Test
     void handleUpdate_doesNothing_whenTextIsUnrecognizedAndPasswordDoesNotMatch() {
         TelegramMessage message = new TelegramMessage(new TelegramChat(42L), null, "hello there");
-        when(telegramAdminService.tryRegister(42L, null, "hello there")).thenReturn(false);
+        when(telegramAdminService.tryRegister(42L, null, "hello there")).thenReturn(REJECTED);
 
         poller.handleUpdate(new TelegramUpdate(1L, message));
 
@@ -125,7 +168,7 @@ class TelegramUpdatePollerTest {
             poller.stop();
             return List.of(update);
         });
-        when(telegramAdminService.tryRegister(42L, null, "/start")).thenReturn(false);
+        when(telegramAdminService.tryRegister(42L, null, "/start")).thenReturn(REJECTED);
 
         poller.pollLoop();
 
@@ -148,7 +191,7 @@ class TelegramUpdatePollerTest {
     @Test
     void handleUpdate_toleratesNullText() {
         TelegramMessage message = new TelegramMessage(new TelegramChat(42L), null, null);
-        when(telegramAdminService.tryRegister(42L, null, null)).thenReturn(false);
+        when(telegramAdminService.tryRegister(42L, null, null)).thenReturn(REJECTED);
 
         poller.handleUpdate(new TelegramUpdate(1L, message));
 

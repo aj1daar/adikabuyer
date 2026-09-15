@@ -10,6 +10,8 @@ import usePageTitle from '../hooks/usePageTitle'
 import formatPrice from '../utils/formatPrice'
 import ProductLabels from '../components/ProductLabels'
 import TextBubbleModal from '../components/TextBubbleModal'
+import NotFoundState from '../components/NotFoundState'
+import apiErrorMessage from '../utils/apiErrorMessage'
 import { popIn } from '../utils/motion'
 import type { ProductDto, VariantDto } from '../types/catalog'
 import { attributeKeyLabel, COLOR_ATTRIBUTE_KEY, formatAttributeValue } from '../utils/attributeOptions'
@@ -41,6 +43,7 @@ export default function ProductPage() {
   const [product, setProduct] = useState<ProductDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [notFound, setNotFound] = useState(false)
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
   // explicit attribute picks; a second click on an active value drops it
   const [selection, setSelection] = useState<Record<string, string>>({})
@@ -87,8 +90,9 @@ export default function ProductPage() {
     const controller = new AbortController()
     setLoading(true)
     setError(null)
+    setNotFound(false)
     catalogClient
-      .get<ProductDto>(`/products/${id}`, { signal: controller.signal })
+      .get<ProductDto>(`/products/${id}`, { signal: controller.signal, skipErrorToast: true })
       .then((response) => {
         setProduct(response.data)
         const firstSellable = response.data.variants.find((variant) => variant.status !== 'SOLD_OUT')
@@ -97,7 +101,13 @@ export default function ProductPage() {
       })
       .catch((err) => {
         if (!controller.signal.aborted) {
-          setError(err instanceof Error ? err.message : 'Не удалось загрузить товар')
+          // 404 = gone or archived, 400 = an id that isn't a number: both are "no such product".
+          const status = err?.response?.status
+          if (status === 404 || status === 400) {
+            setNotFound(true)
+          } else {
+            setError(apiErrorMessage(err))
+          }
         }
       })
       .finally(() => {
@@ -190,7 +200,21 @@ export default function ProductPage() {
           </Link>
 
           {loading && <p className="mt-8 text-ink/60">Загрузка товара...</p>}
-          {error && <p className="mt-8 text-red-500">{error}</p>}
+          {notFound && (
+            <NotFoundState
+              title="товар"
+              accent="не найден"
+              message="Такого товара нет или он уже распродан. Посмотрите, что есть в каталоге."
+            />
+          )}
+          {error && (
+            <p
+              role="alert"
+              className="mt-8 block w-fit max-w-full rounded-2xl border-2 border-black bg-bubblegum-light px-5 py-3 font-grotesk text-sm font-bold text-ink shadow-[4px_4px_0_0_#000]"
+            >
+              {error}
+            </p>
+          )}
 
           {!loading && !error && product && (
             <div className="mt-8 grid grid-cols-1 gap-8 sm:grid-cols-2">
@@ -543,7 +567,7 @@ export default function ProductPage() {
                     disabled={!selectedVariant}
                     whileTap={{ scale: 0.93, rotate: -1 }}
                     transition={{ type: 'spring', stiffness: 500, damping: 14 }}
-                    className="flex-1 overflow-hidden rounded-pill border-2 border-black bg-ink px-6 py-3 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="flex-1 overflow-hidden whitespace-nowrap rounded-pill border-2 border-black bg-ink px-4 py-3 font-grotesk min-[380px]:px-6 text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <AnimatePresence mode="wait" initial={false}>
                       <motion.span

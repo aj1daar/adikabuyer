@@ -4,6 +4,7 @@ import LandingPage from './pages/LandingPage'
 import CatalogPage from './pages/CatalogPage'
 import ProductPage from './pages/ProductPage'
 import AboutPage from './pages/AboutPage'
+import NotFoundPage from './pages/NotFoundPage'
 import Login from './pages/admin/Login'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import ProtectedRoute from './router/ProtectedRoute'
@@ -33,6 +34,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
     </MotionConfig>

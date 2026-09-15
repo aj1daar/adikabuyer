@@ -232,6 +232,7 @@ class CatalogServiceTest {
         Product product = Product.builder().name("Real Tumbler").build();
         Variant variant = Variant.builder()
                 .id(7L).sku("REAL-7").product(product)
+                .attributes(Map.of("color", "Чёрный", "volume", 500))
                 .priceOverride(BigDecimal.valueOf(1499)).stockQuantity(4)
                 .active(true).status(VariantStatus.IN_STOCK)
                 .build();
@@ -243,6 +244,7 @@ class CatalogServiceTest {
         assertThat(result.get(0).variantId()).isEqualTo(7L);
         assertThat(result.get(0).productName()).isEqualTo("Real Tumbler");
         assertThat(result.get(0).sku()).isEqualTo("REAL-7");
+        assertThat(result.get(0).attributes()).containsEntry("color", "Чёрный").containsEntry("volume", 500);
         assertThat(result.get(0).unitPrice()).isEqualByComparingTo(BigDecimal.valueOf(1499));
         assertThat(result.get(0).stockQuantity()).isEqualTo(4);
         assertThat(result.get(0).active()).isTrue();
@@ -587,7 +589,7 @@ class CatalogServiceTest {
 
         catalogService.deleteProduct(1L);
 
-        ArgumentCaptor<java.util.Collection<String>> captor = ArgumentCaptor.forClass(java.util.Collection.class);
+        ArgumentCaptor<java.util.Collection<String>> captor = ArgumentCaptor.captor();
         verify(s3StorageService).deleteFiles(captor.capture());
         assertThat(captor.getValue()).containsExactlyInAnyOrder(
                 "http://media/a.png", "http://media/b.png", "http://media/c.png", "http://media/black-swatch.png");
@@ -618,7 +620,7 @@ class CatalogServiceTest {
 
         catalogService.deleteVariant(1L, 10L);
 
-        ArgumentCaptor<java.util.Collection<String>> captor = ArgumentCaptor.forClass(java.util.Collection.class);
+        ArgumentCaptor<java.util.Collection<String>> captor = ArgumentCaptor.captor();
         verify(s3StorageService).deleteFiles(captor.capture());
         // the black variant's own photo plus the black swatch, which no variant uses now
         assertThat(captor.getValue())
@@ -643,7 +645,7 @@ class CatalogServiceTest {
 
         catalogService.deleteVariant(1L, 10L);
 
-        ArgumentCaptor<java.util.Collection<String>> captor = ArgumentCaptor.forClass(java.util.Collection.class);
+        ArgumentCaptor<java.util.Collection<String>> captor = ArgumentCaptor.captor();
         verify(s3StorageService).deleteFiles(captor.capture());
         assertThat(captor.getValue()).containsExactly("http://media/black-s.png");
         assertThat(existing.getColorSwatches()).containsEntry("black", "http://media/black-swatch.png");

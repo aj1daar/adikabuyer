@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import AdminDashboard from '../../../pages/admin/AdminDashboard'
 import useCatalog from '../../../hooks/useCatalog'
+import useIsMobileViewport from '../../../hooks/useIsMobileViewport'
 import useAuthStore from '../../../store/useAuthStore'
 import { createProduct, deleteProduct, deleteVariant, updateProduct } from '../../../api/adminCatalog'
 import getOrders, { deleteOrder } from '../../../api/adminOrders'
@@ -11,6 +12,7 @@ import type { ProductDto } from '../../../types/catalog'
 import type { OrderDto } from '../../../types/order'
 
 vi.mock('../../../hooks/useCatalog')
+vi.mock('../../../hooks/useIsMobileViewport')
 vi.mock('../../../api/adminCatalog')
 vi.mock('../../../api/adminOrders')
 vi.mock('../../../api/telegramAdmins')
@@ -121,6 +123,7 @@ function renderDashboard() {
 }
 
 beforeEach(() => {
+  vi.mocked(useIsMobileViewport).mockReturnValue(false)
   refetch.mockReset()
   mockedCreateProduct.mockReset()
   mockedUpdateProduct.mockReset()
@@ -140,6 +143,17 @@ beforeEach(() => {
 })
 
 describe('AdminDashboard', () => {
+  it('lists products as cards instead of a sideways-scrolling table on phones', () => {
+    vi.mocked(useIsMobileViewport).mockReturnValue(true)
+    mockedUseCatalog.mockReturnValue({ products: [productWithVariant], totalCount: 1, loading: false, error: null, refetch })
+
+    renderDashboard()
+
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Custom Tumbler' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Изменить' })).toBeInTheDocument()
+  })
+
   it('renders a row per variant with translated stock status', () => {
     renderDashboard()
 
@@ -341,12 +355,12 @@ describe('AdminDashboard', () => {
   })
 
   it('shows an error when fetching orders fails', async () => {
-    mockedGetOrders.mockRejectedValueOnce(new Error('Orders down'))
+    mockedGetOrders.mockRejectedValueOnce({ isAxiosError: true, message: 'Request failed with status code 503', response: { status: 503, data: {} } })
     renderDashboard()
 
     fireEvent.click(screen.getByRole('button', { name: 'Заказы' }))
 
-    await waitFor(() => expect(screen.getByText('Orders down')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Сервис временно недоступен. Попробуйте ещё раз.')).toBeInTheDocument())
   })
 
   it('deletes an order and refetches on success', async () => {

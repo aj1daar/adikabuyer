@@ -59,7 +59,7 @@ export default function AboutPage() {
                 direction="down"
                 reduceMotion={reduceMotion}
               />
-              <HeroBubbles overlay bubbles={[{ text: 'с 2021 года', rotate: -4, className: '-top-3 -right-3' }]} />
+              <HeroBubbles overlay bubbles={[{ text: 'с 2021 года', rotate: -4, className: 'bottom-full -right-3 mb-1' }]} />
             </motion.div>
 
             <motion.h1
@@ -75,7 +75,7 @@ export default function AboutPage() {
               <span className="font-bold text-bubblegum-dark">под тебя</span>, а не с полки.
             </motion.p>
 
-            <motion.div {...popIn(0.18)} className="relative mt-2 inline-block">
+            <motion.div {...popIn(0.18)} className="relative mt-8 inline-block sm:mt-2">
               <h2 className="font-grotesk text-xl font-bold text-ink">Наша история</h2>
               <ScribbleNote
                 text="из директа"
@@ -86,7 +86,7 @@ export default function AboutPage() {
               />
               <HeroBubbles
                 overlay
-                bubbles={[{ text: 'из директа 📩', tone: 'pink', rotate: 4, className: '-top-3 -right-3' }]}
+                bubbles={[{ text: 'из директа 📩', tone: 'pink', rotate: 4, className: 'bottom-full -right-3 mb-1' }]}
               />
             </motion.div>
 
@@ -99,7 +99,7 @@ export default function AboutPage() {
 
           {/* right — how it works, shoved to the other edge */}
           <div className="flex flex-col gap-4 sm:items-end">
-            <motion.div {...popIn(0.1)} className="relative inline-block">
+            <motion.div {...popIn(0.1)} className="relative mt-6 inline-block sm:mt-0">
               <h2 className="font-grotesk text-xl font-bold text-ink">Как сделать заказ</h2>
               <ScribbleNote
                 text="это быстро"
@@ -110,7 +110,7 @@ export default function AboutPage() {
               />
               <HeroBubbles
                 overlay
-                bubbles={[{ text: 'это быстро ⚡', rotate: -4, className: '-top-3 -left-3' }]}
+                bubbles={[{ text: 'это быстро ⚡', rotate: -4, className: 'bottom-full -left-3 mb-1' }]}
               />
             </motion.div>
             <ol className="flex w-full max-w-sm flex-col gap-3">
