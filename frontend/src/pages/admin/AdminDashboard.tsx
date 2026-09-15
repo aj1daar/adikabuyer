@@ -169,16 +169,16 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-white px-6 py-8">
+    <div className="min-h-screen bg-white px-4 py-8 min-[380px]:px-6">
       <div className="mx-auto max-w-6xl">
-        <div className="flex items-center justify-between border-b-2 border-black pb-4">
-          <h1 className="font-grotesk text-xl font-bold text-ink">Админ-панель</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-black pb-4">
+          <h1 className="whitespace-nowrap font-grotesk text-xl font-bold text-ink">Админ-панель</h1>
           <div className="flex items-center gap-3">
             {activeTab === 'products' && (
               <button
                 type="button"
                 onClick={openCreateForm}
-                className="rounded-pill border-2 border-black bg-ink px-4 py-2 font-grotesk text-sm font-bold text-white hover:bg-bubblegum-dark"
+                className="min-h-11 whitespace-nowrap rounded-pill border-2 border-black bg-ink px-4 py-2 font-grotesk text-sm font-bold text-white hover:bg-bubblegum-dark"
               >
                 Добавить товар
               </button>
@@ -186,19 +186,19 @@ export default function AdminDashboard() {
             <button
               type="button"
               onClick={handleLogout}
-              className="rounded-pill border-2 border-black bg-silver px-4 py-2 font-grotesk text-sm font-bold text-ink hover:bg-bubblegum hover:text-white"
+              className="min-h-11 rounded-pill border-2 border-black bg-silver px-4 py-2 font-grotesk text-sm font-bold text-ink hover:bg-bubblegum hover:text-white"
             >
               Выйти
             </button>
           </div>
         </div>
 
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setActiveTab('products')}
             aria-pressed={activeTab === 'products'}
-            className={`rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
+            className={`min-h-11 rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
               activeTab === 'products' ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
             }`}
           >
@@ -208,7 +208,7 @@ export default function AdminDashboard() {
             type="button"
             onClick={() => setActiveTab('orders')}
             aria-pressed={activeTab === 'orders'}
-            className={`rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
+            className={`min-h-11 rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
               activeTab === 'orders' ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
             }`}
           >
@@ -218,7 +218,7 @@ export default function AdminDashboard() {
             type="button"
             onClick={() => setActiveTab('telegram')}
             aria-pressed={activeTab === 'telegram'}
-            className={`rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
+            className={`min-h-11 rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
               activeTab === 'telegram' ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
             }`}
           >
