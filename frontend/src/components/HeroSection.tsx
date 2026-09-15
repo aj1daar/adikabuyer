@@ -117,8 +117,9 @@ export default function HeroSection() {
           rel="noopener noreferrer"
           aria-label="Adika Buyer в Instagram"
           className="relative block h-full w-full"
-          animate={reduceMotion ? undefined : { y: [0, -14, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+          // reduced motion: a slow few-pixel float instead of standing still
+          animate={{ y: reduceMotion ? [0, -4, 0] : [0, -14, 0] }}
+          transition={{ duration: reduceMotion ? 8 : 5, repeat: Infinity, ease: 'easeInOut' }}
           whileHover={{ scale: 1.05, rotate: -3 }}
           whileTap={{ scale: 0.96 }}
         >
@@ -136,9 +137,9 @@ export default function HeroSection() {
           <motion.div
             aria-hidden="true"
             className="absolute -inset-4 rounded-full bg-gradient-to-br from-bubblegum via-bubblegum-light to-silver blur-2xl opacity-70"
-            animate={reduceMotion ? undefined : { rotate: 360, scale: [1, 1.1, 1] }}
+            animate={reduceMotion ? { rotate: 360 } : { rotate: 360, scale: [1, 1.1, 1] }}
             transition={{
-              rotate: { duration: 22, repeat: Infinity, ease: 'linear' },
+              rotate: { duration: reduceMotion ? 60 : 22, repeat: Infinity, ease: 'linear' },
               scale: { duration: 6, repeat: Infinity, ease: 'easeInOut' },
             }}
           />
@@ -146,8 +147,8 @@ export default function HeroSection() {
             aria-hidden="true"
             viewBox="0 0 100 100"
             className="absolute -inset-3 h-[calc(100%+1.5rem)] w-[calc(100%+1.5rem)] text-black/40"
-            animate={reduceMotion ? undefined : { rotate: -360 }}
-            transition={{ duration: 26, repeat: Infinity, ease: 'linear' }}
+            animate={{ rotate: -360 }}
+            transition={{ duration: reduceMotion ? 70 : 26, repeat: Infinity, ease: 'linear' }}
           >
             <circle
               cx="50"
