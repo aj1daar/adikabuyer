@@ -46,7 +46,7 @@ function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
             onClick={() => onChangeQuantity(item.variantId, -1)}
             disabled={item.quantity <= 1}
             aria-label="Уменьшить количество"
-            className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
             −
           </button>
@@ -57,7 +57,7 @@ function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
             type="button"
             onClick={() => onChangeQuantity(item.variantId, 1)}
             aria-label="Увеличить количество"
-            className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition hover:bg-bubblegum hover:text-white"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum hover:text-white"
           >
             +
           </button>
@@ -70,7 +70,7 @@ function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
         <button
           type="button"
           onClick={() => onRemove(item.variantId)}
-          className="-m-3 p-3 font-grotesk text-xs font-bold text-ink/40 transition hover:text-bubblegum-dark"
+          className="-m-3.5 p-3.5 font-grotesk text-xs font-bold text-ink/40 transition hover:text-bubblegum-dark"
         >
           Удалить
         </button>
@@ -188,7 +188,7 @@ export default function CartDrawer() {
               <button
                 type="button"
                 onClick={handleClose}
-                className="-m-3 p-3 font-grotesk text-sm font-bold text-ink/50 transition hover:text-ink"
+                className="-m-3.5 p-3.5 font-grotesk text-sm font-bold text-ink/50 transition hover:text-ink"
               >
                 Закрыть
               </button>
