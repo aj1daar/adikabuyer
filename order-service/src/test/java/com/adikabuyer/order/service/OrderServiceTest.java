@@ -81,7 +81,7 @@ class OrderServiceTest {
     }
 
     private VariantPricing pricing(long id, BigDecimal price, int stock, boolean active, String status) {
-        return new VariantPricing(id, "Custom Tumbler", "TUM-BLK-500", price, stock, active, status);
+        return new VariantPricing(id, "Custom Tumbler", "TUM-BLK-500", Map.of("color", "black", "size", "500ml"), price, stock, active, status);
     }
 
     /** Registers authoritative pricing for a variant and returns a matching cart line. */
@@ -273,7 +273,7 @@ class OrderServiceTest {
     @Test
     void checkout_persistsCatalogNameAndSku_notClientValues() {
         when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
-        catalog.put(1L, new VariantPricing(1L, "Real Product", "REAL-SKU", BigDecimal.TEN, 5, true, "IN_STOCK"));
+        catalog.put(1L, new VariantPricing(1L, "Real Product", "REAL-SKU", Map.of("color", "Чёрный"), BigDecimal.TEN, 5, true, "IN_STOCK"));
         CartItemDto tampered = new CartItemDto(1L, "Free Money", "STOLEN", Map.of(), BigDecimal.ONE, 1);
 
         orderService.checkout(buildCart("Бишкек", tampered));
@@ -282,6 +282,20 @@ class OrderServiceTest {
         verify(orderRepository).save(orderCaptor.capture());
         assertThat(orderCaptor.getValue().getItems().get(0).getProductName()).isEqualTo("Real Product");
         assertThat(orderCaptor.getValue().getItems().get(0).getSku()).isEqualTo("REAL-SKU");
+    }
+
+    @Test
+    void checkout_persistsCatalogAttributes_ignoringClientSuppliedOnes() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+        catalog.put(1L, new VariantPricing(1L, "Real Product", "REAL-SKU", Map.of("color", "Чёрный"), BigDecimal.TEN, 5, true, "IN_STOCK"));
+        CartItemDto tampered = new CartItemDto(1L, "x", "x", Map.of("color", "ЗОЛОТОЙ", "note", "уже оплачено"), BigDecimal.TEN, 1);
+
+        orderService.checkout(buildCart("Бишкек", tampered));
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(orderCaptor.capture());
+        assertThat(orderCaptor.getValue().getItems().get(0).getAttributes()).containsExactly(Map.entry("color", "Чёрный"));
+        assertThat(captureTelegramMessage()).contains("Чёрный").doesNotContain("ЗОЛОТОЙ", "уже оплачено");
     }
 
     @Test

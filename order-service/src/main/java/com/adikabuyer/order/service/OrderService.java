@@ -56,7 +56,7 @@ public class OrderService {
 
     @Transactional
     public CheckoutResponseDto checkout(CartDto cart) {
-        // Never trust the client's prices/names/SKUs — re-resolve every line against
+        // Never trust the client's prices/names/SKUs/attributes — re-resolve every line against
         // catalog-service and reject anything unknown, inactive or out of stock.
         List<CartItemDto> items = repriceAgainstCatalog(cart.items());
 
@@ -118,7 +118,7 @@ public class OrderService {
                     item.variantId(),
                     variant.productName(),
                     variant.sku(),
-                    item.attributes(),
+                    variant.attributes(),
                     variant.unitPrice(),
                     item.quantity()
             ));
