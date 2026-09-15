@@ -36,7 +36,7 @@ services:
       - adikabuyer-network
 
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: adikabuyer-dev-minio
     restart: unless-stopped
     environment:
