@@ -76,8 +76,8 @@ OID=$(jstr "$R" orderId)
 [ -n "$OID" ] && ok "checkout -> $OID" || no "checkout ($R)"
 echo "$R" | grep -q '"itemsTotal":2400' && ok "server re-prices to catalog 1200x2=2400 (ignores client price)" || no "re-pricing ($R)"
 echo "$R" | grep -q '"deliveryFee":300' && ok "courier delivery fee 300" || no "delivery fee"
-chk "$($C -o /dev/null -w '%{http_code}' -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json' -d '{"customerName":"x","customerPhone":"x","region":"Бишкек","items":[{"variantId":999999,"productName":"x","sku":"x","attributes":{},"unitPrice":1,"quantity":1}]}')" 400 "checkout unknown variant -> 400"
-chk "$($C -o /dev/null -w '%{http_code}' -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json' -d "{\"customerName\":\"x\",\"customerPhone\":\"x\",\"region\":\"Бишкек\",\"items\":[{\"variantId\":$VID,\"productName\":\"x\",\"sku\":\"x\",\"attributes\":{},\"unitPrice\":1,\"quantity\":99999}]}")" 409 "checkout over-stock -> 409"
+chk "$($C -o /dev/null -w '%{http_code}' -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json' -d '{"customerName":"x","customerPhone":"+996700000000","region":"Бишкек","items":[{"variantId":999999,"productName":"x","sku":"x","attributes":{},"unitPrice":1,"quantity":1}]}')" 400 "checkout unknown variant -> 400"
+chk "$($C -o /dev/null -w '%{http_code}' -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json' -d "{\"customerName\":\"x\",\"customerPhone\":\"+996700000000\",\"region\":\"Бишкек\",\"items\":[{\"variantId\":$VID,\"productName\":\"x\",\"sku\":\"x\",\"attributes\":{},\"unitPrice\":1,\"quantity\":99999}]}")" 409 "checkout over-stock -> 409"
 
 echo "== inventory deduction (RabbitMQ round-trip) =="
 STK=""

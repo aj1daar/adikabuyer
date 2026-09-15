@@ -61,7 +61,7 @@ class OrderControllerTest {
                 {
                   "customerName": "John Doe",
                   "customerPhone": "996700123456",
-                  "region": "bishkek",
+                  "region": "Бишкек",
                   "items": [
                     {
                       "variantId": 1,
@@ -115,6 +115,43 @@ class OrderControllerTest {
                 .andExpect(status().isOk());
 
         verify(checkoutRateLimiter).isAllowed(eq("198.51.100.4"));
+    }
+
+    @Test
+    void checkout_returns400_whenRegionIsNotBishkekOrPickup() throws Exception {
+        String payload = validCartJson().replace("\"Бишкек\"", "\"Ош\"");
+
+        mockMvc.perform(post("/api/orders/checkout")
+                        .contentType("application/json;charset=UTF-8")
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.region").exists());
+
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void checkout_acceptsPickup_inAnyCase() throws Exception {
+        when(orderService.checkout(any())).thenReturn(new CheckoutResponseDto("order-1", BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE));
+        String payload = validCartJson().replace("\"Бишкек\"", "\"Самовывоз\"");
+
+        mockMvc.perform(post("/api/orders/checkout")
+                        .contentType("application/json;charset=UTF-8")
+                        .content(payload))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void checkout_returns400_whenPhoneContainsLettersOrMarkup() throws Exception {
+        String payload = validCartJson().replace("\"996700123456\"", "\"<script>alert(1)</script>\"");
+
+        mockMvc.perform(post("/api/orders/checkout")
+                        .contentType("application/json;charset=UTF-8")
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.customerPhone").exists());
+
+        verifyNoInteractions(orderService);
     }
 
     @Test
@@ -234,7 +271,7 @@ class OrderControllerTest {
                 {
                   "customerName": "John Doe",
                   "customerPhone": "996700123456",
-                  "region": "bishkek",
+                  "region": "Бишкек",
                   "items": [%s]
                 }
                 """.formatted(items);

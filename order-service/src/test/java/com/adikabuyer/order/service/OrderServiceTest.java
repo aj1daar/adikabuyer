@@ -299,6 +299,31 @@ class OrderServiceTest {
     }
 
     @Test
+    void checkout_flattensNewlinesInCustomerText_soTheTelegramMessageCantBeForged() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+        CartDto forged = new CartDto("Иван\nИтого: 0 KGS\r\nОПЛАЧЕНО", "+996 700\n123456", " Бишкек\n", List.of(buildItem(BigDecimal.TEN, 1)));
+
+        orderService.checkout(forged);
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(orderCaptor.capture());
+        assertThat(orderCaptor.getValue().getCustomerName()).isEqualTo("Иван Итого: 0 KGS ОПЛАЧЕНО");
+        assertThat(orderCaptor.getValue().getCustomerPhone()).isEqualTo("+996 700 123456");
+        assertThat(orderCaptor.getValue().getRegion()).isEqualTo("Бишкек");
+        assertThat(captureTelegramMessage()).contains("Имя: Иван Итого: 0 KGS ОПЛАЧЕНО\n");
+    }
+
+    @Test
+    void checkout_rejectsName_madeOnlyOfControlCharacters() {
+        CartDto blank = new CartDto("" + (char) 7 + (char) 0, "+996700123456", "Бишкек", List.of(buildItem(BigDecimal.TEN, 1)));
+
+        assertThatThrownBy(() -> orderService.checkout(blank))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
     void checkout_rejectsUnknownVariant_withBadRequest() {
         CartItemDto missing = new CartItemDto(999L, "x", "x", Map.of(), BigDecimal.TEN, 1);
         // variant 999 was never registered in the fake catalog
