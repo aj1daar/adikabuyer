@@ -95,6 +95,10 @@ public class OrderService {
     private List<CartItemDto> repriceAgainstCatalog(List<CartItemDto> requested) {
         Set<Long> variantIds = requested.stream().map(CartItemDto::variantId).collect(Collectors.toSet());
         Map<Long, VariantPricing> pricing = catalogClient.fetchPricing(variantIds);
+        // Stock is checked against the variant's total across every line, so splitting one
+        // variant over several cart lines can't slip past the check line by line.
+        Map<Long, Long> requestedPerVariant = requested.stream()
+                .collect(Collectors.groupingBy(CartItemDto::variantId, Collectors.summingLong(CartItemDto::quantity)));
 
         List<CartItemDto> priced = new ArrayList<>();
         for (CartItemDto item : requested) {
@@ -106,7 +110,8 @@ public class OrderService {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Variant is no longer available: " + item.variantId());
             }
             boolean stockChecked = !STATUS_PRE_ORDER.equals(variant.status());
-            if (stockChecked && (variant.stockQuantity() == null || variant.stockQuantity() < item.quantity())) {
+            if (stockChecked && (variant.stockQuantity() == null
+                    || variant.stockQuantity() < requestedPerVariant.get(item.variantId()))) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Not enough stock for variant: " + item.variantId());
             }
             priced.add(new CartItemDto(

@@ -326,6 +326,30 @@ class OrderServiceTest {
     }
 
     @Test
+    void checkout_rejectsOneVariantSplitAcrossLines_whenTheirTotalExceedsStock() {
+        catalog.put(1L, pricing(1L, BigDecimal.TEN, 6, true, "IN_STOCK"));
+        CartItemDto first = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 6);
+        CartItemDto second = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 6);
+
+        assertThatThrownBy(() -> orderService.checkout(buildCart("Бишкек", first, second)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409");
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void checkout_acceptsOneVariantSplitAcrossLines_whenTheirTotalFitsStock() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+        catalog.put(1L, pricing(1L, BigDecimal.TEN, 6, true, "IN_STOCK"));
+        CartItemDto first = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 2);
+        CartItemDto second = new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 4);
+
+        CheckoutResponseDto response = orderService.checkout(buildCart("Бишкек", first, second));
+
+        assertThat(response.itemsTotal()).isEqualByComparingTo(BigDecimal.valueOf(60));
+    }
+
+    @Test
     void checkout_allowsPreOrderVariant_withZeroStock() {
         when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
         catalog.put(1L, pricing(1L, BigDecimal.valueOf(50), 0, true, "PRE_ORDER"));
