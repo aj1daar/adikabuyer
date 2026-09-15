@@ -101,7 +101,7 @@ export default function OrdersTable({ orders, loading, error, onDelete }: Orders
                       <button
                         type="button"
                         onClick={() => onDelete(order)}
-                        className="text-xs text-ink/40 hover:text-bubblegum-dark"
+                        className="relative after:absolute after:-inset-x-1 after:-inset-y-2.5 after:content-[''] text-xs text-ink/40 hover:text-bubblegum-dark"
                       >
                         Удалить
                       </button>

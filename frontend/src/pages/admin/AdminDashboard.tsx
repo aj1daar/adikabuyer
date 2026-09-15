@@ -317,14 +317,14 @@ export default function AdminDashboard() {
                         <button
                           type="button"
                           onClick={() => openEditForm(product)}
-                          className="mr-3 font-grotesk text-xs font-bold text-bubblegum-dark hover:underline"
+                          className="relative after:absolute after:-inset-x-1 after:-inset-y-2.5 after:content-[''] mr-3 font-grotesk text-xs font-bold text-bubblegum-dark hover:underline"
                         >
                           Изменить
                         </button>
                         <button
                           type="button"
                           onClick={() => requestProductDelete(product)}
-                          className="whitespace-nowrap font-grotesk text-xs font-bold text-ink/50 hover:text-bubblegum-dark"
+                          className="relative after:absolute after:-inset-x-1 after:-inset-y-2.5 after:content-[''] whitespace-nowrap font-grotesk text-xs font-bold text-ink/50 hover:text-bubblegum-dark"
                         >
                           Удалить товар
                         </button>
@@ -362,7 +362,7 @@ export default function AdminDashboard() {
                             <button
                               type="button"
                               onClick={() => requestVariantDelete(product, variant)}
-                              className="whitespace-nowrap text-xs text-ink/40 hover:text-bubblegum-dark"
+                              className="relative after:absolute after:-inset-x-1 after:-inset-y-2.5 after:content-[''] whitespace-nowrap text-xs text-ink/40 hover:text-bubblegum-dark"
                             >
                               Удалить вариант
                             </button>
