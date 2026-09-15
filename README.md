@@ -75,7 +75,7 @@ docker compose -f docker-compose.prod.yml exec db-backup \
   | docker compose -f docker-compose.prod.yml exec -T postgres-db psql -U adikabuyer -d adikabuyer
 ```
 
-**What this does and doesn't cover.** It covers deleting the wrong thing — a product, a variant, a bad migration. It does **not** cover losing the VPS: the dumps live on the same disk as the database. For that you need a copy elsewhere — run the `docker cp` above on a schedule from your own machine, or keep Hetzner snapshots on. Deleted MinIO images are not in these dumps either; a restored row can point at an image that's already gone.
+**What this does and doesn't cover.** The local dumps cover deleting the wrong thing — a product, a variant, a bad migration — but they live on the same disk as the database. Losing the VPS is covered by the `backup-offsite` sidecar (`scripts/backup-offsite.sh`, MinIO's `mc`): every `BACKUP_OFFSITE_INTERVAL_SECONDS` (default 24h) it copies the dumps to `<BACKUP_S3_BUCKET>/<BACKUP_S3_PREFIX>/db/` and mirrors the product-photo bucket to `…/media/` in any S3-compatible bucket (Hetzner Object Storage, Cloudflare R2, Backblaze B2), pruning remote dumps after `BACKUP_OFFSITE_RETENTION_DAYS` (default 30). Set `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY`, `BACKUP_S3_SECRET_KEY` in `.env.prod` (and `ENV_PROD_B64`); until then it only logs a reminder. Once configured, the monitor alerts when no off-site copy has landed for two intervals. Restoring from off-site: `mc cp offsite/<bucket>/<prefix>/db/<dump>.sql.gz .` then the `gunzip | psql` above, and `mc mirror offsite/<bucket>/<prefix>/media local/adikabuyer-media` for photos.
 
 ## Deploy
 

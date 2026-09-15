@@ -17,6 +17,8 @@ DISK_ALERT_PERCENT="${MONITOR_DISK_ALERT_PERCENT:-85}"
 BACKUP_DIR="${BACKUP_DIR:-/backups}"
 # a backup older than two intervals (+1h slack) means the nightly pass failed or stopped
 BACKUP_MAX_AGE_SECONDS="${MONITOR_BACKUP_MAX_AGE_SECONDS:-$(( ${BACKUP_INTERVAL_SECONDS:-86400} * 2 + 3600 ))}"
+OFFSITE_MAX_AGE_SECONDS="${MONITOR_OFFSITE_MAX_AGE_SECONDS:-$(( ${BACKUP_OFFSITE_INTERVAL_SECONDS:-86400} * 2 + 3600 ))}"
+OFFSITE_STATUS_FILE="${BACKUP_STATUS_DIR:-/status}/offsite-last-success"
 STATE_DIR="${MONITOR_STATE_DIR:-/tmp/monitor-state}"
 TELEGRAM_API_BASE="${TELEGRAM_API_BASE:-https://api.telegram.org}"
 SITE_LABEL="${DOMAIN:-adikabuyer}"
@@ -48,6 +50,11 @@ check_disk() { [ "$(disk_percent)" -lt "$DISK_ALERT_PERCENT" ]; }
 check_backup_fresh() {
   newest="$(find "$BACKUP_DIR" -name '*.sql.gz' -type f -exec stat -c %Y {} \; 2>/dev/null | sort -n | tail -1)"
   [ -n "$newest" ] && [ $(( $(date +%s) - newest )) -lt "$BACKUP_MAX_AGE_SECONDS" ]
+}
+
+check_offsite_fresh() {
+  last="$(cat "$OFFSITE_STATUS_FILE" 2>/dev/null)"
+  [ -n "$last" ] && [ $(( $(date +%s) - last )) -lt "$OFFSITE_MAX_AGE_SECONDS" ]
 }
 
 admin_chat_ids() {
@@ -89,6 +96,9 @@ run_pass() {
   check_http "http://minio:9000/minio/health/live"; report minio $? "хранилище фото (MinIO) не отвечает" "хранилище фото снова работает"
   check_disk; report disk $? "диск заполнен на $(disk_percent)% (порог ${DISK_ALERT_PERCENT}%)" "на диске снова есть место ($(disk_percent)%)"
   check_backup_fresh; report backup $? "свежей резервной копии базы нет больше $((BACKUP_MAX_AGE_SECONDS / 3600)) ч" "резервные копии базы снова создаются"
+  if [ -n "${BACKUP_S3_BUCKET:-}" ]; then
+    check_offsite_fresh; report offsite $? "копии в облако не обновлялись больше $((OFFSITE_MAX_AGE_SECONDS / 3600)) ч" "копии в облако снова обновляются"
+  fi
   log "pass done"
 }
 
