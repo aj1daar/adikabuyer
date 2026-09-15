@@ -43,6 +43,14 @@ describe('App routing', () => {
     expect(screen.getByRole('heading', { name: /о нас/i })).toBeInTheDocument()
   })
 
+  it('renders the 404 page for an unknown path instead of a blank screen', () => {
+    renderAt('/does-not-exist')
+
+    expect(screen.getByText('404')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'В каталог' })).toHaveAttribute('href', '/catalog')
+    expect(screen.getByRole('link', { name: 'На главную' })).toHaveAttribute('href', '/')
+  })
+
   it('renders the login page at /admin/login', () => {
     renderAt('/admin/login')
 
