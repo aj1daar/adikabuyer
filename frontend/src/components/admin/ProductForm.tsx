@@ -384,7 +384,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                     onBlur={addLabel}
                     maxLength={MAX_LABEL_CHARS}
                     placeholder="+ метка"
-                    className="w-28 rounded-pill border-2 border-dashed border-black/40 px-3 py-1 font-grotesk text-sm text-ink outline-none focus:border-solid focus:border-bubblegum-dark"
+                    className="w-28 rounded-pill border-2 border-dashed border-black/40 px-3 py-1 font-grotesk text-base text-ink outline-none sm:text-sm focus:border-solid focus:border-bubblegum-dark"
                   />
                 )}
               </div>
