@@ -1,9 +1,12 @@
 package com.adikabuyer.catalog.listener;
 
+import com.adikabuyer.catalog.domain.OrderStockDeduction;
 import com.adikabuyer.catalog.domain.Variant;
 import com.adikabuyer.catalog.domain.VariantStatus;
+import com.adikabuyer.catalog.event.OrderCancelledEvent;
 import com.adikabuyer.catalog.event.OrderItemEvent;
 import com.adikabuyer.catalog.event.OrderPlacedEvent;
+import com.adikabuyer.catalog.repository.OrderStockDeductionRepository;
 import com.adikabuyer.catalog.repository.ProcessedOrderEventRepository;
 import com.adikabuyer.catalog.repository.VariantRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,11 +38,14 @@ class InventoryListenerTest {
     @Mock
     private ProcessedOrderEventRepository processedOrderEventRepository;
 
+    @Mock
+    private OrderStockDeductionRepository orderStockDeductionRepository;
+
     private InventoryListener inventoryListener;
 
     @BeforeEach
     void setUp() {
-        inventoryListener = new InventoryListener(variantRepository, processedOrderEventRepository);
+        inventoryListener = new InventoryListener(variantRepository, processedOrderEventRepository, orderStockDeductionRepository);
     }
 
     private OrderItemEvent buildItem(Long variantId, int quantity) {
@@ -63,6 +69,68 @@ class InventoryListenerTest {
         assertThat(variant.getStockQuantity()).isEqualTo(7);
         assertThat(variant.getStatus()).isEqualTo(VariantStatus.IN_STOCK);
         verify(variantRepository).save(variant);
+    }
+
+    @Test
+    void handleOrderPlaced_recordsWhatWasActuallyTaken_flooredAtAvailableStock() {
+        Variant variant = Variant.builder().id(1L).stockQuantity(2).active(true).status(VariantStatus.IN_STOCK).build();
+        when(variantRepository.findById(1L)).thenReturn(Optional.of(variant));
+
+        inventoryListener.handleOrderPlaced(buildEvent(buildItem(1L, 5)));
+
+        ArgumentCaptor<OrderStockDeduction> captor = ArgumentCaptor.forClass(OrderStockDeduction.class);
+        verify(orderStockDeductionRepository).save(captor.capture());
+        assertThat(captor.getValue().getOrderId()).isEqualTo("order-1");
+        assertThat(captor.getValue().getQuantity()).isEqualTo(2);
+        assertThat(captor.getValue().isCausedSoldOut()).isTrue();
+    }
+
+    @Test
+    void handleOrderPlaced_recordsNothing_forAPreOrderVariantThatHasNoStockToTake() {
+        Variant variant = Variant.builder().id(1L).stockQuantity(0).active(true).status(VariantStatus.PRE_ORDER).build();
+        when(variantRepository.findById(1L)).thenReturn(Optional.of(variant));
+
+        inventoryListener.handleOrderPlaced(buildEvent(buildItem(1L, 3)));
+
+        verify(orderStockDeductionRepository, never()).save(any());
+    }
+
+    @Test
+    void handleOrderCancelled_returnsTheTakenStock_andReopensAVariantThisOrderSoldOut() {
+        Variant variant = Variant.builder().id(1L).stockQuantity(0).active(false).status(VariantStatus.SOLD_OUT).build();
+        OrderStockDeduction deduction = OrderStockDeduction.builder().orderId("order-1").variantId(1L).quantity(2).causedSoldOut(true).build();
+        when(orderStockDeductionRepository.findAllByOrderIdAndRestoredAtIsNull("order-1")).thenReturn(List.of(deduction));
+        when(variantRepository.findById(1L)).thenReturn(Optional.of(variant));
+
+        inventoryListener.handleOrderCancelled(new OrderCancelledEvent("order-1", Instant.now()));
+
+        assertThat(variant.getStockQuantity()).isEqualTo(2);
+        assertThat(variant.getStatus()).isEqualTo(VariantStatus.IN_STOCK);
+        assertThat(variant.isActive()).isTrue();
+        assertThat(deduction.getRestoredAt()).isNotNull();
+        verify(orderStockDeductionRepository).save(deduction);
+    }
+
+    @Test
+    void handleOrderCancelled_keepsAVariantTheAdminSoldOutByHand_soldOut() {
+        Variant variant = Variant.builder().id(1L).stockQuantity(0).active(false).status(VariantStatus.SOLD_OUT).build();
+        OrderStockDeduction deduction = OrderStockDeduction.builder().orderId("order-1").variantId(1L).quantity(1).causedSoldOut(false).build();
+        when(orderStockDeductionRepository.findAllByOrderIdAndRestoredAtIsNull("order-1")).thenReturn(List.of(deduction));
+        when(variantRepository.findById(1L)).thenReturn(Optional.of(variant));
+
+        inventoryListener.handleOrderCancelled(new OrderCancelledEvent("order-1", Instant.now()));
+
+        assertThat(variant.getStockQuantity()).isEqualTo(1);
+        assertThat(variant.getStatus()).isEqualTo(VariantStatus.SOLD_OUT);
+    }
+
+    @Test
+    void handleOrderCancelled_isANoOp_whenTheStockWasAlreadyReturned() {
+        when(orderStockDeductionRepository.findAllByOrderIdAndRestoredAtIsNull("order-1")).thenReturn(List.of());
+
+        inventoryListener.handleOrderCancelled(new OrderCancelledEvent("order-1", Instant.now()));
+
+        verify(variantRepository, never()).save(any());
     }
 
     @Test
