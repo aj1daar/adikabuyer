@@ -4,12 +4,14 @@ import com.adikabuyer.order.client.CatalogClient;
 import com.adikabuyer.order.config.DeliveryFeeProperties;
 import com.adikabuyer.order.domain.Order;
 import com.adikabuyer.order.domain.OrderItem;
+import com.adikabuyer.order.domain.OrderStatus;
 import com.adikabuyer.order.dto.CartDto;
 import com.adikabuyer.order.dto.CartItemDto;
 import com.adikabuyer.order.dto.CheckoutResponseDto;
 import com.adikabuyer.order.dto.OrderDto;
 import com.adikabuyer.order.dto.OrderItemDto;
 import com.adikabuyer.order.dto.OrderPlacedEvent;
+import com.adikabuyer.order.dto.OrderUpdateRequest;
 import com.adikabuyer.order.dto.VariantPricing;
 import com.adikabuyer.order.repository.OrderRepository;
 import com.adikabuyer.order.telegram.OrderNotificationMessageBuilder;
@@ -152,6 +154,23 @@ public class OrderService {
                 .toList();
     }
 
+    /** Applies an admin edit; a status change must follow {@link OrderStatus#canTransitionTo}. */
+    @Transactional
+    public OrderDto updateOrder(String id, OrderUpdateRequest request) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found: " + id));
+        OrderStatus next = request.status();
+        if (next != null && next != order.getStatus()) {
+            if (!order.getStatus().canTransitionTo(next)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Invalid status transition: " + order.getStatus() + " -> " + next);
+            }
+            order.setStatus(next);
+            order.setStatusUpdatedAt(Instant.now());
+        }
+        return toDto(orderRepository.save(order));
+    }
+
     @Transactional
     public void deleteOrder(String id) {
         if (!orderRepository.existsById(id)) {
@@ -214,6 +233,8 @@ public class OrderService {
                 order.getDeliveryFee(),
                 order.getGrandTotal(),
                 order.getCreatedAt(),
+                order.getStatus(),
+                order.getStatusUpdatedAt(),
                 items
         );
     }

@@ -22,6 +22,7 @@ import java.util.List;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = OrderController.class)
@@ -89,6 +90,19 @@ class SecurityConfigTest {
 
         mockMvc.perform(get("/api/orders/telegram-admins").header("Authorization", "Bearer " + token("ADMIN")))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void updateOrder_returns401_withoutToken() throws Exception {
+        mockMvc.perform(patch("/api/orders/order-1").contentType("application/json").content("{}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updateOrder_returns403_withNonAdminRole() throws Exception {
+        mockMvc.perform(patch("/api/orders/order-1").contentType("application/json").content("{}")
+                        .header("Authorization", "Bearer " + token("STAFF")))
+                .andExpect(status().isForbidden());
     }
 
     @Test

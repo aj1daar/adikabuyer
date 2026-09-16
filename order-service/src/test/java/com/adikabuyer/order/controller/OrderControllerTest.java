@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -291,7 +292,7 @@ class OrderControllerTest {
         OrderDto order = new OrderDto(
                 "order-1", 1042L, "John Doe", "996700123456", "bishkek",
                 BigDecimal.valueOf(50), BigDecimal.valueOf(150), BigDecimal.valueOf(200),
-                Instant.parse("2026-01-01T00:00:00Z"), List.of()
+                Instant.parse("2026-01-01T00:00:00Z"), com.adikabuyer.order.domain.OrderStatus.NEW, null, List.of()
         );
         when(orderService.getAllOrders()).thenReturn(List.of(order));
 
@@ -299,6 +300,24 @@ class OrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("order-1"))
                 .andExpect(jsonPath("$[0].customerName").value("John Doe"));
+    }
+
+    @Test
+    void updateOrder_passesTheRequestedStatusThrough() throws Exception {
+        when(orderService.updateOrder(org.mockito.ArgumentMatchers.eq("order-1"), any())).thenReturn(null);
+
+        mockMvc.perform(patch("/api/orders/order-1").contentType("application/json").content("{\"status\": \"CONFIRMED\"}"))
+                .andExpect(status().isOk());
+
+        verify(orderService).updateOrder("order-1", new com.adikabuyer.order.dto.OrderUpdateRequest(com.adikabuyer.order.domain.OrderStatus.CONFIRMED));
+    }
+
+    @Test
+    void updateOrder_returns400_forAnUnknownStatus() throws Exception {
+        mockMvc.perform(patch("/api/orders/order-1").contentType("application/json").content("{\"status\": \"TELEPORTED\"}"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(orderService);
     }
 
     @Test

@@ -3,6 +3,8 @@ package com.adikabuyer.order.domain;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
@@ -55,6 +57,14 @@ public class Order {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private OrderStatus status = OrderStatus.NEW;
+
+    @Column(name = "status_updated_at")
+    private Instant statusUpdatedAt;
 
     @Builder.Default
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)

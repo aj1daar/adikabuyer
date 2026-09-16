@@ -3,11 +3,13 @@ package com.adikabuyer.order.service;
 import com.adikabuyer.order.client.CatalogClient;
 import com.adikabuyer.order.config.DeliveryFeeProperties;
 import com.adikabuyer.order.domain.Order;
+import com.adikabuyer.order.domain.OrderStatus;
 import com.adikabuyer.order.dto.CartDto;
 import com.adikabuyer.order.dto.CartItemDto;
 import com.adikabuyer.order.dto.CheckoutResponseDto;
 import com.adikabuyer.order.dto.OrderDto;
 import com.adikabuyer.order.dto.OrderPlacedEvent;
+import com.adikabuyer.order.dto.OrderUpdateRequest;
 import com.adikabuyer.order.dto.VariantPricing;
 import com.adikabuyer.order.repository.OrderRepository;
 import com.adikabuyer.order.telegram.TelegramNotifier;
@@ -27,6 +29,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -411,6 +414,55 @@ class OrderServiceTest {
         CheckoutResponseDto response = orderService.checkout(buildCart("Бишкек", item));
 
         assertThat(response.itemsTotal()).isEqualByComparingTo(BigDecimal.valueOf(150));
+    }
+
+    private Order storedOrder(OrderStatus status) {
+        Order order = Order.builder().id("order-1").number(1042L).customerName("Jane").customerPhone("996700000000")
+                .region("Бишкек").itemsTotal(BigDecimal.TEN).deliveryFee(BigDecimal.ZERO).grandTotal(BigDecimal.TEN)
+                .createdAt(Instant.parse("2026-01-01T00:00:00Z")).status(status).items(List.of()).build();
+        when(orderRepository.findById("order-1")).thenReturn(Optional.of(order));
+        lenient().when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        return order;
+    }
+
+    @Test
+    void checkout_startsEveryOrderAsNew() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+
+        orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.TEN, 1)));
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(orderCaptor.capture());
+        assertThat(orderCaptor.getValue().getStatus()).isEqualTo(OrderStatus.NEW);
+    }
+
+    @Test
+    void updateOrder_movesTheStatusForwardAndStampsWhen() {
+        storedOrder(OrderStatus.NEW);
+
+        OrderDto dto = orderService.updateOrder("order-1", new OrderUpdateRequest(OrderStatus.CONFIRMED));
+
+        assertThat(dto.status()).isEqualTo(OrderStatus.CONFIRMED);
+        assertThat(dto.statusUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    void updateOrder_rejectsAnIllegalTransition_withConflict() {
+        storedOrder(OrderStatus.DELIVERED);
+
+        assertThatThrownBy(() -> orderService.updateOrder("order-1", new OrderUpdateRequest(OrderStatus.NEW)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409");
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void updateOrder_returns404_forAnUnknownOrder() {
+        when(orderRepository.findById("missing")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.updateOrder("missing", new OrderUpdateRequest(OrderStatus.CONFIRMED)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
     }
 
     @Test
