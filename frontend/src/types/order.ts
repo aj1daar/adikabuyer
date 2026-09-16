@@ -16,6 +16,8 @@ export type CheckoutRequest = {
 
 export type CheckoutResponse = {
   orderId: string
+  /** short number the customer can quote when we call ("№1042") */
+  orderNumber: number
   itemsTotal: number
   deliveryFee: number
   grandTotal: number

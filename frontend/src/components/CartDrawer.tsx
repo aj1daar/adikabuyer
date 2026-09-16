@@ -98,6 +98,7 @@ export default function CartDrawer() {
   const isSubmittingRef = useRef(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [orderPlaced, setOrderPlaced] = useState(false)
+  const [orderNumbers, setOrderNumbers] = useState<number[]>([])
 
   const inStockItems = items.filter((item) => item.status !== 'PRE_ORDER')
   const preOrderItems = items.filter((item) => item.status === 'PRE_ORDER')
@@ -133,15 +134,14 @@ export default function CartDrawer() {
     setSubmitError(null)
 
     try {
-      if (isSplitDelivery) {
-        await Promise.all([
-          submitCheckout({ customerName, customerPhone, region, items: toCheckoutItems(inStockItems) }),
-          submitCheckout({ customerName, customerPhone, region, items: toCheckoutItems(preOrderItems) }),
-        ])
-      } else {
-        await submitCheckout({ customerName, customerPhone, region, items: toCheckoutItems(items) })
-      }
+      const placed = isSplitDelivery
+        ? await Promise.all([
+            submitCheckout({ customerName, customerPhone, region, items: toCheckoutItems(inStockItems) }),
+            submitCheckout({ customerName, customerPhone, region, items: toCheckoutItems(preOrderItems) }),
+          ])
+        : [await submitCheckout({ customerName, customerPhone, region, items: toCheckoutItems(items) })]
 
+      setOrderNumbers(placed.map((order) => order.orderNumber).filter((n) => typeof n === 'number'))
       clearCart()
       setOrderPlaced(true)
     } catch (err) {
@@ -203,6 +203,11 @@ export default function CartDrawer() {
                   ✓
                 </motion.span>
                 <h3 className="font-grotesk text-lg font-bold text-ink">Заказ принят!</h3>
+                {orderNumbers.length > 0 && (
+                  <p className="rotate-[-2deg] rounded-pill border-2 border-black bg-white px-4 py-1.5 font-grotesk text-sm font-bold text-ink shadow-[3px_3px_0_0_#000]">
+                    {orderNumbers.length === 1 ? 'Номер заказа' : 'Номера заказов'}: {orderNumbers.map((n) => `№${n}`).join(' и ')}
+                  </p>
+                )}
                 <p className="text-sm text-ink/60">
                   Мы свяжемся с вами по указанному номеру, чтобы уточнить детали заказа и доставку.
                   {isSplitDelivery && ' Товары в наличии и товары под заказ приедут отдельными доставками.'}
