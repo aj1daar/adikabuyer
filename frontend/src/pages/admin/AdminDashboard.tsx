@@ -10,9 +10,10 @@ import TelegramAdminsTable from '../../components/admin/TelegramAdminsTable'
 import ConfirmDialog from '../../components/admin/ConfirmDialog'
 import ProductCardList from '../../components/admin/ProductCardList'
 import { createProduct, deleteProduct, deleteVariant, updateProduct } from '../../api/adminCatalog'
-import { deleteOrder } from '../../api/adminOrders'
+import { deleteOrder, updateOrder } from '../../api/adminOrders'
 import type { ProductDto } from '../../types/catalog'
-import type { OrderDto } from '../../types/order'
+import type { OrderDto, OrderUpdatePayload } from '../../types/order'
+import apiErrorMessage from '../../utils/apiErrorMessage'
 import type { ProductPayload } from '../../types/admin'
 import formatPrice from '../../utils/formatPrice'
 import filterAdminProducts from '../../utils/filterAdminProducts'
@@ -159,7 +160,19 @@ export default function AdminDashboard() {
       await deleteOrder(order.id)
       refetchOrders()
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Не удалось удалить заказ.')
+      setActionError(apiErrorMessage(err))
+    }
+  }
+
+  const handleUpdateOrder = async (order: OrderDto, payload: OrderUpdatePayload) => {
+    setActionError(null)
+    try {
+      await updateOrder(order.id, payload)
+      refetchOrders()
+      return true
+    } catch (err) {
+      setActionError(apiErrorMessage(err))
+      return false
     }
   }
 
@@ -224,7 +237,13 @@ export default function AdminDashboard() {
         {actionError && <p className="mt-4 text-sm text-red-500">{actionError}</p>}
 
         {activeTab === 'orders' && (
-          <OrdersTable orders={orders} loading={ordersLoading} error={ordersError} onDelete={handleDeleteOrder} />
+          <OrdersTable
+            orders={orders}
+            loading={ordersLoading}
+            error={ordersError}
+            onUpdate={handleUpdateOrder}
+            onDelete={handleDeleteOrder}
+          />
         )}
 
         {activeTab === 'telegram' && (
