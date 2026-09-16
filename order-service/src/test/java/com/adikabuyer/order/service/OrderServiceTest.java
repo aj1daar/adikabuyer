@@ -447,6 +447,38 @@ class OrderServiceTest {
     }
 
     @Test
+    void updateOrder_recordsTheAgreedWeightFeeAndNote_andReportsTheFinalTotal() {
+        storedOrder(OrderStatus.NEW);
+
+        OrderDto dto = orderService.updateOrder("order-1",
+                new OrderUpdateRequest(OrderStatus.CONFIRMED, BigDecimal.valueOf(330), "  чёрный вместо белого  "));
+
+        assertThat(dto.weightFee()).isEqualByComparingTo(BigDecimal.valueOf(330));
+        assertThat(dto.finalTotal()).isEqualByComparingTo(BigDecimal.valueOf(340));
+        assertThat(dto.adminNote()).isEqualTo("чёрный вместо белого");
+    }
+
+    @Test
+    void updateOrder_leavesFieldsThatWereNotSentUntouched_andClearsTheNoteOnEmptyString() {
+        Order order = storedOrder(OrderStatus.CONFIRMED);
+        order.setWeightFee(BigDecimal.valueOf(110));
+        order.setAdminNote("старая заметка");
+
+        OrderDto dto = orderService.updateOrder("order-1", new OrderUpdateRequest(null, null, ""));
+
+        assertThat(dto.status()).isEqualTo(OrderStatus.CONFIRMED);
+        assertThat(dto.weightFee()).isEqualByComparingTo(BigDecimal.valueOf(110));
+        assertThat(dto.adminNote()).isNull();
+    }
+
+    @Test
+    void getAllOrders_hasNoFinalTotal_untilTheWeightFeeIsAgreed() {
+        storedOrder(OrderStatus.NEW);
+
+        assertThat(orderService.updateOrder("order-1", new OrderUpdateRequest(null)).finalTotal()).isNull();
+    }
+
+    @Test
     void updateOrder_rejectsAnIllegalTransition_withConflict() {
         storedOrder(OrderStatus.DELIVERED);
 

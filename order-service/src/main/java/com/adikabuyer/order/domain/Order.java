@@ -66,6 +66,18 @@ public class Order {
     @Column(name = "status_updated_at")
     private Instant statusUpdatedAt;
 
+    /** Parcel-weight surcharge agreed at confirmation; null until known. */
+    @Column(name = "weight_fee")
+    private BigDecimal weightFee;
+
+    @Column(name = "admin_note", length = 1000)
+    private String adminNote;
+
+    /** What the customer actually pays: the checkout total plus the weight fee once agreed. */
+    public BigDecimal getFinalTotal() {
+        return weightFee == null ? null : grandTotal.add(weightFee);
+    }
+
     @Builder.Default
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderBy("id ASC")

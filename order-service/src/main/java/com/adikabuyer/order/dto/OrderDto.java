@@ -18,6 +18,9 @@ public record OrderDto(
         Instant createdAt,
         OrderStatus status,
         Instant statusUpdatedAt,
+        BigDecimal weightFee,
+        BigDecimal finalTotal,
+        String adminNote,
         List<OrderItemDto> items
 ) {
 }

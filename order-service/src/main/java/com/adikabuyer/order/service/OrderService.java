@@ -168,6 +168,13 @@ public class OrderService {
             order.setStatus(next);
             order.setStatusUpdatedAt(Instant.now());
         }
+        if (request.weightFee() != null) {
+            order.setWeightFee(request.weightFee());
+        }
+        if (request.adminNote() != null) {
+            String note = request.adminNote().strip();
+            order.setAdminNote(note.isEmpty() ? null : note);
+        }
         return toDto(orderRepository.save(order));
     }
 
@@ -235,6 +242,9 @@ public class OrderService {
                 order.getCreatedAt(),
                 order.getStatus(),
                 order.getStatusUpdatedAt(),
+                order.getWeightFee(),
+                order.getFinalTotal(),
+                order.getAdminNote(),
                 items
         );
     }

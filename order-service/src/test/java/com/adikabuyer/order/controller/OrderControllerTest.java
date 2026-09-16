@@ -292,7 +292,7 @@ class OrderControllerTest {
         OrderDto order = new OrderDto(
                 "order-1", 1042L, "John Doe", "996700123456", "bishkek",
                 BigDecimal.valueOf(50), BigDecimal.valueOf(150), BigDecimal.valueOf(200),
-                Instant.parse("2026-01-01T00:00:00Z"), com.adikabuyer.order.domain.OrderStatus.NEW, null, List.of()
+                Instant.parse("2026-01-01T00:00:00Z"), com.adikabuyer.order.domain.OrderStatus.NEW, null, null, null, null, List.of()
         );
         when(orderService.getAllOrders()).thenReturn(List.of(order));
 
@@ -310,6 +310,19 @@ class OrderControllerTest {
                 .andExpect(status().isOk());
 
         verify(orderService).updateOrder("order-1", new com.adikabuyer.order.dto.OrderUpdateRequest(com.adikabuyer.order.domain.OrderStatus.CONFIRMED));
+    }
+
+    @Test
+    void updateOrder_returns400_forANegativeWeightFeeOrAnOverlongNote() throws Exception {
+        mockMvc.perform(patch("/api/orders/order-1").contentType("application/json").content("{\"weightFee\": -1}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.weightFee").exists());
+        mockMvc.perform(patch("/api/orders/order-1").contentType("application/json")
+                        .content("{\"adminNote\": \"" + "x".repeat(1001) + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.adminNote").exists());
+
+        verifyNoInteractions(orderService);
     }
 
     @Test
