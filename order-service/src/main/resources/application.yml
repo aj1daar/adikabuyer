@@ -52,3 +52,4 @@ app:
   telegram:
     bot-token: ${TELEGRAM_BOT_TOKEN:}
     registration-password: ${TELEGRAM_REGISTRATION_PASSWORD:}
+    admin-url: ${TELEGRAM_ADMIN_URL:}

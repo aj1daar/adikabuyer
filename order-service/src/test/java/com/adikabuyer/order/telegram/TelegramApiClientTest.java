@@ -43,6 +43,54 @@ class TelegramApiClientTest {
     }
 
     @Test
+    void sendMessage_withButtons_postsAnInlineKeyboard() {
+        mockServer.expect(requestTo("https://api.telegram.org/bottest-token/sendMessage"))
+                .andExpect(content().json("""
+                        {"chat_id":42,"text":"hi","reply_markup":{"inline_keyboard":[
+                          [{"text":"Ок","callback_data":"order:1:CONFIRMED"}],
+                          [{"text":"Админка","url":"https://adikabuyer.kg/admin"}]
+                        ]}}"""))
+                .andRespond(withSuccess());
+
+        telegramApiClient.sendMessage(42L, "hi", List.of(
+                List.of(InlineButton.callback("Ок", "order:1:CONFIRMED")),
+                List.of(InlineButton.link("Админка", "https://adikabuyer.kg/admin"))));
+
+        mockServer.verify();
+    }
+
+    @Test
+    void editMessageText_andAnswerCallbackQuery_callTheirEndpoints() {
+        mockServer.expect(requestTo("https://api.telegram.org/bottest-token/editMessageText"))
+                .andExpect(content().json("{\"chat_id\":42,\"message_id\":7,\"text\":\"done\"}"))
+                .andRespond(withSuccess());
+        mockServer.expect(requestTo("https://api.telegram.org/bottest-token/answerCallbackQuery"))
+                .andExpect(content().json("{\"callback_query_id\":\"cb1\",\"text\":\"ok\"}"))
+                .andRespond(withSuccess());
+
+        telegramApiClient.editMessageText(42L, 7L, "done");
+        telegramApiClient.answerCallbackQuery("cb1", "ok");
+
+        mockServer.verify();
+    }
+
+    @Test
+    void getUpdates_readsCallbackQueries() {
+        mockServer.expect(requestTo("https://api.telegram.org/bottest-token/getUpdates?offset=0&timeout=25"))
+                .andRespond(withSuccess("""
+                        {"ok": true, "result": [{"update_id": 9, "callback_query": {"id": "cb1", "data": "order:1:CANCELLED",
+                          "from": {"id": 5, "username": "jane"}, "message": {"message_id": 7, "chat": {"id": 42}, "text": "Новый заказ"}}}]}
+                        """, MediaType.APPLICATION_JSON));
+
+        TelegramCallbackQuery query = telegramApiClient.getUpdates(0, 25).get(0).callbackQuery();
+
+        assertThat(query.data()).isEqualTo("order:1:CANCELLED");
+        assertThat(query.message().messageId()).isEqualTo(7L);
+        assertThat(query.message().chat().id()).isEqualTo(42L);
+        assertThat(query.from().username()).isEqualTo("jane");
+    }
+
+    @Test
     void getUpdates_returnsResultList_whenResponseHasUpdates() {
         mockServer.expect(requestTo("https://api.telegram.org/bottest-token/getUpdates?offset=5&timeout=25"))
                 .andExpect(method(GET))

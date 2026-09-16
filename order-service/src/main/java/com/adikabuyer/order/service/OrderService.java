@@ -15,8 +15,10 @@ import com.adikabuyer.order.dto.OrderPlacedEvent;
 import com.adikabuyer.order.dto.OrderUpdateRequest;
 import com.adikabuyer.order.dto.VariantPricing;
 import com.adikabuyer.order.repository.OrderRepository;
+import com.adikabuyer.order.telegram.InlineButton;
 import com.adikabuyer.order.telegram.OrderNotificationMessageBuilder;
 import com.adikabuyer.order.telegram.TelegramNotifier;
+import com.adikabuyer.order.telegram.TelegramProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -50,6 +52,7 @@ public class OrderService {
     private final DeliveryFeeProperties deliveryFeeProperties;
     private final TelegramNotifier telegramNotifier;
     private final CatalogClient catalogClient;
+    private final TelegramProperties telegramProperties;
 
     @Value("${app.rabbitmq.exchange}")
     private String exchangeName;
@@ -92,12 +95,29 @@ public class OrderService {
 
         String message = OrderNotificationMessageBuilder.buildOrderMessage("№" + orderNumber, cart, items, itemsTotal, deliveryFee, grandTotal);
         try {
-            telegramNotifier.notifyAdmins(message);
+            telegramNotifier.notifyAdmins(message, orderActions(orderId));
         } catch (Exception e) {
             log.warn("Failed to send telegram notification for order {}", orderId, e);
         }
 
         return new CheckoutResponseDto(orderId, orderNumber, itemsTotal, deliveryFee, grandTotal);
+    }
+
+    /** Callback data the bot sends back when an admin taps a button: "order:<id>:<STATUS>". */
+    public static String orderCallback(String orderId, OrderStatus status) {
+        return "order:" + orderId + ":" + status.name();
+    }
+
+    private List<List<InlineButton>> orderActions(String orderId) {
+        List<List<InlineButton>> keyboard = new ArrayList<>();
+        keyboard.add(List.of(
+                InlineButton.callback("✅ Подтвердить", orderCallback(orderId, OrderStatus.CONFIRMED)),
+                InlineButton.callback("❌ Отменить", orderCallback(orderId, OrderStatus.CANCELLED))
+        ));
+        if (telegramProperties.hasUsableAdminUrl()) {
+            keyboard.add(List.of(InlineButton.link("Открыть админку", telegramProperties.getAdminUrl())));
+        }
+        return keyboard;
     }
 
     /**

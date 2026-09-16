@@ -13,7 +13,9 @@ import com.adikabuyer.order.dto.OrderPlacedEvent;
 import com.adikabuyer.order.dto.OrderUpdateRequest;
 import com.adikabuyer.order.dto.VariantPricing;
 import com.adikabuyer.order.repository.OrderRepository;
+import com.adikabuyer.order.telegram.InlineButton;
 import com.adikabuyer.order.telegram.TelegramNotifier;
+import com.adikabuyer.order.telegram.TelegramProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,12 +63,14 @@ class OrderServiceTest {
 
     private OrderService orderService;
 
+    private final TelegramProperties telegramProperties = new TelegramProperties();
+
     /** Authoritative pricing the fake catalog will return, keyed by variant id. */
     private final Map<Long, VariantPricing> catalog = new HashMap<>();
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, rabbitTemplate, deliveryFeeProperties, telegramNotifier, catalogClient);
+        orderService = new OrderService(orderRepository, rabbitTemplate, deliveryFeeProperties, telegramNotifier, catalogClient, telegramProperties);
         ReflectionTestUtils.setField(orderService, "exchangeName", "order.exchange");
         ReflectionTestUtils.setField(orderService, "routingKey", "order.new");
         ReflectionTestUtils.setField(orderService, "cancelRoutingKey", "order.cancelled");
@@ -106,7 +110,7 @@ class OrderServiceTest {
 
     private String captureTelegramMessage() {
         ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-        verify(telegramNotifier).notifyAdmins(messageCaptor.capture());
+        verify(telegramNotifier).notifyAdmins(messageCaptor.capture(), any());
         return messageCaptor.getValue();
     }
 
@@ -161,6 +165,39 @@ class OrderServiceTest {
         verify(orderRepository).save(orderCaptor.capture());
         assertThat(orderCaptor.getValue().getNumber()).isEqualTo(1042L);
         assertThat(captureTelegramMessage()).startsWith("Новый заказ №1042\n");
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<List<InlineButton>> captureTelegramButtons() {
+        ArgumentCaptor<List<List<InlineButton>>> captor = ArgumentCaptor.captor();
+        verify(telegramNotifier).notifyAdmins(anyString(), captor.capture());
+        return captor.getValue();
+    }
+
+    @Test
+    void checkout_attachesConfirmAndCancelButtons_toTheTelegramMessage() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+
+        CheckoutResponseDto response = orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.TEN, 1)));
+
+        List<List<InlineButton>> buttons = captureTelegramButtons();
+        assertThat(buttons).hasSize(1);
+        assertThat(buttons.get(0)).extracting(InlineButton::callbackData).containsExactly(
+                "order:" + response.orderId() + ":CONFIRMED", "order:" + response.orderId() + ":CANCELLED");
+    }
+
+    @Test
+    void checkout_addsTheAdminLink_onlyForAPublicHttpsUrl() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+        telegramProperties.setAdminUrl("https://adikabuyer.kg/admin");
+
+        orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.TEN, 1)));
+
+        List<List<InlineButton>> buttons = captureTelegramButtons();
+        assertThat(buttons).hasSize(2);
+        assertThat(buttons.get(1).get(0).url()).isEqualTo("https://adikabuyer.kg/admin");
+        telegramProperties.setAdminUrl("https://localhost/admin");
+        assertThat(telegramProperties.hasUsableAdminUrl()).isFalse();
     }
 
     @Test
@@ -255,7 +292,7 @@ class OrderServiceTest {
     void checkout_doesNotFail_whenTelegramNotificationThrows() {
         when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
         org.mockito.Mockito.doThrow(new RuntimeException("telegram down"))
-                .when(telegramNotifier).notifyAdmins(anyString());
+                .when(telegramNotifier).notifyAdmins(anyString(), any());
 
         CheckoutResponseDto response = orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.TEN, 1)));
 

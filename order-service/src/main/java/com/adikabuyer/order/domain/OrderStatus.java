@@ -14,6 +14,18 @@ public enum OrderStatus {
     DELIVERED,
     CANCELLED;
 
+    /** Russian name shown to admins in Telegram and the admin panel. */
+    public String label() {
+        return switch (this) {
+            case NEW -> "Новый";
+            case CONFIRMED -> "Подтверждён";
+            case PURCHASED -> "Выкуплен";
+            case SHIPPED -> "В пути";
+            case DELIVERED -> "Доставлен";
+            case CANCELLED -> "Отменён";
+        };
+    }
+
     public boolean isFinal() {
         return this == DELIVERED || this == CANCELLED;
     }

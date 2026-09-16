@@ -63,6 +63,10 @@ public class TelegramAdminService {
         return true;
     }
 
+    public boolean isAdminChat(long chatId) {
+        return telegramAdminRepository.existsById(chatId);
+    }
+
     public List<Long> getAdminChatIds() {
         return telegramAdminRepository.findAll().stream().map(TelegramAdmin::getChatId).toList();
     }
