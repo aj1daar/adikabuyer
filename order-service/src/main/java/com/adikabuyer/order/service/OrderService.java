@@ -7,6 +7,7 @@ import com.adikabuyer.order.domain.OrderItem;
 import com.adikabuyer.order.domain.OrderStatus;
 import com.adikabuyer.order.dto.CartDto;
 import com.adikabuyer.order.dto.CartItemDto;
+import com.adikabuyer.order.dto.OrderCancelledEvent;
 import com.adikabuyer.order.dto.CheckoutResponseDto;
 import com.adikabuyer.order.dto.OrderDto;
 import com.adikabuyer.order.dto.OrderItemDto;
@@ -55,6 +56,9 @@ public class OrderService {
 
     @Value("${app.rabbitmq.routing-key}")
     private String routingKey;
+
+    @Value("${app.rabbitmq.cancel-routing-key}")
+    private String cancelRoutingKey;
 
     @Transactional
     public CheckoutResponseDto checkout(CartDto submitted) {
@@ -167,6 +171,9 @@ public class OrderService {
             }
             order.setStatus(next);
             order.setStatusUpdatedAt(Instant.now());
+            if (next == OrderStatus.CANCELLED) {
+                returnStock(order);
+            }
         }
         if (request.weightFee() != null) {
             order.setWeightFee(request.weightFee());
@@ -178,12 +185,22 @@ public class OrderService {
         return toDto(orderRepository.save(order));
     }
 
+    /**
+     * Deleting an order that was still open (not cancelled, not delivered) gives its stock
+     * back first, the same as cancelling it; a delivered order's goods are gone for good.
+     */
     @Transactional
     public void deleteOrder(String id) {
-        if (!orderRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found: " + id);
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found: " + id));
+        if (!order.getStatus().isFinal()) {
+            returnStock(order);
         }
-        orderRepository.deleteById(id);
+        orderRepository.delete(order);
+    }
+
+    private void returnStock(Order order) {
+        rabbitTemplate.convertAndSend(exchangeName, cancelRoutingKey, new OrderCancelledEvent(order.getId(), Instant.now()));
     }
 
     private Order buildOrder(

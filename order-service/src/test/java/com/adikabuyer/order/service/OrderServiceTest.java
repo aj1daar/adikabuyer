@@ -7,6 +7,7 @@ import com.adikabuyer.order.domain.OrderStatus;
 import com.adikabuyer.order.dto.CartDto;
 import com.adikabuyer.order.dto.CartItemDto;
 import com.adikabuyer.order.dto.CheckoutResponseDto;
+import com.adikabuyer.order.dto.OrderCancelledEvent;
 import com.adikabuyer.order.dto.OrderDto;
 import com.adikabuyer.order.dto.OrderPlacedEvent;
 import com.adikabuyer.order.dto.OrderUpdateRequest;
@@ -68,6 +69,7 @@ class OrderServiceTest {
         orderService = new OrderService(orderRepository, rabbitTemplate, deliveryFeeProperties, telegramNotifier, catalogClient);
         ReflectionTestUtils.setField(orderService, "exchangeName", "order.exchange");
         ReflectionTestUtils.setField(orderService, "routingKey", "order.new");
+        ReflectionTestUtils.setField(orderService, "cancelRoutingKey", "order.cancelled");
         lenient().when(orderRepository.nextOrderNumber()).thenReturn(1042L);
         lenient().when(catalogClient.fetchPricing(any())).thenAnswer(invocation -> {
             Collection<Long> ids = invocation.getArgument(0);
@@ -479,6 +481,46 @@ class OrderServiceTest {
     }
 
     @Test
+    void updateOrder_publishesAStockReturn_whenTheOrderIsCancelled() {
+        storedOrder(OrderStatus.CONFIRMED);
+
+        orderService.updateOrder("order-1", new OrderUpdateRequest(OrderStatus.CANCELLED));
+
+        ArgumentCaptor<OrderCancelledEvent> eventCaptor = ArgumentCaptor.forClass(OrderCancelledEvent.class);
+        verify(rabbitTemplate).convertAndSend(org.mockito.ArgumentMatchers.eq("order.exchange"), org.mockito.ArgumentMatchers.eq("order.cancelled"), eventCaptor.capture());
+        assertThat(eventCaptor.getValue().orderId()).isEqualTo("order-1");
+    }
+
+    @Test
+    void updateOrder_returnsNoStock_forAnOrdinaryForwardMove() {
+        storedOrder(OrderStatus.CONFIRMED);
+
+        orderService.updateOrder("order-1", new OrderUpdateRequest(OrderStatus.SHIPPED));
+
+        verify(rabbitTemplate, never()).convertAndSend(anyString(), org.mockito.ArgumentMatchers.eq("order.cancelled"), any(Object.class));
+    }
+
+    @Test
+    void deleteOrder_returnsTheStock_ofAnOrderThatWasStillOpen() {
+        Order order = storedOrder(OrderStatus.PURCHASED);
+
+        orderService.deleteOrder("order-1");
+
+        verify(rabbitTemplate).convertAndSend(org.mockito.ArgumentMatchers.eq("order.exchange"), org.mockito.ArgumentMatchers.eq("order.cancelled"), any(OrderCancelledEvent.class));
+        verify(orderRepository).delete(order);
+    }
+
+    @Test
+    void deleteOrder_doesNotReturnStockTwice_forAnAlreadyCancelledOrDeliveredOrder() {
+        Order order = storedOrder(OrderStatus.CANCELLED);
+
+        orderService.deleteOrder("order-1");
+
+        verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), any(Object.class));
+        verify(orderRepository).delete(order);
+    }
+
+    @Test
     void updateOrder_rejectsAnIllegalTransition_withConflict() {
         storedOrder(OrderStatus.DELIVERED);
 
@@ -523,21 +565,21 @@ class OrderServiceTest {
 
     @Test
     void deleteOrder_deletesExistingOrder() {
-        when(orderRepository.existsById("order-1")).thenReturn(true);
+        Order order = storedOrder(OrderStatus.DELIVERED);
 
         orderService.deleteOrder("order-1");
 
-        verify(orderRepository).deleteById("order-1");
+        verify(orderRepository).delete(order);
     }
 
     @Test
     void deleteOrder_throwsNotFound_whenOrderDoesNotExist() {
-        when(orderRepository.existsById("missing")).thenReturn(false);
+        when(orderRepository.findById("missing")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.deleteOrder("missing"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("404");
 
-        verify(orderRepository, never()).deleteById(anyString());
+        verify(orderRepository, never()).delete(any());
     }
 }
