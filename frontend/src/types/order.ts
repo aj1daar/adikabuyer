@@ -32,8 +32,18 @@ export type OrderItemDto = {
   quantity: number
 }
 
+export type OrderStatus = 'NEW' | 'CONFIRMED' | 'PURCHASED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
+
+/** Admin edit of an order; only the fields sent are changed (empty adminNote clears it). */
+export type OrderUpdatePayload = {
+  status?: OrderStatus
+  weightFee?: number
+  adminNote?: string
+}
+
 export type OrderDto = {
   id: string
+  number: number
   customerName: string
   customerPhone: string
   region: string
@@ -41,5 +51,12 @@ export type OrderDto = {
   deliveryFee: number
   grandTotal: number
   createdAt: string
+  status: OrderStatus
+  statusUpdatedAt: string | null
+  /** parcel-weight surcharge agreed at confirmation; null until known */
+  weightFee: number | null
+  /** grandTotal + weightFee; null until the weight fee is known */
+  finalTotal: number | null
+  adminNote: string | null
   items: OrderItemDto[]
 }

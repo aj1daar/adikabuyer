@@ -15,6 +15,12 @@ const order: OrderDto = {
   deliveryFee: 150,
   grandTotal: 200,
   createdAt: '2026-01-01T00:00:00Z',
+  number: 1042,
+  status: 'NEW',
+  statusUpdatedAt: null,
+  weightFee: null,
+  finalTotal: null,
+  adminNote: null,
   items: [{ variantId: 1, productName: 'Tumbler', sku: 'TUM-1', attributes: {}, unitPrice: 50, quantity: 2 }],
 }
 
