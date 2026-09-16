@@ -68,7 +68,8 @@ public class OrderService {
         CartDto cart = sanitize(submitted);
         // Never trust the client's prices/names/SKUs/attributes — re-resolve every line against
         // catalog-service and reject anything unknown, inactive or out of stock.
-        List<CartItemDto> items = repriceAgainstCatalog(cart.items());
+        List<String> lowStock = new ArrayList<>();
+        List<CartItemDto> items = repriceAgainstCatalog(cart.items(), lowStock);
 
         BigDecimal itemsTotal = calculateItemsTotal(items);
         BigDecimal deliveryFee = resolveDeliveryFee(cart.region());
@@ -98,6 +99,13 @@ public class OrderService {
             telegramNotifier.notifyAdmins(message, orderActions(orderId));
         } catch (Exception e) {
             log.warn("Failed to send telegram notification for order {}", orderId, e);
+        }
+        if (!lowStock.isEmpty()) {
+            try {
+                telegramNotifier.notifyAdmins("⚠️ Заканчивается после заказа №" + orderNumber + ":\n" + String.join("\n", lowStock));
+            } catch (Exception e) {
+                log.warn("Failed to send low-stock alert for order {}", orderId, e);
+            }
         }
 
         return new CheckoutResponseDto(orderId, orderNumber, itemsTotal, deliveryFee, grandTotal);
@@ -137,7 +145,7 @@ public class OrderService {
         return value == null ? null : value.replaceAll("\\p{Cntrl}", " ").replaceAll("\\s+", " ").strip();
     }
 
-    private List<CartItemDto> repriceAgainstCatalog(List<CartItemDto> requested) {
+    private List<CartItemDto> repriceAgainstCatalog(List<CartItemDto> requested, List<String> lowStock) {
         Set<Long> variantIds = requested.stream().map(CartItemDto::variantId).collect(Collectors.toSet());
         Map<Long, VariantPricing> pricing = catalogClient.fetchPricing(variantIds);
         // Stock is checked against the variant's total across every line, so splitting one
@@ -146,6 +154,7 @@ public class OrderService {
                 .collect(Collectors.groupingBy(CartItemDto::variantId, Collectors.summingLong(CartItemDto::quantity)));
 
         List<CartItemDto> priced = new ArrayList<>();
+        Set<Long> reported = new java.util.HashSet<>();
         for (CartItemDto item : requested) {
             VariantPricing variant = pricing.get(item.variantId());
             if (variant == null) {
@@ -158,6 +167,14 @@ public class OrderService {
             if (stockChecked && (variant.stockQuantity() == null
                     || variant.stockQuantity() < requestedPerVariant.get(item.variantId()))) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Not enough stock for variant: " + item.variantId());
+            }
+            // what this order leaves on the shelf; one line per variant however many cart lines it spans
+            if (stockChecked && reported.add(item.variantId())) {
+                long left = variant.stockQuantity() - requestedPerVariant.get(item.variantId());
+                if (left <= telegramProperties.getLowStockThreshold()) {
+                    lowStock.add("• " + variant.productName() + " (" + variant.sku() + ") — "
+                            + (left == 0 ? "закончился" : "осталось " + left));
+                }
             }
             priced.add(new CartItemDto(
                     item.variantId(),

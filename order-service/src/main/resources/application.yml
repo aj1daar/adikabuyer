@@ -53,3 +53,4 @@ app:
     bot-token: ${TELEGRAM_BOT_TOKEN:}
     registration-password: ${TELEGRAM_REGISTRATION_PASSWORD:}
     admin-url: ${TELEGRAM_ADMIN_URL:}
+    low-stock-threshold: ${TELEGRAM_LOW_STOCK_THRESHOLD:2}

@@ -201,6 +201,33 @@ class OrderServiceTest {
     }
 
     @Test
+    void checkout_warnsAdmins_whenAVariantIsNearlySoldOut() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+        catalog.put(1L, new VariantPricing(1L, "Полночь", "ЧЁРНЫЙ-500", Map.of(), BigDecimal.TEN, 3, true, "IN_STOCK"));
+        catalog.put(2L, new VariantPricing(2L, "Рассвет", "БЕЛЫЙ-500", Map.of(), BigDecimal.TEN, 2, true, "IN_STOCK"));
+        catalog.put(3L, new VariantPricing(3L, "Худи", "M", Map.of(), BigDecimal.TEN, 50, true, "IN_STOCK"));
+
+        orderService.checkout(buildCart("Бишкек",
+                new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 1),
+                new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 1),
+                new CartItemDto(2L, "x", "x", Map.of(), BigDecimal.TEN, 2),
+                new CartItemDto(3L, "x", "x", Map.of(), BigDecimal.TEN, 1)));
+
+        verify(telegramNotifier).notifyAdmins(
+                "⚠️ Заканчивается после заказа №1042:\n• Полночь (ЧЁРНЫЙ-500) — осталось 1\n• Рассвет (БЕЛЫЙ-500) — закончился");
+    }
+
+    @Test
+    void checkout_sendsNoStockWarning_forPreOrdersOrAmpleStock() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+        catalog.put(1L, new VariantPricing(1L, "Под заказ", "PO", Map.of(), BigDecimal.TEN, 0, true, "PRE_ORDER"));
+
+        orderService.checkout(buildCart("Бишкек", new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 1), buildItem(BigDecimal.TEN, 1)));
+
+        verify(telegramNotifier, never()).notifyAdmins(anyString());
+    }
+
+    @Test
     void checkout_sendsTelegramNotification_withNonBlankMessage() {
         when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.valueOf(500));
 
