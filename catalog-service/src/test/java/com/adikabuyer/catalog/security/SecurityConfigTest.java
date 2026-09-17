@@ -82,7 +82,12 @@ class SecurityConfigTest {
     @Test
     void writeEndpoint_isRejected_whenTokenIsTampered() throws Exception {
         String token = jwtUtil.generateToken("admin", "ADMIN");
-        String tamperedToken = token.substring(0, token.length() - 2) + "xx";
+        // change the signature's first char: the last base64url char carries padding bits,
+        // so overwriting the tail could decode to the very same signature
+        int signature = token.lastIndexOf('.') + 1;
+        String tamperedToken = token.substring(0, signature)
+                + (token.charAt(signature) == 'A' ? 'B' : 'A')
+                + token.substring(signature + 1);
 
         mockMvc.perform(post("/api/catalog/products").header("Authorization", "Bearer " + tamperedToken))
                 .andExpect(status().isUnauthorized());
