@@ -26,13 +26,17 @@ dump_one() {
   db="$1"
   target="$BACKUP_DIR/${db}-${stamp}.sql.gz"
   # write to .part first so a crashed/half-written dump is never mistaken for a
-  # good backup, and never picked up by the restore instructions
+  # good backup, and never picked up by the restore instructions. pg_dump and gzip
+  # run as separate steps: in a pipe only gzip's exit code counts, so a refused
+  # connection used to leave an empty 20-byte "backup" behind.
   if pg_dump --host="$PGHOST" --username="$PGUSER" --dbname="$db" --no-owner --no-privileges \
-      | gzip -9 > "${target}.part"; then
+      --file="${target}.sql.part" \
+      && gzip -9 -c "${target}.sql.part" > "${target}.part"; then
+    rm -f "${target}.sql.part"
     mv "${target}.part" "$target"
     echo "[backup] $db -> $target ($(wc -c < "$target") bytes)"
   else
-    rm -f "${target}.part"
+    rm -f "${target}.sql.part" "${target}.part"
     echo "[backup] FAILED for $db" >&2
     return 1
   fi
