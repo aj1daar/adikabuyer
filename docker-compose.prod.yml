@@ -1,10 +1,19 @@
 name: adikabuyer
 
+# Docker keeps json-file logs forever by default, which slowly fills the VPS disk.
+# Every service rotates at 10MB and keeps 3 files (≤30MB of logs per container).
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres-db:
     image: postgres:16-alpine
     container_name: adikabuyer-postgres
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 512m
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-adikabuyer}
@@ -26,6 +35,7 @@ services:
     image: postgres:16-alpine
     container_name: adikabuyer-db-backup
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 128m
     depends_on:
       - postgres-db
@@ -38,10 +48,73 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     # one pass on boot (so a fresh deploy has a backup immediately), then on the interval
     command:
-      - 'while true; do /scripts/backup-db.sh || echo "[backup] pass failed"; sleep "$${BACKUP_INTERVAL_SECONDS}"; done'
+      - 'while true; do sh /scripts/backup-db.sh || echo "[backup] pass failed"; sleep "$${BACKUP_INTERVAL_SECONDS}"; done'
     volumes:
       - ./scripts:/scripts:ro
       - db-backups:/backups
+    networks:
+      - adikabuyer-network
+
+  # Off-site copies: mirrors the database dumps and the product-photo bucket into any
+  # S3-compatible bucket (scripts/backup-offsite.sh) so losing the VPS loses nothing.
+  # Idle, with a log reminder, until BACKUP_S3_BUCKET and its keys are set.
+  backup-offsite:
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    container_name: adikabuyer-backup-offsite
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 128m
+    depends_on:
+      - minio
+      - db-backup
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set}
+      S3_BUCKET: ${S3_BUCKET:-adikabuyer-media}
+      BACKUP_S3_ENDPOINT: ${BACKUP_S3_ENDPOINT:-}
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-}
+      BACKUP_S3_ACCESS_KEY: ${BACKUP_S3_ACCESS_KEY:-}
+      BACKUP_S3_SECRET_KEY: ${BACKUP_S3_SECRET_KEY:-}
+      BACKUP_S3_PREFIX: ${BACKUP_S3_PREFIX:-adikabuyer}
+      BACKUP_OFFSITE_RETENTION_DAYS: ${BACKUP_OFFSITE_RETENTION_DAYS:-30}
+      BACKUP_OFFSITE_INTERVAL_SECONDS: ${BACKUP_OFFSITE_INTERVAL_SECONDS:-86400}
+      # mc keeps its alias config in $HOME; the image runs without one
+      HOME: /tmp
+    entrypoint: ["sh", "/scripts/backup-offsite.sh"]
+    volumes:
+      - ./scripts:/scripts:ro
+      - db-backups:/backups:ro
+      - backup-status:/status
+    networks:
+      - adikabuyer-network
+
+  # Watchdog: checks every service, Postgres, disk and backup freshness each minute and
+  # messages the registered Telegram admin chats when something breaks or recovers
+  # (scripts/monitor.sh). Silent — logs only — while TELEGRAM_BOT_TOKEN is unset.
+  monitor:
+    image: postgres:16-alpine
+    container_name: adikabuyer-monitor
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 64m
+    depends_on:
+      - postgres-db
+    environment:
+      DOMAIN: ${DOMAIN}
+      POSTGRES_USER: ${POSTGRES_USER:-adikabuyer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-adikabuyer}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      MONITOR_INTERVAL_SECONDS: ${MONITOR_INTERVAL_SECONDS:-60}
+      MONITOR_DISK_ALERT_PERCENT: ${MONITOR_DISK_ALERT_PERCENT:-85}
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-}
+      BACKUP_OFFSITE_INTERVAL_SECONDS: ${BACKUP_OFFSITE_INTERVAL_SECONDS:-86400}
+    entrypoint: ["sh", "/scripts/monitor.sh"]
+    volumes:
+      - ./scripts:/scripts:ro
+      - db-backups:/backups:ro
+      - backup-status:/status:ro
     networks:
       - adikabuyer-network
 
@@ -49,6 +122,7 @@ services:
     image: rabbitmq:3.13-management-alpine
     container_name: adikabuyer-rabbitmq
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 256m
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-adikabuyer}
@@ -67,6 +141,7 @@ services:
     image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
     container_name: adikabuyer-minio
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 512m
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-adikabuyer}
@@ -88,6 +163,7 @@ services:
       context: ./catalog-service
     container_name: adikabuyer-catalog-service
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 384m
     depends_on:
       - postgres-db
@@ -120,6 +196,7 @@ services:
       context: ./order-service
     container_name: adikabuyer-order-service
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 384m
     depends_on:
       - postgres-db
@@ -139,6 +216,8 @@ services:
       APP_SECURITY_CHECKOUT_WINDOW_SECONDS: ${APP_SECURITY_CHECKOUT_WINDOW_SECONDS:-600}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_REGISTRATION_PASSWORD: ${TELEGRAM_REGISTRATION_PASSWORD:-}
+      TELEGRAM_ADMIN_URL: ${TELEGRAM_ADMIN_URL:-https://${DOMAIN}/admin}
+      TELEGRAM_LOW_STOCK_THRESHOLD: ${TELEGRAM_LOW_STOCK_THRESHOLD:-2}
     networks:
       - adikabuyer-network
 
@@ -147,6 +226,7 @@ services:
       context: ./api-gateway
     container_name: adikabuyer-api-gateway
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 384m
     depends_on:
       - catalog-service
@@ -164,6 +244,7 @@ services:
       context: ./frontend
     container_name: adikabuyer-caddy
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 128m
     depends_on:
       - api-gateway
@@ -195,3 +276,4 @@ volumes:
   caddy-data:
   caddy-config:
   db-backups:
+  backup-status:

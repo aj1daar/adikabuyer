@@ -4,16 +4,21 @@ import com.adikabuyer.order.client.CatalogClient;
 import com.adikabuyer.order.config.DeliveryFeeProperties;
 import com.adikabuyer.order.domain.Order;
 import com.adikabuyer.order.domain.OrderItem;
+import com.adikabuyer.order.domain.OrderStatus;
 import com.adikabuyer.order.dto.CartDto;
 import com.adikabuyer.order.dto.CartItemDto;
+import com.adikabuyer.order.dto.OrderCancelledEvent;
 import com.adikabuyer.order.dto.CheckoutResponseDto;
 import com.adikabuyer.order.dto.OrderDto;
 import com.adikabuyer.order.dto.OrderItemDto;
 import com.adikabuyer.order.dto.OrderPlacedEvent;
+import com.adikabuyer.order.dto.OrderUpdateRequest;
 import com.adikabuyer.order.dto.VariantPricing;
 import com.adikabuyer.order.repository.OrderRepository;
+import com.adikabuyer.order.telegram.InlineButton;
 import com.adikabuyer.order.telegram.OrderNotificationMessageBuilder;
 import com.adikabuyer.order.telegram.TelegramNotifier;
+import com.adikabuyer.order.telegram.TelegramProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -47,6 +52,7 @@ public class OrderService {
     private final DeliveryFeeProperties deliveryFeeProperties;
     private final TelegramNotifier telegramNotifier;
     private final CatalogClient catalogClient;
+    private final TelegramProperties telegramProperties;
 
     @Value("${app.rabbitmq.exchange}")
     private String exchangeName;
@@ -54,20 +60,25 @@ public class OrderService {
     @Value("${app.rabbitmq.routing-key}")
     private String routingKey;
 
+    @Value("${app.rabbitmq.cancel-routing-key}")
+    private String cancelRoutingKey;
+
     @Transactional
     public CheckoutResponseDto checkout(CartDto submitted) {
         CartDto cart = sanitize(submitted);
         // Never trust the client's prices/names/SKUs/attributes — re-resolve every line against
         // catalog-service and reject anything unknown, inactive or out of stock.
-        List<CartItemDto> items = repriceAgainstCatalog(cart.items());
+        List<String> lowStock = new ArrayList<>();
+        List<CartItemDto> items = repriceAgainstCatalog(cart.items(), lowStock);
 
         BigDecimal itemsTotal = calculateItemsTotal(items);
         BigDecimal deliveryFee = resolveDeliveryFee(cart.region());
         BigDecimal grandTotal = itemsTotal.add(deliveryFee);
         String orderId = UUID.randomUUID().toString();
+        long orderNumber = orderRepository.nextOrderNumber();
         Instant now = Instant.now();
 
-        Order order = buildOrder(orderId, cart, items, itemsTotal, deliveryFee, grandTotal, now);
+        Order order = buildOrder(orderId, orderNumber, cart, items, itemsTotal, deliveryFee, grandTotal, now);
         orderRepository.save(order);
 
         OrderPlacedEvent event = new OrderPlacedEvent(
@@ -83,14 +94,38 @@ public class OrderService {
         );
         rabbitTemplate.convertAndSend(exchangeName, routingKey, event);
 
-        String message = OrderNotificationMessageBuilder.buildOrderMessage(orderId, cart, items, itemsTotal, deliveryFee, grandTotal);
+        String message = OrderNotificationMessageBuilder.buildOrderMessage("№" + orderNumber, cart, items, itemsTotal, deliveryFee, grandTotal);
         try {
-            telegramNotifier.notifyAdmins(message);
+            telegramNotifier.notifyAdmins(message, orderActions(orderId));
         } catch (Exception e) {
             log.warn("Failed to send telegram notification for order {}", orderId, e);
         }
+        if (!lowStock.isEmpty()) {
+            try {
+                telegramNotifier.notifyAdmins("⚠️ Заканчивается после заказа №" + orderNumber + ":\n" + String.join("\n", lowStock));
+            } catch (Exception e) {
+                log.warn("Failed to send low-stock alert for order {}", orderId, e);
+            }
+        }
 
-        return new CheckoutResponseDto(orderId, itemsTotal, deliveryFee, grandTotal);
+        return new CheckoutResponseDto(orderId, orderNumber, itemsTotal, deliveryFee, grandTotal);
+    }
+
+    /** Callback data the bot sends back when an admin taps a button: "order:<id>:<STATUS>". */
+    public static String orderCallback(String orderId, OrderStatus status) {
+        return "order:" + orderId + ":" + status.name();
+    }
+
+    private List<List<InlineButton>> orderActions(String orderId) {
+        List<List<InlineButton>> keyboard = new ArrayList<>();
+        keyboard.add(List.of(
+                InlineButton.callback("✅ Подтвердить", orderCallback(orderId, OrderStatus.CONFIRMED)),
+                InlineButton.callback("❌ Отменить", orderCallback(orderId, OrderStatus.CANCELLED))
+        ));
+        if (telegramProperties.hasUsableAdminUrl()) {
+            keyboard.add(List.of(InlineButton.link("Открыть админку", telegramProperties.getAdminUrl())));
+        }
+        return keyboard;
     }
 
     /**
@@ -110,7 +145,7 @@ public class OrderService {
         return value == null ? null : value.replaceAll("\\p{Cntrl}", " ").replaceAll("\\s+", " ").strip();
     }
 
-    private List<CartItemDto> repriceAgainstCatalog(List<CartItemDto> requested) {
+    private List<CartItemDto> repriceAgainstCatalog(List<CartItemDto> requested, List<String> lowStock) {
         Set<Long> variantIds = requested.stream().map(CartItemDto::variantId).collect(Collectors.toSet());
         Map<Long, VariantPricing> pricing = catalogClient.fetchPricing(variantIds);
         // Stock is checked against the variant's total across every line, so splitting one
@@ -119,6 +154,7 @@ public class OrderService {
                 .collect(Collectors.groupingBy(CartItemDto::variantId, Collectors.summingLong(CartItemDto::quantity)));
 
         List<CartItemDto> priced = new ArrayList<>();
+        Set<Long> reported = new java.util.HashSet<>();
         for (CartItemDto item : requested) {
             VariantPricing variant = pricing.get(item.variantId());
             if (variant == null) {
@@ -131,6 +167,14 @@ public class OrderService {
             if (stockChecked && (variant.stockQuantity() == null
                     || variant.stockQuantity() < requestedPerVariant.get(item.variantId()))) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Not enough stock for variant: " + item.variantId());
+            }
+            // what this order leaves on the shelf; one line per variant however many cart lines it spans
+            if (stockChecked && reported.add(item.variantId())) {
+                long left = variant.stockQuantity() - requestedPerVariant.get(item.variantId());
+                if (left <= telegramProperties.getLowStockThreshold()) {
+                    lowStock.add("• " + variant.productName() + " (" + variant.sku() + ") — "
+                            + (left == 0 ? "закончился" : "осталось " + left));
+                }
             }
             priced.add(new CartItemDto(
                     item.variantId(),
@@ -151,20 +195,58 @@ public class OrderService {
                 .toList();
     }
 
+    /** Applies an admin edit; a status change must follow {@link OrderStatus#canTransitionTo}. */
+    @Transactional
+    public OrderDto updateOrder(String id, OrderUpdateRequest request) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found: " + id));
+        OrderStatus next = request.status();
+        if (next != null && next != order.getStatus()) {
+            if (!order.getStatus().canTransitionTo(next)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Invalid status transition: " + order.getStatus() + " -> " + next);
+            }
+            order.setStatus(next);
+            order.setStatusUpdatedAt(Instant.now());
+            if (next == OrderStatus.CANCELLED) {
+                returnStock(order);
+            }
+        }
+        if (request.weightFee() != null) {
+            order.setWeightFee(request.weightFee());
+        }
+        if (request.adminNote() != null) {
+            String note = request.adminNote().strip();
+            order.setAdminNote(note.isEmpty() ? null : note);
+        }
+        return toDto(orderRepository.save(order));
+    }
+
+    /**
+     * Deleting an order that was still open (not cancelled, not delivered) gives its stock
+     * back first, the same as cancelling it; a delivered order's goods are gone for good.
+     */
     @Transactional
     public void deleteOrder(String id) {
-        if (!orderRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found: " + id);
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found: " + id));
+        if (!order.getStatus().isFinal()) {
+            returnStock(order);
         }
-        orderRepository.deleteById(id);
+        orderRepository.delete(order);
+    }
+
+    private void returnStock(Order order) {
+        rabbitTemplate.convertAndSend(exchangeName, cancelRoutingKey, new OrderCancelledEvent(order.getId(), Instant.now()));
     }
 
     private Order buildOrder(
-            String orderId, CartDto cart, List<CartItemDto> items,
+            String orderId, long orderNumber, CartDto cart, List<CartItemDto> items,
             BigDecimal itemsTotal, BigDecimal deliveryFee, BigDecimal grandTotal, Instant now
     ) {
         Order order = Order.builder()
                 .id(orderId)
+                .number(orderNumber)
                 .customerName(cart.customerName())
                 .customerPhone(cart.customerPhone())
                 .region(cart.region())
@@ -204,6 +286,7 @@ public class OrderService {
 
         return new OrderDto(
                 order.getId(),
+                order.getNumber(),
                 order.getCustomerName(),
                 order.getCustomerPhone(),
                 order.getRegion(),
@@ -211,6 +294,11 @@ public class OrderService {
                 order.getDeliveryFee(),
                 order.getGrandTotal(),
                 order.getCreatedAt(),
+                order.getStatus(),
+                order.getStatusUpdatedAt(),
+                order.getWeightFee(),
+                order.getFinalTotal(),
+                order.getAdminNote(),
                 items
         );
     }

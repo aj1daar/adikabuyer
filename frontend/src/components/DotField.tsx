@@ -19,6 +19,8 @@ const TAU = Math.PI * 2
 const FIELD_SCALE = 0.0016 // px⁻¹ — large, soft flow-field features
 const FIELD_MORPH = 0.05 // how fast the field itself drifts
 const EDGE_MARGIN = 70
+/** Reduce Motion: the dots keep drifting, just at about a third of the speed and with no trails. */
+const CALM_SPEED = 0.35
 
 function hash3(x: number, y: number, z: number) {
   let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(z, 2246822519)
@@ -65,7 +67,8 @@ function seeded(seed: number) {
 /**
  * Backdrop dots roaming the whole viewport on a flow field: each drifts along
  * smooth, non-repeating curves at its own speed, curls away from the edges, and
- * leaves a short fading trail. No two move alike; nothing pauses.
+ * leaves a short fading trail. No two move alike; nothing pauses. With Reduce Motion
+ * on they still drift, slower and trail-free, instead of freezing into a still image.
  */
 export default function DotField({ dots, reduceMotion }: DotFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -126,12 +129,8 @@ export default function DotField({ dots, reduceMotion }: DotFieldProps) {
       }
     }
 
-    if (reduceMotion) {
-      dots.forEach((dot, index) => {
-        paintDot(dot, agents[index].x, agents[index].y, agents[index].radius, 0.9)
-      })
-      return () => window.removeEventListener('resize', resize)
-    }
+    const calm = Boolean(reduceMotion)
+    const speedScale = calm ? CALM_SPEED : 1
 
     let raf = 0
     let last = performance.now()
@@ -150,8 +149,8 @@ export default function DotField({ dots, reduceMotion }: DotFieldProps) {
         const jitter = (a.rand() - 0.5) * a.jitter
         const angle = flow + jitter
 
-        let desiredX = Math.cos(angle) * a.speed
-        let desiredY = Math.sin(angle) * a.speed
+        let desiredX = Math.cos(angle) * a.speed * speedScale
+        let desiredY = Math.sin(angle) * a.speed * speedScale
 
         // curl inward near the edges instead of leaving the page
         if (a.x < EDGE_MARGIN) desiredX += (EDGE_MARGIN - a.x) * 0.9
@@ -168,14 +167,16 @@ export default function DotField({ dots, reduceMotion }: DotFieldProps) {
         a.x = Math.max(4, Math.min(width - 4, a.x))
         a.y = Math.max(4, Math.min(height - 4, a.y))
 
-        a.trail.push({ x: a.x, y: a.y })
-        if (a.trail.length > a.trailLength) {
-          a.trail.shift()
+        if (!calm) {
+          a.trail.push({ x: a.x, y: a.y })
+          if (a.trail.length > a.trailLength) {
+            a.trail.shift()
+          }
+          a.trail.forEach((point, trailIndex) => {
+            const k = trailIndex / a.trailLength
+            paintDot(dot, point.x, point.y, a.radius * (0.3 + k * 0.7), k * k * 0.5)
+          })
         }
-        a.trail.forEach((point, trailIndex) => {
-          const k = trailIndex / a.trailLength
-          paintDot(dot, point.x, point.y, a.radius * (0.3 + k * 0.7), k * k * 0.5)
-        })
         paintDot(dot, a.x, a.y, a.radius, 0.9)
       })
 

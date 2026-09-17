@@ -52,6 +52,8 @@ app:
     exchange: order.exchange
     queue: order.queue
     routing-key: order.new
+    cancel-queue: order.cancel.queue
+    cancel-routing-key: order.cancelled
     dead-letter-exchange: order.dlx
     dead-letter-queue: order.queue.dlq
     dead-letter-routing-key: order.new.dlq

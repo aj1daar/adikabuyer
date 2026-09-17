@@ -136,6 +136,7 @@ describe('CartDrawer', () => {
     useCartStore.setState({ items: [cartItem()], isOpen: true })
     mockedSubmitCheckout.mockResolvedValueOnce({
       orderId: 'order-1',
+      orderNumber: 1042,
       itemsTotal: 50,
       deliveryFee: 150,
       grandTotal: 200,
@@ -148,6 +149,7 @@ describe('CartDrawer', () => {
     await waitFor(() => expect(useCartStore.getState().items).toEqual([]))
 
     expect(screen.getByText('Заказ принят!')).toBeInTheDocument()
+    expect(screen.getByText('Номер заказа: №1042')).toBeInTheDocument()
     expect(useCartStore.getState().isOpen).toBe(true)
   })
 
@@ -155,6 +157,7 @@ describe('CartDrawer', () => {
     useCartStore.setState({ items: [cartItem()], isOpen: true })
     mockedSubmitCheckout.mockResolvedValueOnce({
       orderId: 'order-1',
+      orderNumber: 1042,
       itemsTotal: 50,
       deliveryFee: 150,
       grandTotal: 200,
@@ -221,7 +224,7 @@ describe('CartDrawer', () => {
       ],
       isOpen: true,
     })
-    mockedSubmitCheckout.mockResolvedValue({ orderId: 'order-1', itemsTotal: 50, deliveryFee: 250, grandTotal: 300 })
+    mockedSubmitCheckout.mockResolvedValue({ orderId: 'order-1', orderNumber: 1042, itemsTotal: 50, deliveryFee: 250, grandTotal: 300 })
 
     render(<CartDrawer />)
     fillCheckoutForm()
@@ -259,7 +262,7 @@ describe('CartDrawer', () => {
 
     expect(mockedSubmitCheckout).toHaveBeenCalledTimes(1)
 
-    resolveCheckout({ orderId: 'order-1', itemsTotal: 50, deliveryFee: 250, grandTotal: 300 })
+    resolveCheckout({ orderId: 'order-1', orderNumber: 1042, itemsTotal: 50, deliveryFee: 250, grandTotal: 300 })
     await waitFor(() => expect(useCartStore.getState().items).toHaveLength(0))
   })
 

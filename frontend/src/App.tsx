@@ -13,10 +13,12 @@ import WireframeTransition from './components/WireframeTransition'
 
 function App() {
   return (
-    // reducedMotion="user" makes every framer-motion animation on the site
-    // honour the OS "reduce motion" setting automatically — pops become
-    // plain fades, nothing to opt into per-component.
-    <MotionConfig reducedMotion="user">
+    // Animations keep running when the OS asks for reduced motion — "user" used to
+    // flatten every pop into a plain fade, which read as a broken, static site on
+    // phones with Reduce Motion on. The motion-heavy pieces (popIn/popInView, the
+    // hero, the backdrop dots) check the setting themselves and switch to a
+    // gentler, bounce-free version instead.
+    <MotionConfig reducedMotion="never">
       <BrowserRouter>
         <ScrollToTop />
         <WireframeTransition />

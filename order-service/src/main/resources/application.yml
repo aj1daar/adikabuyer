@@ -35,6 +35,7 @@ app:
     exchange: order.exchange
     queue: order.queue
     routing-key: order.new
+    cancel-routing-key: order.cancelled
   delivery:
     # Bishkek-only shop: courier inside the city, or the customer picks the order up.
     bishkek-fee: 300
@@ -51,3 +52,5 @@ app:
   telegram:
     bot-token: ${TELEGRAM_BOT_TOKEN:}
     registration-password: ${TELEGRAM_REGISTRATION_PASSWORD:}
+    admin-url: ${TELEGRAM_ADMIN_URL:}
+    low-stock-threshold: ${TELEGRAM_LOW_STOCK_THRESHOLD:2}

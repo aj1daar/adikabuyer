@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import AdminDashboard from '../../../pages/admin/AdminDashboard'
 import useCatalog from '../../../hooks/useCatalog'
 import useIsMobileViewport from '../../../hooks/useIsMobileViewport'
 import useAuthStore from '../../../store/useAuthStore'
 import { createProduct, deleteProduct, deleteVariant, updateProduct } from '../../../api/adminCatalog'
-import getOrders, { deleteOrder } from '../../../api/adminOrders'
+import getOrders, { deleteOrder, updateOrder } from '../../../api/adminOrders'
 import getTelegramAdmins from '../../../api/telegramAdmins'
 import type { ProductDto } from '../../../types/catalog'
 import type { OrderDto } from '../../../types/order'
@@ -24,6 +24,7 @@ const mockedDeleteProduct = vi.mocked(deleteProduct)
 const mockedDeleteVariant = vi.mocked(deleteVariant)
 const mockedGetOrders = vi.mocked(getOrders)
 const mockedDeleteOrder = vi.mocked(deleteOrder)
+const mockedUpdateOrder = vi.mocked(updateOrder)
 const mockedGetTelegramAdmins = vi.mocked(getTelegramAdmins)
 
 const order: OrderDto = {
@@ -35,6 +36,12 @@ const order: OrderDto = {
   deliveryFee: 150,
   grandTotal: 200,
   createdAt: '2026-01-01T00:00:00Z',
+  number: 1042,
+  status: 'NEW',
+  statusUpdatedAt: null,
+  weightFee: null,
+  finalTotal: null,
+  adminNote: null,
   items: [{ variantId: 1, productName: 'Tumbler', sku: 'TUM-1', attributes: {}, unitPrice: 50, quantity: 1 }],
 }
 
@@ -131,6 +138,7 @@ beforeEach(() => {
   mockedDeleteVariant.mockReset()
   mockedGetOrders.mockReset()
   mockedDeleteOrder.mockReset()
+  mockedUpdateOrder.mockReset()
   mockedGetTelegramAdmins.mockReset()
   useAuthStore.setState({ token: 'valid-token' })
   mockedUseCatalog.mockReturnValue({
@@ -371,23 +379,50 @@ describe('AdminDashboard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Заказы' }))
     await waitFor(() => expect(screen.getByText('Jane Doe')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByRole('button', { name: /удалить/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Удалить' }))
 
     await waitFor(() => expect(mockedDeleteOrder).toHaveBeenCalledWith('order-1'))
-    expect(mockedGetOrders).toHaveBeenCalledTimes(2)
+    await waitFor(() => expect(mockedGetOrders).toHaveBeenCalledTimes(2))
   })
 
   it('shows an error message when order deletion fails', async () => {
     mockedGetOrders.mockResolvedValue([order])
-    mockedDeleteOrder.mockRejectedValueOnce(new Error('Cannot delete order'))
+    mockedDeleteOrder.mockRejectedValueOnce({ isAxiosError: true, message: 'x', response: { status: 404, data: { message: 'Order not found: order-1' } } })
     renderDashboard()
 
     fireEvent.click(screen.getByRole('button', { name: 'Заказы' }))
     await waitFor(() => expect(screen.getByText('Jane Doe')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByRole('button', { name: /удалить/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Удалить' }))
 
-    await waitFor(() => expect(screen.getByText('Cannot delete order')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Заказ не найден.')).toBeInTheDocument())
+  })
+
+  it('moves an order to its next status and refetches', async () => {
+    mockedGetOrders.mockResolvedValue([order])
+    mockedUpdateOrder.mockResolvedValueOnce({ ...order, status: 'CONFIRMED' })
+    renderDashboard()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Заказы' }))
+    await waitFor(() => expect(screen.getByText('Jane Doe')).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: '→ Подтвердить' }))
+
+    await waitFor(() => expect(mockedUpdateOrder).toHaveBeenCalledWith('order-1', { status: 'CONFIRMED' }))
+    await waitFor(() => expect(mockedGetOrders).toHaveBeenCalledTimes(2))
+  })
+
+  it('explains a stale status change in Russian', async () => {
+    mockedGetOrders.mockResolvedValue([order])
+    mockedUpdateOrder.mockRejectedValueOnce({ isAxiosError: true, message: 'x', response: { status: 409, data: { message: 'Invalid status transition: CANCELLED -> CONFIRMED' } } })
+    renderDashboard()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Заказы' }))
+    await waitFor(() => expect(screen.getByText('Jane Doe')).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: '→ Подтвердить' }))
+
+    await waitFor(() => expect(screen.getByText('Статус заказа уже изменили — обновите список.')).toBeInTheDocument())
   })
 
   it('does not fetch telegram admins until the Telegram tab is opened', () => {

@@ -1,5 +1,9 @@
 package com.adikabuyer.order.telegram;
 
+import com.adikabuyer.order.domain.OrderStatus;
+import com.adikabuyer.order.dto.OrderDto;
+import com.adikabuyer.order.dto.OrderUpdateRequest;
+import com.adikabuyer.order.service.OrderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -7,6 +11,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import static com.adikabuyer.order.telegram.TelegramAdminService.RegistrationResult.ALREADY_REGISTERED;
 import static com.adikabuyer.order.telegram.TelegramAdminService.RegistrationResult.REGISTERED;
@@ -29,11 +35,67 @@ class TelegramUpdatePollerTest {
     @Mock
     private TelegramProperties telegramProperties;
 
+    @Mock
+    private OrderService orderService;
+
     private TelegramUpdatePoller poller;
 
     @BeforeEach
     void setUp() {
-        poller = new TelegramUpdatePoller(telegramApiClient, telegramAdminService, telegramProperties);
+        poller = new TelegramUpdatePoller(telegramApiClient, telegramAdminService, telegramProperties, orderService);
+    }
+
+    private TelegramUpdate tap(String data) {
+        TelegramMessage message = new TelegramMessage(new TelegramChat(42L), null, "Новый заказ №1042", 7L);
+        return new TelegramUpdate(1L, null, new TelegramCallbackQuery("cb1", new TelegramUser(5L, "jane"), message, data));
+    }
+
+    private OrderDto orderDto(OrderStatus status) {
+        return new OrderDto("o1", 1042L, "Jane", "+996700000000", "Бишкек", java.math.BigDecimal.TEN, java.math.BigDecimal.ZERO,
+                java.math.BigDecimal.TEN, java.time.Instant.now(), status, java.time.Instant.now(), null, null, null, List.of());
+    }
+
+    @Test
+    void handleCallback_confirmsTheOrder_andRewritesTheMessageWithoutButtons() {
+        when(telegramAdminService.isAdminChat(42L)).thenReturn(true);
+        when(orderService.updateOrder("o1", new OrderUpdateRequest(OrderStatus.CONFIRMED))).thenReturn(orderDto(OrderStatus.CONFIRMED));
+
+        poller.handleUpdate(tap("order:o1:CONFIRMED"));
+
+        verify(telegramApiClient).answerCallbackQuery("cb1", "Заказ №1042: Подтверждён");
+        verify(telegramApiClient).editMessageText(42L, 7L, "Новый заказ №1042\n\nСтатус: Подтверждён — @jane");
+    }
+
+    @Test
+    void handleCallback_refusesChatsThatAreNotRegisteredAdmins() {
+        when(telegramAdminService.isAdminChat(42L)).thenReturn(false);
+
+        poller.handleUpdate(tap("order:o1:CANCELLED"));
+
+        verify(telegramApiClient).answerCallbackQuery("cb1", "Нет доступа");
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void handleCallback_explainsWhenTheOrderWasAlreadyHandled() {
+        when(telegramAdminService.isAdminChat(42L)).thenReturn(true);
+        when(orderService.updateOrder("o1", new OrderUpdateRequest(OrderStatus.CANCELLED)))
+                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Invalid status transition"));
+
+        poller.handleUpdate(tap("order:o1:CANCELLED"));
+
+        verify(telegramApiClient).answerCallbackQuery("cb1", "Нельзя: заказ уже обработан");
+        verify(telegramApiClient, never()).editMessageText(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
+    void handleCallback_ignoresMalformedButtonData() {
+        when(telegramAdminService.isAdminChat(42L)).thenReturn(true);
+
+        poller.handleUpdate(tap("order:o1:TELEPORT"));
+
+        verify(telegramApiClient).answerCallbackQuery("cb1", "Неизвестная команда");
+        verifyNoInteractions(orderService);
     }
 
     @Test

@@ -24,6 +24,12 @@ public class RabbitMQConfig {
     @Value("${app.rabbitmq.routing-key}")
     private String routingKey;
 
+    @Value("${app.rabbitmq.cancel-queue}")
+    private String cancelQueueName;
+
+    @Value("${app.rabbitmq.cancel-routing-key}")
+    private String cancelRoutingKey;
+
     @Value("${app.rabbitmq.dead-letter-exchange}")
     private String deadLetterExchangeName;
 
@@ -49,6 +55,20 @@ public class RabbitMQConfig {
     @Bean
     public Binding orderBinding(Queue orderQueue, TopicExchange orderExchange) {
         return BindingBuilder.bind(orderQueue).to(orderExchange).with(routingKey);
+    }
+
+    /** Cancelled orders from order-service; failures dead-letter like placed orders do. */
+    @Bean
+    public Queue orderCancelQueue() {
+        return QueueBuilder.durable(cancelQueueName)
+                .withArgument("x-dead-letter-exchange", deadLetterExchangeName)
+                .withArgument("x-dead-letter-routing-key", deadLetterRoutingKey)
+                .build();
+    }
+
+    @Bean
+    public Binding orderCancelBinding(Queue orderCancelQueue, TopicExchange orderExchange) {
+        return BindingBuilder.bind(orderCancelQueue).to(orderExchange).with(cancelRoutingKey);
     }
 
     @Bean

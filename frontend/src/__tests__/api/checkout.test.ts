@@ -27,6 +27,7 @@ const payload: CheckoutRequest = {
 
 const response: CheckoutResponse = {
   orderId: 'order-1',
+  orderNumber: 1042,
   itemsTotal: 50,
   deliveryFee: 150,
   grandTotal: 200,

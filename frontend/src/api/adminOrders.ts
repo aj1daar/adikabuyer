@@ -1,5 +1,5 @@
 import orderClient from './orderClient'
-import type { OrderDto } from '../types/order'
+import type { OrderDto, OrderUpdatePayload } from '../types/order'
 
 export default async function getOrders(): Promise<OrderDto[]> {
   const response = await orderClient.get<OrderDto[]>('')
@@ -8,4 +8,9 @@ export default async function getOrders(): Promise<OrderDto[]> {
 
 export async function deleteOrder(id: string): Promise<void> {
   await orderClient.delete(`/${id}`)
+}
+
+export async function updateOrder(id: string, payload: OrderUpdatePayload): Promise<OrderDto> {
+  const response = await orderClient.patch<OrderDto>(`/${id}`, payload)
+  return response.data
 }

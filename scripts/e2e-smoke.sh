@@ -107,7 +107,28 @@ chk "$STK" 3 "stock 5 -> 3 after order of 2 (OrderPlacedEvent consumed)"
 cat > "$WORK/pickup.json" <<EOF
 {"customerName":"Smoke","customerPhone":"+996700000000","region":"Самовывоз","items":[{"variantId":$VID,"productName":"x","sku":"x","attributes":{},"unitPrice":1,"quantity":1}]}
 EOF
-$C -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json; charset=utf-8' --data-binary "@$WORK/pickup.json" | grep -q '"deliveryFee":0' && ok "pickup is free" || no "pickup delivery fee"
+PR=$($C -XPOST "$BASE/api/orders/checkout" -H 'Content-Type: application/json; charset=utf-8' --data-binary "@$WORK/pickup.json")
+echo "$PR" | grep -q '"deliveryFee":0' && ok "pickup is free" || no "pickup delivery fee"
+echo "$PR" | grep -q '"orderNumber":[0-9]' && ok "checkout returns an order number" || no "order number ($PR)"
+
+echo "== order status + stock return on cancel =="
+POID=$(jstr "$PR" orderId)
+for _ in $(seq 1 20); do
+  STK=$($C "$BASE/api/catalog/products/$PID" | grep -o '"stockQuantity":[0-9]*' | head -1 | grep -o '[0-9]*')
+  [ "$STK" = "2" ] && break
+  sleep 2
+done
+chk "$STK" 2 "pickup order took one more unit (3 -> 2)"
+chk "$($C -o /dev/null -w '%{http_code}' -XPATCH "$BASE/api/orders/$POID" -H "$H" -H 'Content-Type: application/json' -d '{"status":"CONFIRMED","weightFee":110}')" 200 "admin confirms the order with a weight fee"
+chk "$($C -o /dev/null -w '%{http_code}' -XPATCH "$BASE/api/orders/$POID" -H "$H" -H 'Content-Type: application/json' -d '{"status":"NEW"}')" 409 "moving an order backwards -> 409"
+chk "$($C -o /dev/null -w '%{http_code}' -XPATCH "$BASE/api/orders/$POID" -H 'Content-Type: application/json' -d '{"status":"CANCELLED"}')" 401 "status change without token -> 401"
+chk "$($C -o /dev/null -w '%{http_code}' -XPATCH "$BASE/api/orders/$POID" -H "$H" -H 'Content-Type: application/json' -d '{"status":"CANCELLED"}')" 200 "admin cancels the order"
+for _ in $(seq 1 20); do
+  STK=$($C "$BASE/api/catalog/products/$PID" | grep -o '"stockQuantity":[0-9]*' | head -1 | grep -o '[0-9]*')
+  [ "$STK" = "3" ] && break
+  sleep 2
+done
+chk "$STK" 3 "cancelled order's unit is back in stock (2 -> 3, OrderCancelledEvent consumed)"
 
 echo "== orders admin =="
 chk "$($C -o /dev/null -w '%{http_code}' "$BASE/api/orders")" 401 "GET /api/orders without token -> 401"

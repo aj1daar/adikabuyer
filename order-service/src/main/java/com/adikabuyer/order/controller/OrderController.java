@@ -3,6 +3,7 @@ package com.adikabuyer.order.controller;
 import com.adikabuyer.order.dto.CartDto;
 import com.adikabuyer.order.dto.CheckoutResponseDto;
 import com.adikabuyer.order.dto.OrderDto;
+import com.adikabuyer.order.dto.OrderUpdateRequest;
 import com.adikabuyer.order.dto.TelegramAdminDto;
 import com.adikabuyer.order.security.CheckoutRateLimiter;
 import com.adikabuyer.order.service.OrderService;
@@ -14,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -51,6 +53,11 @@ public class OrderController {
     @GetMapping("/telegram-admins")
     public List<TelegramAdminDto> getTelegramAdmins() {
         return telegramAdminService.listAdmins();
+    }
+
+    @PatchMapping("/{id}")
+    public OrderDto updateOrder(@PathVariable String id, @Valid @RequestBody OrderUpdateRequest request) {
+        return orderService.updateOrder(id, request);
     }
 
     @DeleteMapping("/{id}")

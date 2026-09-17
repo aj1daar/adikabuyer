@@ -3,14 +3,19 @@ package com.adikabuyer.order.service;
 import com.adikabuyer.order.client.CatalogClient;
 import com.adikabuyer.order.config.DeliveryFeeProperties;
 import com.adikabuyer.order.domain.Order;
+import com.adikabuyer.order.domain.OrderStatus;
 import com.adikabuyer.order.dto.CartDto;
 import com.adikabuyer.order.dto.CartItemDto;
 import com.adikabuyer.order.dto.CheckoutResponseDto;
+import com.adikabuyer.order.dto.OrderCancelledEvent;
 import com.adikabuyer.order.dto.OrderDto;
 import com.adikabuyer.order.dto.OrderPlacedEvent;
+import com.adikabuyer.order.dto.OrderUpdateRequest;
 import com.adikabuyer.order.dto.VariantPricing;
 import com.adikabuyer.order.repository.OrderRepository;
+import com.adikabuyer.order.telegram.InlineButton;
 import com.adikabuyer.order.telegram.TelegramNotifier;
+import com.adikabuyer.order.telegram.TelegramProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +32,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -57,14 +63,18 @@ class OrderServiceTest {
 
     private OrderService orderService;
 
+    private final TelegramProperties telegramProperties = new TelegramProperties();
+
     /** Authoritative pricing the fake catalog will return, keyed by variant id. */
     private final Map<Long, VariantPricing> catalog = new HashMap<>();
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, rabbitTemplate, deliveryFeeProperties, telegramNotifier, catalogClient);
+        orderService = new OrderService(orderRepository, rabbitTemplate, deliveryFeeProperties, telegramNotifier, catalogClient, telegramProperties);
         ReflectionTestUtils.setField(orderService, "exchangeName", "order.exchange");
         ReflectionTestUtils.setField(orderService, "routingKey", "order.new");
+        ReflectionTestUtils.setField(orderService, "cancelRoutingKey", "order.cancelled");
+        lenient().when(orderRepository.nextOrderNumber()).thenReturn(1042L);
         lenient().when(catalogClient.fetchPricing(any())).thenAnswer(invocation -> {
             Collection<Long> ids = invocation.getArgument(0);
             Map<Long, VariantPricing> out = new HashMap<>();
@@ -100,7 +110,7 @@ class OrderServiceTest {
 
     private String captureTelegramMessage() {
         ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-        verify(telegramNotifier).notifyAdmins(messageCaptor.capture());
+        verify(telegramNotifier).notifyAdmins(messageCaptor.capture(), any());
         return messageCaptor.getValue();
     }
 
@@ -142,6 +152,79 @@ class OrderServiceTest {
         assertThat(saved.getItems()).hasSize(1);
         assertThat(saved.getItems().get(0).getSku()).isEqualTo("TUM-BLK-500");
         assertThat(saved.getItems().get(0).getOrder()).isSameAs(saved);
+    }
+
+    @Test
+    void checkout_givesTheOrderAHumanReadableNumber_inTheResponseRecordAndTelegramMessage() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+
+        CheckoutResponseDto response = orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.TEN, 1)));
+
+        assertThat(response.orderNumber()).isEqualTo(1042L);
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(orderCaptor.capture());
+        assertThat(orderCaptor.getValue().getNumber()).isEqualTo(1042L);
+        assertThat(captureTelegramMessage()).startsWith("Новый заказ №1042\n");
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<List<InlineButton>> captureTelegramButtons() {
+        ArgumentCaptor<List<List<InlineButton>>> captor = ArgumentCaptor.captor();
+        verify(telegramNotifier).notifyAdmins(anyString(), captor.capture());
+        return captor.getValue();
+    }
+
+    @Test
+    void checkout_attachesConfirmAndCancelButtons_toTheTelegramMessage() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+
+        CheckoutResponseDto response = orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.TEN, 1)));
+
+        List<List<InlineButton>> buttons = captureTelegramButtons();
+        assertThat(buttons).hasSize(1);
+        assertThat(buttons.get(0)).extracting(InlineButton::callbackData).containsExactly(
+                "order:" + response.orderId() + ":CONFIRMED", "order:" + response.orderId() + ":CANCELLED");
+    }
+
+    @Test
+    void checkout_addsTheAdminLink_onlyForAPublicHttpsUrl() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+        telegramProperties.setAdminUrl("https://adikabuyer.kg/admin");
+
+        orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.TEN, 1)));
+
+        List<List<InlineButton>> buttons = captureTelegramButtons();
+        assertThat(buttons).hasSize(2);
+        assertThat(buttons.get(1).get(0).url()).isEqualTo("https://adikabuyer.kg/admin");
+        telegramProperties.setAdminUrl("https://localhost/admin");
+        assertThat(telegramProperties.hasUsableAdminUrl()).isFalse();
+    }
+
+    @Test
+    void checkout_warnsAdmins_whenAVariantIsNearlySoldOut() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+        catalog.put(1L, new VariantPricing(1L, "Полночь", "ЧЁРНЫЙ-500", Map.of(), BigDecimal.TEN, 3, true, "IN_STOCK"));
+        catalog.put(2L, new VariantPricing(2L, "Рассвет", "БЕЛЫЙ-500", Map.of(), BigDecimal.TEN, 2, true, "IN_STOCK"));
+        catalog.put(3L, new VariantPricing(3L, "Худи", "M", Map.of(), BigDecimal.TEN, 50, true, "IN_STOCK"));
+
+        orderService.checkout(buildCart("Бишкек",
+                new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 1),
+                new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 1),
+                new CartItemDto(2L, "x", "x", Map.of(), BigDecimal.TEN, 2),
+                new CartItemDto(3L, "x", "x", Map.of(), BigDecimal.TEN, 1)));
+
+        verify(telegramNotifier).notifyAdmins(
+                "⚠️ Заканчивается после заказа №1042:\n• Полночь (ЧЁРНЫЙ-500) — осталось 1\n• Рассвет (БЕЛЫЙ-500) — закончился");
+    }
+
+    @Test
+    void checkout_sendsNoStockWarning_forPreOrdersOrAmpleStock() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+        catalog.put(1L, new VariantPricing(1L, "Под заказ", "PO", Map.of(), BigDecimal.TEN, 0, true, "PRE_ORDER"));
+
+        orderService.checkout(buildCart("Бишкек", new CartItemDto(1L, "x", "x", Map.of(), BigDecimal.TEN, 1), buildItem(BigDecimal.TEN, 1)));
+
+        verify(telegramNotifier, never()).notifyAdmins(anyString());
     }
 
     @Test
@@ -236,7 +319,7 @@ class OrderServiceTest {
     void checkout_doesNotFail_whenTelegramNotificationThrows() {
         when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
         org.mockito.Mockito.doThrow(new RuntimeException("telegram down"))
-                .when(telegramNotifier).notifyAdmins(anyString());
+                .when(telegramNotifier).notifyAdmins(anyString(), any());
 
         CheckoutResponseDto response = orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.TEN, 1)));
 
@@ -399,6 +482,127 @@ class OrderServiceTest {
         assertThat(response.itemsTotal()).isEqualByComparingTo(BigDecimal.valueOf(150));
     }
 
+    private Order storedOrder(OrderStatus status) {
+        Order order = Order.builder().id("order-1").number(1042L).customerName("Jane").customerPhone("996700000000")
+                .region("Бишкек").itemsTotal(BigDecimal.TEN).deliveryFee(BigDecimal.ZERO).grandTotal(BigDecimal.TEN)
+                .createdAt(Instant.parse("2026-01-01T00:00:00Z")).status(status).items(List.of()).build();
+        when(orderRepository.findById("order-1")).thenReturn(Optional.of(order));
+        lenient().when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        return order;
+    }
+
+    @Test
+    void checkout_startsEveryOrderAsNew() {
+        when(deliveryFeeProperties.getBishkekFee()).thenReturn(BigDecimal.ZERO);
+
+        orderService.checkout(buildCart("Бишкек", buildItem(BigDecimal.TEN, 1)));
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(orderCaptor.capture());
+        assertThat(orderCaptor.getValue().getStatus()).isEqualTo(OrderStatus.NEW);
+    }
+
+    @Test
+    void updateOrder_movesTheStatusForwardAndStampsWhen() {
+        storedOrder(OrderStatus.NEW);
+
+        OrderDto dto = orderService.updateOrder("order-1", new OrderUpdateRequest(OrderStatus.CONFIRMED));
+
+        assertThat(dto.status()).isEqualTo(OrderStatus.CONFIRMED);
+        assertThat(dto.statusUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    void updateOrder_recordsTheAgreedWeightFeeAndNote_andReportsTheFinalTotal() {
+        storedOrder(OrderStatus.NEW);
+
+        OrderDto dto = orderService.updateOrder("order-1",
+                new OrderUpdateRequest(OrderStatus.CONFIRMED, BigDecimal.valueOf(330), "  чёрный вместо белого  "));
+
+        assertThat(dto.weightFee()).isEqualByComparingTo(BigDecimal.valueOf(330));
+        assertThat(dto.finalTotal()).isEqualByComparingTo(BigDecimal.valueOf(340));
+        assertThat(dto.adminNote()).isEqualTo("чёрный вместо белого");
+    }
+
+    @Test
+    void updateOrder_leavesFieldsThatWereNotSentUntouched_andClearsTheNoteOnEmptyString() {
+        Order order = storedOrder(OrderStatus.CONFIRMED);
+        order.setWeightFee(BigDecimal.valueOf(110));
+        order.setAdminNote("старая заметка");
+
+        OrderDto dto = orderService.updateOrder("order-1", new OrderUpdateRequest(null, null, ""));
+
+        assertThat(dto.status()).isEqualTo(OrderStatus.CONFIRMED);
+        assertThat(dto.weightFee()).isEqualByComparingTo(BigDecimal.valueOf(110));
+        assertThat(dto.adminNote()).isNull();
+    }
+
+    @Test
+    void getAllOrders_hasNoFinalTotal_untilTheWeightFeeIsAgreed() {
+        storedOrder(OrderStatus.NEW);
+
+        assertThat(orderService.updateOrder("order-1", new OrderUpdateRequest(null)).finalTotal()).isNull();
+    }
+
+    @Test
+    void updateOrder_publishesAStockReturn_whenTheOrderIsCancelled() {
+        storedOrder(OrderStatus.CONFIRMED);
+
+        orderService.updateOrder("order-1", new OrderUpdateRequest(OrderStatus.CANCELLED));
+
+        ArgumentCaptor<OrderCancelledEvent> eventCaptor = ArgumentCaptor.forClass(OrderCancelledEvent.class);
+        verify(rabbitTemplate).convertAndSend(org.mockito.ArgumentMatchers.eq("order.exchange"), org.mockito.ArgumentMatchers.eq("order.cancelled"), eventCaptor.capture());
+        assertThat(eventCaptor.getValue().orderId()).isEqualTo("order-1");
+    }
+
+    @Test
+    void updateOrder_returnsNoStock_forAnOrdinaryForwardMove() {
+        storedOrder(OrderStatus.CONFIRMED);
+
+        orderService.updateOrder("order-1", new OrderUpdateRequest(OrderStatus.SHIPPED));
+
+        verify(rabbitTemplate, never()).convertAndSend(anyString(), org.mockito.ArgumentMatchers.eq("order.cancelled"), any(Object.class));
+    }
+
+    @Test
+    void deleteOrder_returnsTheStock_ofAnOrderThatWasStillOpen() {
+        Order order = storedOrder(OrderStatus.PURCHASED);
+
+        orderService.deleteOrder("order-1");
+
+        verify(rabbitTemplate).convertAndSend(org.mockito.ArgumentMatchers.eq("order.exchange"), org.mockito.ArgumentMatchers.eq("order.cancelled"), any(OrderCancelledEvent.class));
+        verify(orderRepository).delete(order);
+    }
+
+    @Test
+    void deleteOrder_doesNotReturnStockTwice_forAnAlreadyCancelledOrDeliveredOrder() {
+        Order order = storedOrder(OrderStatus.CANCELLED);
+
+        orderService.deleteOrder("order-1");
+
+        verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), any(Object.class));
+        verify(orderRepository).delete(order);
+    }
+
+    @Test
+    void updateOrder_rejectsAnIllegalTransition_withConflict() {
+        storedOrder(OrderStatus.DELIVERED);
+
+        assertThatThrownBy(() -> orderService.updateOrder("order-1", new OrderUpdateRequest(OrderStatus.NEW)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409");
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void updateOrder_returns404_forAnUnknownOrder() {
+        when(orderRepository.findById("missing")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.updateOrder("missing", new OrderUpdateRequest(OrderStatus.CONFIRMED)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
+    }
+
     @Test
     void getAllOrders_mapsPersistedOrdersToDto() {
         Order order = Order.builder()
@@ -425,21 +629,21 @@ class OrderServiceTest {
 
     @Test
     void deleteOrder_deletesExistingOrder() {
-        when(orderRepository.existsById("order-1")).thenReturn(true);
+        Order order = storedOrder(OrderStatus.DELIVERED);
 
         orderService.deleteOrder("order-1");
 
-        verify(orderRepository).deleteById("order-1");
+        verify(orderRepository).delete(order);
     }
 
     @Test
     void deleteOrder_throwsNotFound_whenOrderDoesNotExist() {
-        when(orderRepository.existsById("missing")).thenReturn(false);
+        when(orderRepository.findById("missing")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.deleteOrder("missing"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("404");
 
-        verify(orderRepository, never()).deleteById(anyString());
+        verify(orderRepository, never()).delete(any());
     }
 }

@@ -15,6 +15,7 @@ const KNOWN_MESSAGES: [prefix: string, russian: string][] = [
   ['Variant not found', 'Вариант не найден.'],
   ['Product not found', 'Товар не найден.'],
   ['Order not found', 'Заказ не найден.'],
+  ['Invalid status transition', 'Статус заказа уже изменили — обновите список.'],
   ['Too many orders', 'Слишком много заказов подряд. Попробуйте через несколько минут.'],
   ['Too many login attempts', 'Слишком много попыток входа. Подождите минуту.'],
   ['Invalid credentials', 'Неверный логин или пароль.'],

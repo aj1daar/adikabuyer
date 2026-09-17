@@ -21,6 +21,8 @@ class RabbitMQConfigTest {
         ReflectionTestUtils.setField(rabbitMQConfig, "exchangeName", "order.exchange");
         ReflectionTestUtils.setField(rabbitMQConfig, "queueName", "order.queue");
         ReflectionTestUtils.setField(rabbitMQConfig, "routingKey", "order.new");
+        ReflectionTestUtils.setField(rabbitMQConfig, "cancelQueueName", "order.cancel.queue");
+        ReflectionTestUtils.setField(rabbitMQConfig, "cancelRoutingKey", "order.cancelled");
         ReflectionTestUtils.setField(rabbitMQConfig, "deadLetterExchangeName", "order.dlx");
         ReflectionTestUtils.setField(rabbitMQConfig, "deadLetterQueueName", "order.queue.dlq");
         ReflectionTestUtils.setField(rabbitMQConfig, "deadLetterRoutingKey", "order.new.dlq");
@@ -47,6 +49,17 @@ class RabbitMQConfigTest {
 
         assertThat(queue.getArguments()).containsEntry("x-dead-letter-exchange", "order.dlx");
         assertThat(queue.getArguments()).containsEntry("x-dead-letter-routing-key", "order.new.dlq");
+    }
+
+    @Test
+    void orderCancelQueue_isDurable_deadLetters_andBindsToTheCancelledRoutingKey() {
+        Queue queue = rabbitMQConfig.orderCancelQueue();
+        Binding binding = rabbitMQConfig.orderCancelBinding(queue, rabbitMQConfig.orderExchange());
+
+        assertThat(queue.getName()).isEqualTo("order.cancel.queue");
+        assertThat(queue.isDurable()).isTrue();
+        assertThat(queue.getArguments()).containsEntry("x-dead-letter-exchange", "order.dlx");
+        assertThat(binding.getRoutingKey()).isEqualTo("order.cancelled");
     }
 
     @Test

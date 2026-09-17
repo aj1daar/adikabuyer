@@ -30,10 +30,11 @@ export default function HeroBubbles({ bubbles, className, overlay }: HeroBubbles
   const reduceMotion = useReducedMotion()
 
   const anim = (index: number) => ({
-    initial: reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5, y: 6 },
-    animate: reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 },
+    // reduced motion keeps the bloom, just smaller and settling without the bounce
+    initial: reduceMotion ? { opacity: 0, scale: 0.85, y: 2 } : { opacity: 0, scale: 0.5, y: 6 },
+    animate: { opacity: 1, scale: 1, y: 0 },
     transition: reduceMotion
-      ? { delay: 0.4 + index * 0.1, duration: 0.2 }
+      ? ({ delay: 0.4 + index * 0.1, type: 'spring', stiffness: 260, damping: 28 } as const)
       : ({ delay: 0.5 + index * 0.13, type: 'spring', stiffness: 420, damping: 13 } as const),
   })
 

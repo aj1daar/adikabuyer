@@ -60,8 +60,8 @@ what got fixed, and what is a known limitation with the reasoning for leaving it
 - **`postgres`, `rabbitmq`, `caddy`** base images are pinned to a major/minor tag, not a digest
   (MinIO is digest-pinned; `appleboy/ssh-action` is SHA-pinned). Dependabot's docker ecosystem
   watches them.
-- **No log aggregation / alerting.** Logs go to stdout → Docker; no retention policy or off-box shipping.
-- **No data-at-rest encryption** for Postgres/MinIO volumes.
+- **No log aggregation.** Logs go to stdout → Docker, rotated per container at 10MB × 3 files (`x-logging` in `docker-compose.prod.yml`) so they can't fill the disk; nothing ships them off the box.
+- **No data-at-rest encryption** for Postgres/MinIO volumes. Off-site copies inherit whatever encryption the chosen S3 provider applies; enable server-side encryption on that bucket.
 
 ## Not applicable
 
