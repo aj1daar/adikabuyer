@@ -1,33 +1,40 @@
 version: 2
+
+# One grouped PR per ecosystem per month for minor and patch releases; major bumps
+# (Java, Node, Spring Boot, action majors) are planned upgrades done by hand, so
+# Dependabot never opens them. Security advisories still get their own PR at once.
 updates:
   - package-ecosystem: maven
-    directory: /catalog-service
+    directories:
+      - /catalog-service
+      - /order-service
+      - /api-gateway
     schedule:
-      interval: weekly
+      interval: monthly
+    open-pull-requests-limit: 2
     groups:
-      spring:
-        patterns: ["org.springframework*", "org.springframework.boot*"]
-
-  - package-ecosystem: maven
-    directory: /order-service
-    schedule:
-      interval: weekly
-    groups:
-      spring:
-        patterns: ["org.springframework*", "org.springframework.boot*"]
-
-  - package-ecosystem: maven
-    directory: /api-gateway
-    schedule:
-      interval: weekly
-    groups:
-      spring:
-        patterns: ["org.springframework*", "org.springframework.boot*", "org.springframework.cloud*"]
+      maven-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: npm
     directory: /frontend
     schedule:
-      interval: weekly
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
+      # types track the Node version CI and the frontend image run on
+      - dependency-name: "@types/node"
+        versions: [">=25"]
 
   - package-ecosystem: docker
     directories:
@@ -36,9 +43,29 @@ updates:
       - /api-gateway
       - /frontend
     schedule:
-      interval: weekly
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      docker-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
+      # the JDK/JRE and Node lines move only as a deliberate LTS upgrade
+      - dependency-name: "maven"
+      - dependency-name: "eclipse-temurin"
+      - dependency-name: "node"
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      actions-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
