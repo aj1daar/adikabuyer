@@ -22,7 +22,13 @@ jobs:
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
+        env:
+          BACKUP_S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
+          BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          BACKUP_S3_ACCESS_KEY: ${{ secrets.BACKUP_S3_ACCESS_KEY }}
+          BACKUP_S3_SECRET_KEY: ${{ secrets.BACKUP_S3_SECRET_KEY }}
         with:
+          envs: BACKUP_S3_ENDPOINT,BACKUP_S3_BUCKET,BACKUP_S3_ACCESS_KEY,BACKUP_S3_SECRET_KEY
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -34,6 +40,12 @@ jobs:
             # the exact commit CI just verified, not whatever main points at by now
             git reset --hard ${{ github.event.workflow_run.head_sha || 'origin/main' }}
             echo '${{ secrets.ENV_PROD_B64 }}' | base64 -d > .env.prod
+            # off-site backup credentials live in their own secrets so they can be rotated
+            # without re-encoding the whole env file; unset ones are skipped
+            for name in BACKUP_S3_ENDPOINT BACKUP_S3_BUCKET BACKUP_S3_ACCESS_KEY BACKUP_S3_SECRET_KEY; do
+              value="$(printenv "$name" || true)"
+              if [ -n "$value" ]; then printf '\n%s=%s\n' "$name" "$value" >> .env.prod; fi
+            done
             docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build --remove-orphans
             # Force-recreate the components that resolve other containers by name, so a
             # rebuilt catalog/order container behind a new IP doesn't leave stale DNS in
