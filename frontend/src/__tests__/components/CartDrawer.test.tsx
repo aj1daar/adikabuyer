@@ -45,6 +45,15 @@ describe('CartDrawer', () => {
     expect(screen.queryByPlaceholderText('Имя и фамилия')).not.toBeInTheDocument()
   })
 
+  it('is announced as a dialog and closes on Escape', () => {
+    render(<CartDrawer />, { wrapper: MemoryRouter })
+
+    expect(screen.getByRole('dialog', { name: 'Корзина' })).toHaveAttribute('aria-modal', 'true')
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(useCartStore.getState().isOpen).toBe(false)
+  })
+
   it('offers the catalog from an empty cart and shows no totals or checkout button', () => {
     render(<CartDrawer />, { wrapper: MemoryRouter })
 

@@ -8,6 +8,7 @@ import resolveDeliveryFee, { COURIER, DELIVERY_OPTIONS, PICKUP } from '../utils/
 import WeightTariffNote from './WeightTariffNote'
 import { popIn } from '../utils/motion'
 import apiErrorMessage from '../utils/apiErrorMessage'
+import useDialog from '../hooks/useDialog'
 
 type DeliveryMode = 'together' | 'separate'
 
@@ -103,6 +104,7 @@ export default function CartDrawer() {
   const [orderNumbers, setOrderNumbers] = useState<number[]>([])
   const nameInputRef = useRef<HTMLInputElement>(null)
   const phoneInputRef = useRef<HTMLInputElement>(null)
+  const panelRef = useRef<HTMLElement>(null)
 
   const inStockItems = items.filter((item) => item.status !== 'PRE_ORDER')
   const preOrderItems = items.filter((item) => item.status === 'PRE_ORDER')
@@ -196,6 +198,8 @@ export default function CartDrawer() {
     }
   }
 
+  useDialog(panelRef, isOpen, handleClose)
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -214,10 +218,15 @@ export default function CartDrawer() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.3, ease: 'easeOut' }}
-            className="fixed right-0 top-0 z-50 flex h-dvh w-full max-w-sm flex-col border-l-4 border-black bg-white pt-[env(safe-area-inset-top)] shadow-[-8px_0_0_0_#000]"
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cart-title"
+            tabIndex={-1}
+            className="fixed right-0 top-0 z-50 flex h-dvh w-full max-w-sm flex-col outline-none border-l-4 border-black bg-white pt-[env(safe-area-inset-top)] shadow-[-8px_0_0_0_#000]"
           >
             <div className="flex items-center justify-between border-b-2 border-black px-6 py-4">
-              <h2 className="font-grotesk text-lg font-bold text-ink">Корзина</h2>
+              <h2 id="cart-title" className="font-grotesk text-lg font-bold text-ink">Корзина</h2>
               <button
                 type="button"
                 onClick={handleClose}
