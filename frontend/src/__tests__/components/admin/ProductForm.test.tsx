@@ -48,6 +48,16 @@ beforeEach(() => {
 })
 
 describe('ProductForm', () => {
+  it('is a labelled modal dialog that Escape does not close, so unsaved edits survive', () => {
+    const onClose = vi.fn()
+    render(<ProductForm onSubmit={vi.fn()} onClose={onClose} />)
+
+    expect(screen.getByRole('dialog', { name: 'Новый товар' })).toHaveAttribute('aria-modal', 'true')
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
   it('renders empty fields in create mode', () => {
     render(<ProductForm onSubmit={vi.fn()} onClose={vi.fn()} />)
 

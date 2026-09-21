@@ -1,4 +1,4 @@
-import { useId, useState, type ChangeEvent } from 'react'
+import { useId, useRef, useState, type ChangeEvent } from 'react'
 import type { ProductDto, VariantStatus } from '../../types/catalog'
 import type { ProductPayload, VariantPayload } from '../../types/admin'
 import uploadMedia from '../../api/media'
@@ -12,6 +12,7 @@ import {
 } from '../../utils/attributeOptions'
 import OptionDropdown from '../OptionDropdown'
 import CircleCropper from './CircleCropper'
+import useDialog from '../../hooks/useDialog'
 
 const KNOWN_ATTRIBUTE_KEYS = ATTRIBUTE_KEY_OPTIONS.map((option) => option.value).filter(
   (value) => value !== CUSTOM_ATTRIBUTE_KEY
@@ -117,6 +118,8 @@ function toVariantDraft(product?: ProductDto): VariantDraft[] {
 export default function ProductForm({ product, onSubmit, onClose, isSubmitting }: ProductFormProps) {
   const imageUploadId = useId()
   const colorListId = useId()
+  const titleId = useId()
+  const panelRef = useRef<HTMLDivElement>(null)
   const [name, setName] = useState(product?.name ?? '')
   const [description, setDescription] = useState(product?.description ?? '')
   const [category, setCategory] = useState(product?.category ?? '')
@@ -304,14 +307,24 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
     (variant) => variant.priceOverride.trim() !== '' && !Number.isNaN(Number(variant.priceOverride))
   )
 
+  // modal focus handling but no Escape: closing drops every unsaved field
+  useDialog(panelRef, true)
+
   const canSubmit =
     name.trim() !== '' && hasPricedVariant && uploadingVariantIndex === null && !swatchUploading
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4">
-      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border-4 border-black bg-white shadow-[8px_8px_0_0_#000]">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border-4 border-black bg-white shadow-[8px_8px_0_0_#000] outline-none"
+      >
         <div className="flex items-center justify-between border-b-2 border-black px-6 py-4">
-          <h2 className="font-grotesk text-lg font-bold text-ink">
+          <h2 id={titleId} className="font-grotesk text-lg font-bold text-ink">
             {product ? 'Редактировать товар' : 'Новый товар'}
           </h2>
           <button type="button" onClick={onClose} className="font-grotesk text-sm font-bold text-ink/50 hover:text-ink">
