@@ -50,7 +50,7 @@ export default function NotFoundState({
         </Link>
         <Link
           to="/"
-          className="flex min-h-11 items-center rounded-pill border-2 border-black bg-white px-8 py-3 font-grotesk text-sm font-bold text-ink transition-[background-color,color] hover:bg-bubblegum hover:text-white"
+          className="flex min-h-11 items-center rounded-pill border-2 border-black bg-white px-8 py-3 font-grotesk text-sm font-bold text-ink transition-[background-color,color] hover:bg-bubblegum-dark hover:text-white"
         >
           На главную
         </Link>

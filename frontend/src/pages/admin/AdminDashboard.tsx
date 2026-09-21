@@ -194,7 +194,7 @@ export default function AdminDashboard() {
             <button
               type="button"
               onClick={handleLogout}
-              className="min-h-11 rounded-pill border-2 border-black bg-silver px-4 py-2 font-grotesk text-sm font-bold text-ink hover:bg-bubblegum hover:text-white"
+              className="min-h-11 rounded-pill border-2 border-black bg-silver px-4 py-2 font-grotesk text-sm font-bold text-ink hover:bg-bubblegum-dark hover:text-white"
             >
               Выйти
             </button>
@@ -207,7 +207,7 @@ export default function AdminDashboard() {
             onClick={() => setActiveTab('products')}
             aria-pressed={activeTab === 'products'}
             className={`min-h-11 rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
-              activeTab === 'products' ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
+              activeTab === 'products' ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum-dark hover:text-white'
             }`}
           >
             Товары
@@ -217,7 +217,7 @@ export default function AdminDashboard() {
             onClick={() => setActiveTab('orders')}
             aria-pressed={activeTab === 'orders'}
             className={`min-h-11 rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
-              activeTab === 'orders' ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
+              activeTab === 'orders' ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum-dark hover:text-white'
             }`}
           >
             Заказы
@@ -227,7 +227,7 @@ export default function AdminDashboard() {
             onClick={() => setActiveTab('telegram')}
             aria-pressed={activeTab === 'telegram'}
             className={`min-h-11 rounded-pill border-2 border-black px-4 py-2 font-grotesk text-sm font-bold transition ${
-              activeTab === 'telegram' ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
+              activeTab === 'telegram' ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum-dark hover:text-white'
             }`}
           >
             Telegram

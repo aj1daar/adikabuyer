@@ -93,7 +93,7 @@ export default function TextBubbleModal({ open, title, text, onClose }: TextBubb
               type="button"
               onClick={onClose}
               aria-label="Закрыть"
-              className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[2px_2px_0_0_#000] transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum hover:text-white active:scale-90"
+              className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[2px_2px_0_0_#000] transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum-dark hover:text-white active:scale-90"
             >
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
                 <path d="M6 6l12 12M18 6L6 18" />

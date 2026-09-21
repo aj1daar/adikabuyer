@@ -94,7 +94,7 @@ export default function HeroSection() {
               />
               <MotionLink
                 to="/about"
-                className="block rounded-pill border-2 border-black bg-white px-8 py-3 font-grotesk text-sm font-bold text-ink transition-[background-color,color] hover:bg-bubblegum hover:text-white"
+                className="block rounded-pill border-2 border-black bg-white px-8 py-3 font-grotesk text-sm font-bold text-ink transition-[background-color,color] hover:bg-bubblegum-dark hover:text-white"
                 initial={{ opacity: 0, scale: 0.85, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 whileHover={{ ...ctaHover, transition: ctaSpring }}

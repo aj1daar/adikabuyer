@@ -33,7 +33,7 @@ export default function Pagination({ page, pageSize, totalCount, onPageChange }:
         onClick={() => onPageChange(page - 1)}
         disabled={page === 0}
         aria-label="Предыдущая страница"
-        className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-sm font-bold text-ink transition hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+        className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-sm font-bold text-ink transition hover:bg-bubblegum-dark hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
       >
         ←
       </button>
@@ -50,7 +50,7 @@ export default function Pagination({ page, pageSize, totalCount, onPageChange }:
             onClick={() => onPageChange(entry)}
             aria-current={entry === page ? 'page' : undefined}
             className={`flex h-10 w-10 items-center justify-center rounded-full border-2 border-black font-grotesk text-sm font-bold transition ${
-              entry === page ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
+              entry === page ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum-dark hover:text-white'
             }`}
           >
             {entry + 1}
@@ -63,7 +63,7 @@ export default function Pagination({ page, pageSize, totalCount, onPageChange }:
         onClick={() => onPageChange(page + 1)}
         disabled={page >= totalPages - 1}
         aria-label="Следующая страница"
-        className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-sm font-bold text-ink transition hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+        className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-sm font-bold text-ink transition hover:bg-bubblegum-dark hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
       >
         →
       </button>

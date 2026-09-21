@@ -59,7 +59,7 @@ export default function VolumeRangeFilter({ min, max, onApply }: VolumeRangeFilt
         className={`flex h-14 items-center gap-2 rounded-pill border-2 px-5 font-grotesk text-sm font-bold transition ${
           isActive
             ? 'border-black bg-black text-white hover:bg-bubblegum-dark'
-            : 'border-black bg-white text-ink hover:bg-bubblegum hover:text-white'
+            : 'border-black bg-white text-ink hover:bg-bubblegum-dark hover:text-white'
         }`}
       >
         {label}

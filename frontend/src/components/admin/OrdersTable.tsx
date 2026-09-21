@@ -168,7 +168,7 @@ export default function OrdersTable({ orders, loading, error, onUpdate, onDelete
                   aria-pressed={filter === option.value}
                   onClick={() => setFilter(option.value)}
                   className={`min-h-11 rounded-pill border-2 border-black px-4 font-grotesk text-sm font-bold transition ${
-                    filter === option.value ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
+                    filter === option.value ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-bubblegum-dark hover:text-white'
                   }`}
                 >
                   {option.label} ({count})
@@ -244,7 +244,7 @@ export default function OrdersTable({ orders, loading, error, onUpdate, onDelete
                         type="button"
                         disabled={busy}
                         onClick={() => setPending({ kind: 'cancel', order })}
-                        className="min-h-11 rounded-pill border-2 border-black bg-white px-4 font-grotesk text-sm font-bold text-ink hover:bg-bubblegum hover:text-white disabled:opacity-40"
+                        className="min-h-11 rounded-pill border-2 border-black bg-white px-4 font-grotesk text-sm font-bold text-ink hover:bg-bubblegum-dark hover:text-white disabled:opacity-40"
                       >
                         Отменить
                       </button>

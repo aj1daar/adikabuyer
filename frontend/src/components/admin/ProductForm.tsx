@@ -428,7 +428,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               <button
                 type="button"
                 onClick={addVariant}
-                className="rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink hover:bg-bubblegum hover:text-white"
+                className="rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink hover:bg-bubblegum-dark hover:text-white"
               >
                 Добавить вариант
               </button>
@@ -564,7 +564,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   />
                   <label
                     htmlFor={`${imageUploadId}-variant-${variantIndex}`}
-                    className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-black bg-silver font-grotesk text-xs font-bold text-ink transition hover:bg-bubblegum hover:text-white aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                    className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-black bg-silver font-grotesk text-xs font-bold text-ink transition hover:bg-bubblegum-dark hover:text-white aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                     aria-disabled={uploadingVariantIndex !== null}
                   >
                     {uploadingVariantIndex === variantIndex ? '...' : '+'}

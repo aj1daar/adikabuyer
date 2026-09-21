@@ -49,7 +49,7 @@ function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
             onClick={() => onChangeQuantity(item.variantId, -1)}
             disabled={item.quantity <= 1}
             aria-label="Уменьшить количество"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum-dark hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
             −
           </button>
@@ -60,7 +60,7 @@ function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
             type="button"
             onClick={() => onChangeQuantity(item.variantId, 1)}
             aria-label="Увеличить количество"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum hover:text-white"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum-dark hover:text-white"
           >
             +
           </button>
