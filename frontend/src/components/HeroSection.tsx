@@ -17,7 +17,7 @@ export default function HeroSection() {
     : { type: 'spring' as const, stiffness: 500, damping: 11, mass: 0.6 }
 
   return (
-    <section className="relative flex items-center overflow-hidden py-16 sm:h-[calc(100dvh-10rem)] sm:py-0">
+    <section className="relative flex items-center overflow-hidden py-16 sm:min-h-[calc(100dvh-10rem)] sm:py-10">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
