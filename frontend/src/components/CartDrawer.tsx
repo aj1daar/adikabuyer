@@ -35,9 +35,10 @@ function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
       exit={{ opacity: 0, scale: 0.9, height: 0, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
       transition={{ type: 'spring', stiffness: 340, damping: 20 }}
       className="flex items-center justify-between gap-3 overflow-hidden border-b border-ink/10 py-3">
-      <div>
-        <p className="font-grotesk text-sm font-bold text-ink">{item.productName}</p>
-        <p className="text-xs text-ink/50">
+      {/* min-w-0 lets a long name wrap instead of pushing the price and «Удалить» off the edge */}
+      <div className="min-w-0 flex-1">
+        <p className="line-clamp-2 break-words font-grotesk text-sm font-bold text-ink">{item.productName}</p>
+        <p className="truncate text-xs text-ink/50">
           {Object.values(item.attributes).join(', ')}
         </p>
         <div className="mt-2 flex items-center gap-2">
@@ -63,14 +64,14 @@ function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
           </button>
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <span className="font-grotesk text-sm font-bold text-ink">
+      <div className="flex shrink-0 flex-col items-end gap-2">
+        <span className="whitespace-nowrap font-grotesk text-sm font-bold text-ink">
           {formatPrice(item.unitPrice * item.quantity)}
         </span>
         <button
           type="button"
           onClick={() => onRemove(item.variantId)}
-          className="-m-3.5 p-3.5 font-grotesk text-xs font-bold text-ink/40 transition hover:text-bubblegum-dark"
+          className="-m-2 p-2 font-grotesk text-xs font-bold text-ink/40 transition hover:text-bubblegum-dark"
         >
           Удалить
         </button>

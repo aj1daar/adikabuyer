@@ -44,6 +44,19 @@ describe('CartDrawer', () => {
     expect(screen.queryByPlaceholderText('Имя и фамилия')).not.toBeInTheDocument()
   })
 
+  it('lets a long product name wrap so the price and remove button stay visible', () => {
+    useCartStore.setState({
+      items: [cartItem({ productName: 'Термостакан «Пастельная мечта» с двойными стенками и крышкой-поилкой' })],
+      isOpen: true,
+    })
+    render(<CartDrawer />)
+
+    const name = screen.getByText(/Пастельная мечта/)
+    expect(name).toHaveClass('line-clamp-2', 'break-words')
+    expect(name.parentElement).toHaveClass('min-w-0', 'flex-1')
+    expect(screen.getByRole('button', { name: 'Удалить' }).parentElement).toHaveClass('shrink-0')
+  })
+
   it('renders cart items with quantity and line total', () => {
     useCartStore.setState({ items: [cartItem()], isOpen: true })
 
