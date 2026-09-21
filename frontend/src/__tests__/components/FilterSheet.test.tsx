@@ -54,6 +54,18 @@ describe('FilterSheet', () => {
     expect(useFilterSheetStore.getState().isOpen).toBe(true)
   })
 
+  it('is modal and closes without applying on Escape', async () => {
+    const { onColorChange } = renderFilterSheet()
+    fireEvent.click(screen.getByRole('button', { name: 'Фильтры' }))
+    expect(screen.getByRole('dialog', { name: 'Фильтры' })).toHaveAttribute('aria-modal', 'true')
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    await waitForElementToBeRemoved(() => screen.queryByRole('dialog', { name: 'Фильтры' }))
+    expect(useFilterSheetStore.getState().isOpen).toBe(false)
+    expect(onColorChange).not.toHaveBeenCalled()
+  })
+
   it('keeps each filter group collapsed as a dropdown until its header is tapped', () => {
     renderFilterSheet()
 

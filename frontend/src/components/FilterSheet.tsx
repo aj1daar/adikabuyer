@@ -1,6 +1,7 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import useFilterSheetStore from '../store/useFilterSheetStore'
+import useDialog from '../hooks/useDialog'
 import { SINGLE_SELECT_FILTERS, type FilterOption } from '../utils/attributeOptions'
 
 type AccordionSectionProps = {
@@ -112,6 +113,7 @@ export default function FilterSheet({
   const [draftSize, setDraftSize] = useState(size)
   const [draftVolumeMin, setDraftVolumeMin] = useState(volumeMin)
   const [draftVolumeMax, setDraftVolumeMax] = useState(volumeMax)
+  const panelRef = useRef<HTMLDivElement>(null)
 
   const openSheet = useFilterSheetStore((state) => state.open)
   const closeSheet = useFilterSheetStore((state) => state.close)
@@ -169,6 +171,8 @@ export default function FilterSheet({
     setOpenSection((current) => (current === key ? null : key))
   }
 
+  useDialog(panelRef, isOpen, handleClose)
+
   const volumeSummary =
     draftVolumeMin || draftVolumeMax ? `${draftVolumeMin || '0'}–${draftVolumeMax || '∞'} мл` : null
 
@@ -203,9 +207,12 @@ export default function FilterSheet({
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'tween', duration: 0.3, ease: 'easeOut' }}
+              ref={panelRef}
               role="dialog"
+              aria-modal="true"
               aria-label="Фильтры"
-              className="fixed inset-x-0 bottom-0 z-50 flex h-[70dvh] flex-col rounded-t-3xl border-2 border-black bg-white shadow-[0_-8px_0_0_#000]"
+              tabIndex={-1}
+              className="fixed inset-x-0 bottom-0 z-50 flex h-[70dvh] flex-col outline-none rounded-t-3xl border-2 border-black bg-white shadow-[0_-8px_0_0_#000]"
             >
               <div className="flex items-center justify-between border-b-2 border-black px-6 py-4">
                 <h2 className="font-grotesk text-lg font-bold text-ink">Фильтры</h2>
