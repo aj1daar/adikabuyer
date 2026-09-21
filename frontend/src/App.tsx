@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { MotionConfig } from 'framer-motion'
 import LandingPage from './pages/LandingPage'
@@ -5,11 +6,18 @@ import CatalogPage from './pages/CatalogPage'
 import ProductPage from './pages/ProductPage'
 import AboutPage from './pages/AboutPage'
 import NotFoundPage from './pages/NotFoundPage'
-import Login from './pages/admin/Login'
-import AdminDashboard from './pages/admin/AdminDashboard'
 import ProtectedRoute from './router/ProtectedRoute'
 import ScrollToTop from './router/ScrollToTop'
 import WireframeTransition from './components/WireframeTransition'
+
+// the admin panel (product form, cropper, orders) is its own chunk — shoppers never
+// download it; only /admin and /admin/login fetch it
+const Login = lazy(() => import('./pages/admin/Login'))
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
+
+function AdminFallback() {
+  return <p className="p-8 font-grotesk text-sm font-bold text-ink/50">Загрузка...</p>
+}
 
 function App() {
   return (
@@ -27,12 +35,21 @@ function App() {
           <Route path="/catalog" element={<CatalogPage />} />
           <Route path="/catalog/:id" element={<ProductPage />} />
           <Route path="/about" element={<AboutPage />} />
-          <Route path="/admin/login" element={<Login />} />
+          <Route
+            path="/admin/login"
+            element={
+              <Suspense fallback={<AdminFallback />}>
+                <Login />
+              </Suspense>
+            }
+          />
           <Route
             path="/admin"
             element={
               <ProtectedRoute>
-                <AdminDashboard />
+                <Suspense fallback={<AdminFallback />}>
+                  <AdminDashboard />
+                </Suspense>
               </ProtectedRoute>
             }
           />
