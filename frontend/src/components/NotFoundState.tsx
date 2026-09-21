@@ -34,7 +34,7 @@ export default function NotFoundState({
       >
         {title}
         <br />
-        <span className="text-bubblegum">{accent}</span>
+        <span className="text-bubblegum-dark">{accent}</span>
       </motion.h1>
 
       <motion.p {...popIn(0.12)} className="max-w-md text-lg text-ink/70">

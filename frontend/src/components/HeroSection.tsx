@@ -38,7 +38,7 @@ export default function HeroSection() {
           >
             сделано
             <br />
-            для <span className="text-bubblegum">тебя</span>
+            для <span className="text-bubblegum-dark">тебя</span>
           </motion.h1>
 
           <motion.p {...popIn(0.12)} className="max-w-xl text-lg text-ink/70">

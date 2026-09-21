@@ -345,7 +345,7 @@ export default function ProductPage() {
                     transition={{ type: 'spring', stiffness: 340, damping: 14 }}
                     className="w-fit rounded-2xl border-2 border-black bg-bubblegum px-5 py-2 shadow-[4px_4px_0_0_#000]"
                   >
-                    <span className="font-grotesk text-3xl font-black tracking-tight text-white sm:text-4xl">
+                    <span className="font-grotesk text-3xl font-black tracking-tight text-ink sm:text-4xl">
                       {formatPrice(price)}
                     </span>
                   </motion.div>
