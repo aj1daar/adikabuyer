@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import useCartStore, { type CartItem } from '../store/useCartStore'
 import submitCheckout from '../api/checkout'
 import formatPrice from '../utils/formatPrice'
@@ -225,7 +226,23 @@ export default function CartDrawer() {
               <>
             <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-4">
               {items.length === 0 && (
-                <p className="text-sm text-ink/50">Корзина пуста.</p>
+                <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+                  <motion.span
+                    {...popIn(0.05)}
+                    className="rotate-[-4deg] rounded-pill border-2 border-black bg-bubblegum-light px-4 py-1 font-grotesk text-xs font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]"
+                  >
+                    пусто
+                  </motion.span>
+                  <h3 className="font-grotesk text-lg font-bold text-ink">Корзина пуста.</h3>
+                  <p className="max-w-60 text-sm text-ink/60">Загляни в каталог — выбери вариант, и он появится здесь.</p>
+                  <Link
+                    to="/catalog"
+                    onClick={handleClose}
+                    className="flex min-h-11 items-center rounded-pill border-2 border-black bg-ink px-6 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition hover:bg-bubblegum-dark"
+                  >
+                    Смотреть каталог
+                  </Link>
+                </div>
               )}
               {hasBothGroups ? (
                 <>
@@ -347,50 +364,51 @@ export default function CartDrawer() {
               )}
             </div>
 
-            <div className="border-t-2 border-black px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-              {items.length > 0 && (
+            {/* nothing to total yet: an empty cart shows no delivery fee, sum or disabled button */}
+            {items.length > 0 && (
+              <div className="border-t-2 border-black px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                 <p className="mb-3 text-xs text-ink/50">
                   Доставка займёт от 7 до 14 дней — заказы едут напрямую из США и Кореи.
                 </p>
-              )}
-              <div className="mb-1 flex items-center justify-between font-grotesk text-sm text-ink/60">
-                <span>Товары</span>
-                <span>{formatPrice(totalPrice)}</span>
-              </div>
-              {isSplitDelivery ? (
-                <>
-                  <div className="mb-1 flex items-center justify-between font-grotesk text-sm text-ink/60">
-                    <span>{deliveryLabel} — в наличии</span>
-                    <span>{formatPrice(singleDeliveryFee)}</span>
-                  </div>
-                  <div className="mb-4 flex items-center justify-between font-grotesk text-sm text-ink/60">
-                    <span>{deliveryLabel} — под заказ</span>
-                    <span>{formatPrice(singleDeliveryFee)}</span>
-                  </div>
-                </>
-              ) : (
-                <div className="mb-4 flex items-center justify-between font-grotesk text-sm text-ink/60">
-                  <span>{deliveryLabel}</span>
-                  <span>{formatPrice(deliveryFee)}</span>
+                <div className="mb-1 flex items-center justify-between font-grotesk text-sm text-ink/60">
+                  <span>Товары</span>
+                  <span>{formatPrice(totalPrice)}</span>
                 </div>
-              )}
-              <div className="mb-1 flex items-center justify-between border-t border-ink/10 pt-3 font-grotesk text-base font-bold text-ink">
-                <span>Итого</span>
-                <span>{formatPrice(grandTotal)}</span>
+                {isSplitDelivery ? (
+                  <>
+                    <div className="mb-1 flex items-center justify-between font-grotesk text-sm text-ink/60">
+                      <span>{deliveryLabel} — в наличии</span>
+                      <span>{formatPrice(singleDeliveryFee)}</span>
+                    </div>
+                    <div className="mb-4 flex items-center justify-between font-grotesk text-sm text-ink/60">
+                      <span>{deliveryLabel} — под заказ</span>
+                      <span>{formatPrice(singleDeliveryFee)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="mb-4 flex items-center justify-between font-grotesk text-sm text-ink/60">
+                    <span>{deliveryLabel}</span>
+                    <span>{formatPrice(deliveryFee)}</span>
+                  </div>
+                )}
+                <div className="mb-1 flex items-center justify-between border-t border-ink/10 pt-3 font-grotesk text-base font-bold text-ink">
+                  <span>Итого</span>
+                  <span>{formatPrice(grandTotal)}</span>
+                </div>
+                <div className="mb-4 flex items-center justify-between gap-2 font-grotesk text-xs text-ink/45">
+                  <span>Плюс вес посылки — посчитаем при подтверждении</span>
+                  <WeightTariffNote label="Тариф" className="shrink-0" />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCheckout}
+                  disabled={!canCheckout || isSubmitting}
+                  className="w-full rounded-pill border-2 border-black bg-ink px-4 py-3 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isSubmitting ? 'Оформляем заказ...' : 'Оформить заказ'}
+                </button>
               </div>
-              <div className="mb-4 flex items-center justify-between gap-2 font-grotesk text-xs text-ink/45">
-                <span>Плюс вес посылки — посчитаем при подтверждении</span>
-                <WeightTariffNote label="Тариф" className="shrink-0" />
-              </div>
-              <button
-                type="button"
-                onClick={handleCheckout}
-                disabled={!canCheckout || isSubmitting}
-                className="w-full rounded-pill border-2 border-black bg-ink px-4 py-3 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {isSubmitting ? 'Оформляем заказ...' : 'Оформить заказ'}
-              </button>
-            </div>
+            )}
               </>
             )}
           </motion.aside>
