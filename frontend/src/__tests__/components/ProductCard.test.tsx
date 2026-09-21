@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import ProductCard from '../../components/ProductCard'
 import useCartStore from '../../store/useCartStore'
 import useIsMobileViewport from '../../hooks/useIsMobileViewport'
@@ -336,5 +336,55 @@ describe('ProductCard', () => {
         status: 'IN_STOCK',
       },
     ])
+  })
+
+  describe('when the shopper still has to choose', () => {
+    const sized: ProductDto = {
+      ...product,
+      colorSwatches: { Black: 'black.jpg', White: 'white.jpg' },
+      variants: [
+        { ...product.variants[0], id: 1, sku: 'TEE-BLK-S', attributes: { color: 'Black', size: 'S' } },
+        { ...product.variants[0], id: 2, sku: 'TEE-BLK-M', attributes: { color: 'Black', size: 'M' } },
+        { ...product.variants[0], id: 3, sku: 'TEE-WHT-S', attributes: { color: 'White', size: 'S' } },
+      ],
+    }
+
+    const renderWithRoutes = (card: ProductDto, mobileColumns: 1 | 2 = 1) =>
+      render(
+        <MemoryRouter initialEntries={['/catalog']}>
+          <Routes>
+            <Route path="/catalog" element={<ProductCard product={card} mobileColumns={mobileColumns} />} />
+            <Route path="/catalog/:id" element={<p>product page</p>} />
+          </Routes>
+        </MemoryRouter>,
+      )
+
+    it('opens the product page instead of silently adding the first variant', () => {
+      renderWithRoutes(sized)
+
+      expect(screen.queryByRole('button', { name: 'Увеличить количество' })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Выбрать' }))
+
+      expect(useCartStore.getState().items).toHaveLength(0)
+      expect(screen.getByText('product page')).toBeInTheDocument()
+    })
+
+    it('labels the compact mobile button as a choice too', () => {
+      renderWithRoutes(sized, 2)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Выбрать вариант' }))
+
+      expect(useCartStore.getState().items).toHaveLength(0)
+      expect(screen.getByText('product page')).toBeInTheDocument()
+    })
+
+    it('adds straight away once the picked colour leaves a single variant', () => {
+      renderWithRoutes(sized)
+
+      fireEvent.click(screen.getByRole('button', { name: 'White' }))
+      fireEvent.click(screen.getByRole('button', { name: 'В корзину' }))
+
+      expect(useCartStore.getState().items).toEqual([expect.objectContaining({ variantId: 3, quantity: 1 })])
+    })
   })
 })

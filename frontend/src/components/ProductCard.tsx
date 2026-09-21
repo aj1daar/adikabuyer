@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import type { ProductDto } from '../types/catalog'
 import useCartStore from '../store/useCartStore'
 import useCardTransitionStore from '../store/useCardTransitionStore'
@@ -23,6 +24,8 @@ type ProductCardProps = {
 
 export default function ProductCard({ product, mobileColumns = 1 }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem)
+  const openCart = useCartStore((state) => state.openCart)
+  const navigate = useNavigate()
   const playTransition = useCardTransitionStore((state) => state.play)
   const cardRef = useRef<HTMLDivElement>(null)
   const isMobile = useIsMobileViewport()
@@ -64,6 +67,13 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     ? sellableVariants.find((variant) => String(variant.attributes[COLOR_ATTRIBUTE_KEY] ?? '') === activeColor)
     : undefined
   const shownVariant = activeVariant ?? sellableVariants[0]
+  // the card may only add straight to the cart when the shopper can't mean anything else:
+  // one sellable variant, or a picked colour that has exactly one. Otherwise (sizes, or
+  // several colours with none picked) the button opens the product page to choose.
+  const candidateVariants = activeColor
+    ? sellableVariants.filter((variant) => String(variant.attributes[COLOR_ATTRIBUTE_KEY] ?? '') === activeColor)
+    : sellableVariants
+  const needsChoice = candidateVariants.length > 1
 
   // the gallery for the current view: the shown variant's own photos (borrowing the
   // closest sibling's if it has none, same rule the product page uses) — never every
@@ -110,8 +120,26 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
       ? ['Новинка', ...(product.labels ?? [])]
       : product.labels
 
+  const playExpand = () => {
+    if (!cardRef.current) {
+      return
+    }
+    const rect = cardRef.current.getBoundingClientRect()
+    playTransition('expand', {
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    })
+  }
+
   const handleAddToCart = () => {
     if (!shownVariant) {
+      return
+    }
+    if (needsChoice) {
+      playExpand()
+      navigate(`/catalog/${product.id}`)
       return
     }
     addItem({
@@ -125,20 +153,32 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
       status: shownVariant.status,
     })
     setQuantity(1)
+    toast.success(
+      (t) => (
+        <span className="flex items-center gap-3">
+          <span className="min-w-0">В корзине: {truncate(product.name, 40)}</span>
+          <button
+            type="button"
+            onClick={() => {
+              openCart()
+              toast.dismiss(t.id)
+            }}
+            className="min-h-9 shrink-0 rounded-pill border-2 border-black bg-ink px-3 text-xs font-bold text-white hover:bg-bubblegum-dark"
+          >
+            Открыть
+          </button>
+        </span>
+      ),
+      { id: `cart-${shownVariant.id}` },
+    )
   }
 
   const handleCardClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement
-    if (!cardRef.current || !target.closest('a') || target.closest('button')) {
+    if (!target.closest('a') || target.closest('button')) {
       return
     }
-    const rect = cardRef.current.getBoundingClientRect()
-    playTransition('expand', {
-      top: rect.top,
-      left: rect.left,
-      width: rect.width,
-      height: rect.height,
-    })
+    playExpand()
   }
 
   return (
@@ -308,8 +348,8 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
             type="button"
             onClick={handleAddToCart}
             disabled={!shownVariant}
-            aria-label="Добавить в корзину"
-            className="relative hidden w-full items-center justify-center rounded-pill border-2 border-black bg-ink py-2 text-white transition after:absolute after:inset-x-0 after:-inset-y-2 after:content-[''] hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40 max-sm:flex"
+            aria-label={needsChoice ? 'Выбрать вариант' : 'Добавить в корзину'}
+            className="relative hidden w-full items-center justify-center gap-1 rounded-pill border-2 border-black bg-ink py-2 text-white transition after:absolute after:inset-x-0 after:-inset-y-2 after:content-[''] hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40 max-sm:flex"
           >
             <svg
               aria-hidden="true"
@@ -324,38 +364,47 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
               <path d="M6 7h12l-1 13H7L6 7z" />
               <path d="M9 7V5a3 3 0 0 1 6 0v2" />
             </svg>
+            {needsChoice && (
+              <span aria-hidden="true" className="font-grotesk text-sm font-bold leading-none">
+                ›
+              </span>
+            )}
           </button>
         )}
 
         <div className={`mt-3 flex items-center gap-2 ${hideDescriptionOnMobile ? 'max-sm:hidden' : ''}`}>
-          <button
-            type="button"
-            onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-            disabled={!shownVariant || quantity <= 1}
-            aria-label="Уменьшить количество"
-            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum hover:text-white active:scale-90 active:bg-bubblegum-dark active:text-white disabled:cursor-not-allowed disabled:opacity-30"
-          >
-            −
-          </button>
-          <span className="min-w-6 text-center font-grotesk text-sm font-bold text-ink">
-            {quantity}
-          </span>
-          <button
-            type="button"
-            onClick={() => setQuantity((current) => current + 1)}
-            disabled={!shownVariant}
-            aria-label="Увеличить количество"
-            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum hover:text-white active:scale-90 active:bg-bubblegum-dark active:text-white disabled:cursor-not-allowed disabled:opacity-30"
-          >
-            +
-          </button>
+          {!needsChoice && (
+            <>
+              <button
+                type="button"
+                onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                disabled={!shownVariant || quantity <= 1}
+                aria-label="Уменьшить количество"
+                className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum hover:text-white active:scale-90 active:bg-bubblegum-dark active:text-white disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                −
+              </button>
+              <span className="min-w-6 text-center font-grotesk text-sm font-bold text-ink">
+                {quantity}
+              </span>
+              <button
+                type="button"
+                onClick={() => setQuantity((current) => current + 1)}
+                disabled={!shownVariant}
+                aria-label="Увеличить количество"
+                className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum hover:text-white active:scale-90 active:bg-bubblegum-dark active:text-white disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                +
+              </button>
+            </>
+          )}
           <button
             type="button"
             onClick={handleAddToCart}
             disabled={!shownVariant}
             className="flex-1 rounded-pill border-2 border-black bg-ink px-4 py-2 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
           >
-            В корзину
+            {needsChoice ? 'Выбрать' : 'В корзину'}
           </button>
         </div>
       </div>
