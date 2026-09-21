@@ -44,11 +44,11 @@
     @apply select-none transition active:scale-95;
   }
 
-  /* Keyboard focus: a thick bubblegum-dark ring (3.7:1 on white) that follows the pill
+  /* Keyboard focus: a thick bubblegum-dark ring (4.7:1 on white) that follows the pill
      and circle shapes. :focus-visible keeps it off mouse clicks and taps; text fields
      keep their own border highlight. */
   :focus-visible {
-    outline: 3px solid #d45c86;
+    outline: 3px solid #c24775;
     outline-offset: 3px;
   }
 }

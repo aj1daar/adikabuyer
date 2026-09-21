@@ -5,7 +5,7 @@ export default {
         bubblegum: {
           DEFAULT: '#E8799F',
           light: '#F3A9C0',
-          dark: '#D45C86',
+          dark: '#C24775',
         },
         ink: '#0A0A0A',
         silver: {
