@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import formatPrice from '../utils/formatPrice'
+import useDialog from '../hooks/useDialog'
 import {
   NEGOTIABLE_FROM_KG,
   USD_RATE,
@@ -26,24 +27,20 @@ export default function WeightTariffNote({
   className = '',
 }: WeightTariffNoteProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const panelRef = useRef<HTMLDivElement>(null)
+  // opens over the cart drawer — the dialog stack makes Escape close only this sheet
+  useDialog(panelRef, isOpen, () => setIsOpen(false))
 
   useEffect(() => {
     if (!isOpen) {
       return
     }
-    const close = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsOpen(false)
-      }
-    }
     // The page behind an open sheet must not scroll — on a phone the two scrolls fight
     // and the sheet feels broken.
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    window.addEventListener('keydown', close)
     return () => {
       document.body.style.overflow = previousOverflow
-      window.removeEventListener('keydown', close)
     }
   }, [isOpen])
 
@@ -72,6 +69,8 @@ export default function WeightTariffNote({
           >
             <motion.div
               key="weight-tariff-dialog"
+              ref={panelRef}
+              tabIndex={-1}
               role="dialog"
               aria-modal="true"
               aria-label="Тариф за вес посылки"
@@ -80,7 +79,7 @@ export default function WeightTariffNote({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 24, scale: 0.98 }}
               transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-              className="max-h-full w-full max-w-sm overflow-y-auto overscroll-contain rounded-3xl border-4 border-black bg-white p-6 shadow-[8px_8px_0_0_#000]"
+              className="max-h-full w-full max-w-sm overflow-y-auto outline-none overscroll-contain rounded-3xl border-4 border-black bg-white p-6 shadow-[8px_8px_0_0_#000]"
             >
               <h2 className="font-grotesk text-lg font-bold text-ink">Тариф за вес</h2>
               <p className="mt-2 text-sm leading-relaxed text-ink/70">

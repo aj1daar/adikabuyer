@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
+import useDialog from '../hooks/useDialog'
 
 type TextBubbleModalProps = {
   open: boolean
@@ -13,6 +14,8 @@ type TextBubbleModalProps = {
 export default function TextBubbleModal({ open, title, text, onClose }: TextBubbleModalProps) {
   const bodyRef = useRef<HTMLDivElement | null>(null)
   const textRef = useRef<HTMLParagraphElement | null>(null)
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  useDialog(panelRef, open, onClose)
   // Scrollbars are hidden site-wide, so a long description would otherwise give no hint
   // that it continues below the fold — this drives a fade that says "there is more".
   const [hasMoreBelow, setHasMoreBelow] = useState(false)
@@ -51,19 +54,12 @@ export default function TextBubbleModal({ open, title, text, onClose }: TextBubb
     if (!open) {
       return
     }
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    window.addEventListener('keydown', onKey)
     return () => {
       document.body.style.overflow = previousOverflow
-      window.removeEventListener('keydown', onKey)
     }
-  }, [open, onClose])
+  }, [open])
 
   return createPortal(
     <AnimatePresence>
@@ -78,15 +74,17 @@ export default function TextBubbleModal({ open, title, text, onClose }: TextBubb
         >
           <motion.div
             key="text-bubble"
+            ref={panelRef}
             role="dialog"
             aria-modal="true"
             aria-label={title}
+            tabIndex={-1}
             initial={{ opacity: 0, scale: 0.6, y: 60 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.7, y: 40 }}
             transition={{ type: 'spring', stiffness: 380, damping: 12, mass: 0.8 }}
             onClick={(event) => event.stopPropagation()}
-            className="relative flex max-h-full w-full max-w-xl flex-col rounded-3xl border-2 border-black bg-white p-6 shadow-[8px_8px_0_0_#000] sm:p-8"
+            className="relative flex max-h-full w-full max-w-xl flex-col rounded-3xl outline-none border-2 border-black bg-white p-6 shadow-[8px_8px_0_0_#000] sm:p-8"
           >
             {/* speech-bubble tail */}
             <span className="absolute -bottom-[11px] left-10 h-5 w-5 rotate-45 border-b-2 border-r-2 border-black bg-white" />

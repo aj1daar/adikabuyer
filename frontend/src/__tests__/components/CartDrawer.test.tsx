@@ -54,6 +54,18 @@ describe('CartDrawer', () => {
     expect(useCartStore.getState().isOpen).toBe(false)
   })
 
+  it('closes only the tariff sheet, not the cart, on Escape', async () => {
+    useCartStore.setState({ items: [cartItem()], isOpen: true })
+    render(<CartDrawer />, { wrapper: MemoryRouter })
+    fireEvent.click(screen.getByRole('button', { name: /Тариф/ }))
+    expect(screen.getByRole('dialog', { name: 'Тариф за вес посылки' })).toBeInTheDocument()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Тариф за вес посылки' })).not.toBeInTheDocument())
+    expect(useCartStore.getState().isOpen).toBe(true)
+  })
+
   it('offers the catalog from an empty cart and shows no totals or checkout button', () => {
     render(<CartDrawer />, { wrapper: MemoryRouter })
 
