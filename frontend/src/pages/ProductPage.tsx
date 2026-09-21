@@ -8,6 +8,7 @@ import useCardTransitionStore from '../store/useCardTransitionStore'
 import { resolveVariantGallery } from '../utils/variantImage'
 import usePageTitle from '../hooks/usePageTitle'
 import formatPrice from '../utils/formatPrice'
+import notifyAddedToCart from '../utils/notifyAddedToCart'
 import ProductLabels from '../components/ProductLabels'
 import TextBubbleModal from '../components/TextBubbleModal'
 import NotFoundState from '../components/NotFoundState'
@@ -37,7 +38,6 @@ function variantLabel(variant: VariantDto, index: number): string {
 export default function ProductPage() {
   const { id } = useParams()
   const addItem = useCartStore((state) => state.addItem)
-  const openCart = useCartStore((state) => state.openCart)
   const playTransition = useCardTransitionStore((state) => state.play)
 
   const [product, setProduct] = useState<ProductDto | null>(null)
@@ -185,7 +185,7 @@ export default function ProductPage() {
     })
     setQuantity(1)
     setJustAdded(true)
-    openCart()
+    notifyAddedToCart(product.name, selectedVariant.id)
   }
 
   return (

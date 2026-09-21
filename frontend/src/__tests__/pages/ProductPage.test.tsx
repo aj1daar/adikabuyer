@@ -104,7 +104,8 @@ describe('ProductPage', () => {
     const items = useCartStore.getState().items
     expect(items).toHaveLength(1)
     expect(items[0]).toMatchObject({ variantId: 2, sku: 'TUM-WHT', unitPrice: 30, quantity: 2, status: 'PRE_ORDER' })
-    expect(useCartStore.getState().isOpen).toBe(true)
+    // confirms with the shared toast instead of throwing the drawer over the page
+    expect(useCartStore.getState().isOpen).toBe(false)
   })
 
   it('switches the main photo when a thumbnail is clicked', async () => {

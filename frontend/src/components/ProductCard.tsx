@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
 import type { ProductDto } from '../types/catalog'
 import useCartStore from '../store/useCartStore'
 import useCardTransitionStore from '../store/useCardTransitionStore'
 import formatPrice from '../utils/formatPrice'
 import truncate from '../utils/truncate'
+import notifyAddedToCart from '../utils/notifyAddedToCart'
 import useIsMobileViewport from '../hooks/useIsMobileViewport'
 import { COLOR_ATTRIBUTE_KEY, formatAttributeValue } from '../utils/attributeOptions'
 import { resolveVariantGallery } from '../utils/variantImage'
@@ -24,7 +24,6 @@ type ProductCardProps = {
 
 export default function ProductCard({ product, mobileColumns = 1 }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem)
-  const openCart = useCartStore((state) => state.openCart)
   const navigate = useNavigate()
   const playTransition = useCardTransitionStore((state) => state.play)
   const cardRef = useRef<HTMLDivElement>(null)
@@ -159,24 +158,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
       status: shownVariant.status,
     })
     setQuantity(1)
-    toast.success(
-      (t) => (
-        <span className="flex items-center gap-3">
-          <span className="min-w-0">В корзине: {truncate(product.name, 40)}</span>
-          <button
-            type="button"
-            onClick={() => {
-              openCart()
-              toast.dismiss(t.id)
-            }}
-            className="min-h-9 shrink-0 rounded-pill border-2 border-black bg-ink px-3 text-xs font-bold text-white hover:bg-bubblegum-dark"
-          >
-            Открыть
-          </button>
-        </span>
-      ),
-      { id: `cart-${shownVariant.id}` },
-    )
+    notifyAddedToCart(product.name, shownVariant.id)
   }
 
   const handleCardClick = (event: MouseEvent<HTMLDivElement>) => {
