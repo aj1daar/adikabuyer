@@ -34,7 +34,7 @@ const chooseDelivery = (label: string) => {
 
 const fillCheckoutForm = () => {
   fireEvent.change(screen.getByPlaceholderText('Имя и фамилия'), { target: { value: 'John Doe' } })
-  fireEvent.change(screen.getByPlaceholderText('Номер телефона'), { target: { value: '996700123456' } })
+  fireEvent.change(screen.getByLabelText('Телефон'), { target: { value: '996700123456' } })
 }
 
 describe('CartDrawer', () => {
@@ -115,7 +115,7 @@ describe('CartDrawer', () => {
 
     render(<CartDrawer />, { wrapper: MemoryRouter })
     fireEvent.change(screen.getByPlaceholderText('Имя и фамилия'), { target: { value: '   ' } })
-    fireEvent.change(screen.getByPlaceholderText('Номер телефона'), { target: { value: '   ' } })
+    fireEvent.change(screen.getByLabelText('Телефон'), { target: { value: '   ' } })
 
     expect(screen.getByRole('button', { name: /оформить заказ/i })).toBeDisabled()
   })
@@ -127,6 +127,50 @@ describe('CartDrawer', () => {
     fillCheckoutForm()
 
     expect(screen.getByRole('button', { name: /оформить заказ/i })).toBeEnabled()
+  })
+
+  it('labels the fields and lets the browser autofill name and phone', () => {
+    useCartStore.setState({ items: [cartItem()], isOpen: true })
+    render(<CartDrawer />, { wrapper: MemoryRouter })
+
+    expect(screen.getByLabelText('Имя')).toHaveAttribute('autocomplete', 'name')
+    const phone = screen.getByLabelText('Телефон')
+    expect(phone).toHaveAttribute('autocomplete', 'tel')
+    expect(phone).toHaveAttribute('inputmode', 'tel')
+  })
+
+  it('says what is still missing under the disabled checkout button', () => {
+    useCartStore.setState({ items: [cartItem()], isOpen: true })
+    render(<CartDrawer />, { wrapper: MemoryRouter })
+
+    expect(screen.getByText('Чтобы оформить, укажите имя и телефон.')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Имя'), { target: { value: 'John Doe' } })
+    expect(screen.getByText('Чтобы оформить, укажите телефон.')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Телефон'), { target: { value: '996700123456' } })
+    expect(screen.queryByText(/Чтобы оформить/)).not.toBeInTheDocument()
+  })
+
+  it('jumps to the empty field when Enter is pressed too early', () => {
+    useCartStore.setState({ items: [cartItem()], isOpen: true })
+    render(<CartDrawer />, { wrapper: MemoryRouter })
+    fireEvent.change(screen.getByLabelText('Имя'), { target: { value: 'John Doe' } })
+
+    fireEvent.keyDown(screen.getByLabelText('Имя'), { key: 'Enter' })
+
+    expect(screen.getByLabelText('Телефон')).toHaveFocus()
+    expect(mockedSubmitCheckout).not.toHaveBeenCalled()
+  })
+
+  it('places the order when the form is submitted with Enter', async () => {
+    useCartStore.setState({ items: [cartItem()], isOpen: true })
+    mockedSubmitCheckout.mockResolvedValue({ orderId: 'order-1', orderNumber: 1042, itemsTotal: 50, deliveryFee: 300, grandTotal: 350 })
+    render(<CartDrawer />, { wrapper: MemoryRouter })
+    fillCheckoutForm()
+
+    fireEvent.keyDown(screen.getByLabelText('Телефон'), { key: 'Enter' })
+
+    await waitFor(() => expect(mockedSubmitCheckout).toHaveBeenCalledTimes(1))
+    expect(await screen.findByText('Заказ принят!')).toBeInTheDocument()
   })
 
   it('shows the delivery-time note and the courier fee straight away', () => {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import useCartStore, { type CartItem } from '../store/useCartStore'
@@ -101,6 +101,8 @@ export default function CartDrawer() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [orderNumbers, setOrderNumbers] = useState<number[]>([])
+  const nameInputRef = useRef<HTMLInputElement>(null)
+  const phoneInputRef = useRef<HTMLInputElement>(null)
 
   const inStockItems = items.filter((item) => item.status !== 'PRE_ORDER')
   const preOrderItems = items.filter((item) => item.status === 'PRE_ORDER')
@@ -119,6 +121,13 @@ export default function CartDrawer() {
 
   const canCheckout =
     items.length > 0 && customerName.trim() !== '' && customerPhone.trim() !== '' && region.trim() !== ''
+
+  // spelled out under the checkout button, so a greyed-out button never leaves the
+  // shopper guessing what it still needs
+  const missingFields = [
+    customerName.trim() === '' ? 'имя' : null,
+    customerPhone.trim() === '' ? 'телефон' : null,
+  ].filter((field): field is string => field !== null)
 
   const isSplitDelivery = hasBothGroups && deliveryMode === 'separate'
   const singleDeliveryFee = region ? resolveDeliveryFee(region) : 0
@@ -151,6 +160,28 @@ export default function CartDrawer() {
     } finally {
       isSubmittingRef.current = false
       setIsSubmitting(false)
+    }
+  }
+
+  // Enter / the keyboard's «Go» submits; with a field still empty it jumps there instead
+  const handleSubmit = (event: FormEvent | KeyboardEvent) => {
+    event.preventDefault()
+    if (customerName.trim() === '') {
+      nameInputRef.current?.focus()
+      return
+    }
+    if (customerPhone.trim() === '') {
+      phoneInputRef.current?.focus()
+      return
+    }
+    void handleCheckout()
+  }
+
+  // browsers skip Enter-to-submit while the submit button is disabled (it is, until both
+  // fields are filled), so the inputs handle Enter themselves
+  const handleFieldKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
+    if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
+      handleSubmit(event)
     }
   }
 
@@ -287,21 +318,42 @@ export default function CartDrawer() {
               )}
 
               {items.length > 0 && (
-                <div className="mt-4 flex flex-col gap-3">
-                  <input
-                    type="text"
-                    value={customerName}
-                    onChange={(event) => setCustomerName(event.target.value)}
-                    placeholder="Имя и фамилия"
-                    className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
-                  />
-                  <input
-                    type="tel"
-                    value={customerPhone}
-                    onChange={(event) => setCustomerPhone(event.target.value)}
-                    placeholder="Номер телефона"
-                    className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
-                  />
+                <form
+                  id="checkout-form"
+                  onSubmit={handleSubmit}
+                  onKeyDown={handleFieldKeyDown}
+                  noValidate
+                  className="mt-4 flex flex-col gap-3"
+                >
+                  <label className="flex flex-col gap-1">
+                    <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">Имя</span>
+                    <input
+                      ref={nameInputRef}
+                      type="text"
+                      name="name"
+                      autoComplete="name"
+                      enterKeyHint="next"
+                      value={customerName}
+                      onChange={(event) => setCustomerName(event.target.value)}
+                      placeholder="Имя и фамилия"
+                      className="min-h-11 rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">Телефон</span>
+                    <input
+                      ref={phoneInputRef}
+                      type="tel"
+                      name="tel"
+                      autoComplete="tel"
+                      inputMode="tel"
+                      enterKeyHint="send"
+                      value={customerPhone}
+                      onChange={(event) => setCustomerPhone(event.target.value)}
+                      placeholder="+996 700 123 456"
+                      className="min-h-11 rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+                    />
+                  </label>
                   <div className="flex flex-col gap-1">
                     <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
                       Как получить
@@ -360,7 +412,7 @@ export default function CartDrawer() {
                     </div>
                   )}
                   {submitError && <p className="text-xs text-red-500">{submitError}</p>}
-                </div>
+                </form>
               )}
             </div>
 
@@ -400,13 +452,19 @@ export default function CartDrawer() {
                   <WeightTariffNote label="Тариф" className="shrink-0" />
                 </div>
                 <button
-                  type="button"
-                  onClick={handleCheckout}
+                  type="submit"
+                  form="checkout-form"
                   disabled={!canCheckout || isSubmitting}
+                  aria-describedby={missingFields.length > 0 ? 'checkout-missing' : undefined}
                   className="w-full rounded-pill border-2 border-black bg-ink px-4 py-3 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {isSubmitting ? 'Оформляем заказ...' : 'Оформить заказ'}
                 </button>
+                {missingFields.length > 0 && (
+                  <p id="checkout-missing" className="mt-2 text-center font-grotesk text-xs text-ink/50">
+                    Чтобы оформить, укажите {missingFields.join(' и ')}.
+                  </p>
+                )}
               </div>
             )}
               </>
