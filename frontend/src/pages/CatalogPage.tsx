@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import { useSearchParams } from 'react-router-dom'
 import MainLayout from '../layouts/MainLayout'
 import { popIn } from '../utils/motion'
 import ProductGrid from '../components/ProductGrid'
@@ -17,6 +18,18 @@ const MOBILE_COLUMNS_STORAGE_KEY = 'catalog-mobile-columns'
 const PAGE_SIZE = 12
 const UNPAGINATED_SIZE = 1000
 
+// URL query keys for the catalog state, so going back from a product (or sharing the
+// link) lands on the same search, filters and page
+const PARAM = {
+  search: 'q',
+  category: 'category',
+  color: 'color',
+  size: 'size',
+  volumeMin: 'vmin',
+  volumeMax: 'vmax',
+  page: 'page',
+} as const
+
 function readStoredMobileColumns(): MobileColumns {
   const stored = localStorage.getItem(MOBILE_COLUMNS_STORAGE_KEY)
   return stored === '1' || stored === '2' || stored === '3' ? (Number(stored) as MobileColumns) : 2
@@ -24,29 +37,53 @@ function readStoredMobileColumns(): MobileColumns {
 
 export default function CatalogPage() {
   usePageTitle('Каталог')
-  const [searchInput, setSearchInput] = useState('')
-  const [search, setSearch] = useState('')
-  const [category, setCategory] = useState('')
-  const [color, setColor] = useState('')
-  const [size, setSize] = useState('')
-  const [volumeMin, setVolumeMin] = useState('')
-  const [volumeMax, setVolumeMax] = useState('')
+  const [params, setParams] = useSearchParams()
+  const search = params.get(PARAM.search) ?? ''
+  const category = params.get(PARAM.category) ?? ''
+  const color = params.get(PARAM.color) ?? ''
+  const size = params.get(PARAM.size) ?? ''
+  const volumeMin = params.get(PARAM.volumeMin) ?? ''
+  const volumeMax = params.get(PARAM.volumeMax) ?? ''
+  // 1-based in the URL (?page=2), 0-based for the API
+  const page = Math.max(0, Math.floor(Number(params.get(PARAM.page)) || 1) - 1)
+  const [searchInput, setSearchInput] = useState(search)
   const [mobileColumns, setMobileColumns] = useState<MobileColumns>(readStoredMobileColumns)
-  const [page, setPage] = useState(0)
   const isMobile = useIsMobileViewport()
+
+  // replace, not push: filter tweaks shouldn't pile up history entries behind the back button
+  const updateParams = useCallback((changes: Partial<Record<keyof typeof PARAM, string>>) => {
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        for (const [key, value] of Object.entries(changes)) {
+          const name = PARAM[key as keyof typeof PARAM]
+          if (value) {
+            next.set(name, value)
+          } else {
+            next.delete(name)
+          }
+        }
+        // any filter change starts over from the first page
+        if (!('page' in changes)) {
+          next.delete(PARAM.page)
+        }
+        return next
+      },
+      { replace: true },
+    )
+  }, [setParams])
 
   useEffect(() => {
     localStorage.setItem(MOBILE_COLUMNS_STORAGE_KEY, String(mobileColumns))
   }, [mobileColumns])
 
   useEffect(() => {
-    const timeout = setTimeout(() => setSearch(searchInput), 300)
+    if (searchInput === search) {
+      return
+    }
+    const timeout = setTimeout(() => updateParams({ search: searchInput }), 300)
     return () => clearTimeout(timeout)
-  }, [searchInput])
-
-  useEffect(() => {
-    setPage(0)
-  }, [search, category, color, size, volumeMin, volumeMax])
+  }, [searchInput, search, updateParams])
 
   const categoryOptions = useCategories({ search, color, size, volumeMin, volumeMax })
 
@@ -56,12 +93,14 @@ export default function CatalogPage() {
   )
 
   const handleVolumeChange = (min: string, max: string) => {
-    setVolumeMin(min)
-    setVolumeMax(max)
+    updateParams({ volumeMin: min, volumeMax: max })
   }
+  const setCategory = (value: string) => updateParams({ category: value })
+  const setColor = (value: string) => updateParams({ color: value })
+  const setSize = (value: string) => updateParams({ size: value })
 
   const handlePageChange = (nextPage: number) => {
-    setPage(nextPage)
+    updateParams({ page: nextPage > 0 ? String(nextPage + 1) : '' })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
