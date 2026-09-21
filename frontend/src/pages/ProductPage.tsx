@@ -225,7 +225,13 @@ export default function ProductPage() {
                 />
                 <div className="relative flex aspect-[4/5] items-center justify-center overflow-hidden rounded-3xl border-2 border-black bg-silver shadow-[8px_8px_0_0_#000]">
                   {imageUrl ? (
-                    <img src={imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                    <img
+                      src={imageUrl}
+                      alt={product.name}
+                      // the page's largest element: fetch it before anything else
+                      fetchPriority="high"
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <span className="font-grotesk text-6xl font-semibold text-ink/20">{initials}</span>
                   )}
@@ -281,7 +287,7 @@ export default function ProductPage() {
                             : 'border-black/30 opacity-70 hover:opacity-100'
                         }`}
                       >
-                        <img src={url} alt="" className="h-full w-full object-cover" />
+                        <img src={url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                       </button>
                     ))}
                   </div>
@@ -436,7 +442,7 @@ export default function ProductPage() {
                                             : 'border-black/30 opacity-40 hover:opacity-100'
                                       }`}
                                     >
-                                      <img src={swatch} alt="" className="h-full w-full object-cover" />
+                                      <img src={swatch} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                                     </motion.button>
                                   </motion.div>
                                 )
