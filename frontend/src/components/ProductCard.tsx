@@ -35,7 +35,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
   const hideDescriptionOnMobile = mobileColumns >= 2
   const hideTagsAndVariantsOnMobile = mobileColumns >= 2
   const hideCategoryOnMobile = mobileColumns >= 2
-  const hideNameOnMobile = mobileColumns >= 3
+  const tinyTextOnMobile = mobileColumns >= 3
   // 3-col mobile: the card is too narrow for swatches — hide the row entirely.
   const hideSwatchRow = isMobile && mobileColumns >= 3
   // smaller swatches in the cramped 2-col mobile card so a full row + "+N" never wraps
@@ -262,11 +262,18 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
 
         <Link
           to={`/catalog/${product.id}`}
-          className={`relative block after:absolute after:-inset-y-3.5 after:inset-x-0 after:content-[''] ${hideNameOnMobile ? 'max-sm:hidden' : ''}`}
+          className="relative block after:absolute after:-inset-y-3.5 after:inset-x-0 after:content-['']"
         >
+          {/* compact phone grids keep the name on two small lines (height reserved so
+              cards line up) — one truncated line, or none at 3 columns, made products
+              impossible to tell apart */}
           <h3
-            className={`line-clamp-2 min-h-[3.5rem] font-grotesk text-lg font-bold text-ink transition hover:text-bubblegum-dark ${
-              hideDescriptionOnMobile ? 'max-sm:min-h-0 max-sm:truncate max-sm:text-xs' : ''
+            className={`line-clamp-2 min-h-[3.5rem] break-words hyphens-auto font-grotesk text-lg font-bold text-ink transition hover:text-bubblegum-dark ${
+              tinyTextOnMobile
+                ? 'max-sm:min-h-6 max-sm:text-[10px] max-sm:leading-3'
+                : hideDescriptionOnMobile
+                  ? 'max-sm:min-h-8 max-sm:text-xs max-sm:leading-4'
+                  : ''
             }`}
           >
             {product.name}
@@ -336,7 +343,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
         >
           <span
             className={`min-w-0 truncate font-grotesk text-base font-bold tabular-nums text-ink ${
-              hideNameOnMobile ? 'max-sm:text-[10px]' : hideDescriptionOnMobile ? 'max-sm:text-sm' : ''
+              tinyTextOnMobile ? 'max-sm:text-[10px]' : hideDescriptionOnMobile ? 'max-sm:text-sm' : ''
             }`}
           >
             {formatPrice(shownPrice)}

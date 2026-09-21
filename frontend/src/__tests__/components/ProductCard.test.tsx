@@ -76,21 +76,24 @@ describe('ProductCard', () => {
     expect(screen.getByText('Custom Tumbler').closest('a')).not.toHaveClass('max-sm:hidden')
   })
 
-  it('additionally hides the name on mobile once 3 columns are selected', () => {
+  it('keeps the name, in tiny type on two lines, once 3 columns are selected', () => {
     render(<ProductCard product={product} mobileColumns={3} />, { wrapper: MemoryRouter })
 
     expect(screen.getByText('Insulated steel tumbler')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Drinkware').closest('div')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Black').closest('div')).toHaveClass('max-sm:hidden')
-    expect(screen.getByText('Custom Tumbler').closest('a')).toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Custom Tumbler').closest('a')).not.toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Custom Tumbler')).toHaveClass('line-clamp-2', 'max-sm:text-[10px]')
   })
 
-  it('shrinks and truncates the title to one line on mobile once a compact density is selected', () => {
+  it('shrinks the title to two small lines on mobile once a compact density is selected', () => {
     const { rerender } = render(<ProductCard product={product} />, { wrapper: MemoryRouter })
-    expect(screen.getByText('Custom Tumbler')).not.toHaveClass('max-sm:truncate')
+    expect(screen.getByText('Custom Tumbler')).not.toHaveClass('max-sm:text-xs')
 
     rerender(<ProductCard product={product} mobileColumns={2} />)
-    expect(screen.getByText('Custom Tumbler')).toHaveClass('max-sm:truncate', 'max-sm:text-xs')
+    const title = screen.getByText('Custom Tumbler')
+    expect(title).toHaveClass('line-clamp-2', 'max-sm:text-xs', 'max-sm:min-h-8')
+    expect(title).not.toHaveClass('max-sm:truncate')
   })
 
   it('hides the quantity stepper and full-width cart button on mobile once compact', () => {
