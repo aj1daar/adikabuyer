@@ -149,8 +149,10 @@ export default function NavigationBar() {
       <nav
         data-mobile-tabbar
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        // stays put while scrolling (only the header slides away) so navigation and the
+        // cart never need a scroll back up; it only steps aside for the filter sheet
         className={`fixed inset-x-0 bottom-0 z-40 flex border-t-2 border-black bg-white/95 backdrop-blur transition-transform duration-150 will-change-transform sm:hidden ${
-          hidden ? 'translate-y-full' : 'translate-y-0'
+          filterSheetOpen ? 'translate-y-full' : 'translate-y-0'
         }`}
       >
         {navItems.map((item) => (

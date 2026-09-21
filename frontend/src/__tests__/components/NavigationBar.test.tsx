@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import NavigationBar from '../../components/NavigationBar'
 import useCartStore from '../../store/useCartStore'
@@ -58,5 +58,20 @@ describe('NavigationBar', () => {
 
     tab.click()
     expect(useCartStore.getState().isOpen).toBe(true)
+  })
+
+  it('hides only the header when scrolling down; the tab bar with the cart stays', () => {
+    const { container } = renderNavigationBar()
+    const scrollTo = (y: number) => {
+      Object.defineProperty(window, 'scrollY', { value: y, configurable: true })
+      window.dispatchEvent(new Event('scroll'))
+    }
+
+    act(() => scrollTo(100))
+    act(() => scrollTo(400))
+
+    expect(container.querySelector('header')).toHaveClass('-translate-y-full')
+    expect(container.querySelector('[data-mobile-tabbar]')).toHaveClass('translate-y-0')
+    act(() => scrollTo(0))
   })
 })
