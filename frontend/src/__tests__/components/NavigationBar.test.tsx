@@ -38,8 +38,25 @@ describe('NavigationBar', () => {
 
     expect(useCartStore.getState().isOpen).toBe(false)
 
-    screen.getByRole('button', { name: /корзина/i }).click()
+    screen.getByRole('button', { name: 'Корзина (0)' }).click()
 
+    expect(useCartStore.getState().isOpen).toBe(true)
+  })
+
+  it('puts a cart tab with the item count in the mobile tab bar', () => {
+    useCartStore.setState({
+      items: [
+        { variantId: 1, productId: 1, productName: 'Худи', sku: 'H1', attributes: {}, unitPrice: 10, quantity: 2, status: 'IN_STOCK' },
+      ],
+      isOpen: false,
+    })
+    renderNavigationBar()
+
+    const tab = screen.getByRole('button', { name: 'Корзина, товаров: 2' })
+    expect(tab.closest('[data-mobile-tabbar]')).not.toBeNull()
+    expect(tab).toHaveTextContent('2')
+
+    tab.click()
     expect(useCartStore.getState().isOpen).toBe(true)
   })
 })
