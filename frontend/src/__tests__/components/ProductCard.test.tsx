@@ -341,6 +341,35 @@ describe('ProductCard', () => {
     ])
   })
 
+  describe('pre-order sticker', () => {
+    const mixed: ProductDto = {
+      ...product,
+      colorSwatches: { Black: 'black.jpg', White: 'white.jpg' },
+      variants: [
+        { ...product.variants[0], id: 1, attributes: { color: 'Black' }, status: 'IN_STOCK' },
+        { ...product.variants[0], id: 2, sku: 'W', attributes: { color: 'White' }, status: 'PRE_ORDER' },
+      ],
+    }
+
+    it('marks a product whose every variant is pre-order', () => {
+      render(
+        <ProductCard product={{ ...product, variants: [{ ...product.variants[0], status: 'PRE_ORDER' }] }} />,
+        { wrapper: MemoryRouter },
+      )
+
+      expect(screen.getByText('Под заказ')).toBeInTheDocument()
+    })
+
+    it('stays off while an in-stock option exists, and appears once a pre-order colour is picked', () => {
+      render(<ProductCard product={mixed} />, { wrapper: MemoryRouter })
+      expect(screen.queryByText('Под заказ')).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: 'White' }))
+
+      expect(screen.getByText('Под заказ')).toBeInTheDocument()
+    })
+  })
+
   describe('when the shopper still has to choose', () => {
     const sized: ProductDto = {
       ...product,

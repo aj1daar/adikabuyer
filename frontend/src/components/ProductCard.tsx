@@ -74,6 +74,9 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     ? sellableVariants.filter((variant) => String(variant.attributes[COLOR_ATTRIBUTE_KEY] ?? '') === activeColor)
     : sellableVariants
   const needsChoice = candidateVariants.length > 1
+  // «Под заказ» when everything the shopper could pick right now is pre-order (the picked
+  // colour, or the whole product) — a 7–14 day wait they should see before opening the card
+  const isPreOrder = candidateVariants.length > 0 && candidateVariants.every((variant) => variant.status === 'PRE_ORDER')
 
   // the gallery for the current view: the shown variant's own photos (borrowing the
   // closest sibling's if it has none, same rule the product page uses) — never every
@@ -115,10 +118,13 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
 
   // "Новинка" rides in front of the admin's own labels; the backend sets isNew
   // for two weeks after a product is added (skip it if the admin already typed one).
-  const cardLabels =
+  const labelsWithNew =
     product.isNew && !(product.labels ?? []).includes('Новинка')
       ? ['Новинка', ...(product.labels ?? [])]
-      : product.labels
+      : (product.labels ?? [])
+  // «Под заказ» leads the sticker stack: it changes when the order arrives, which matters
+  // more than any marketing label (the stack is vertical, so it never collides on 3 columns)
+  const cardLabels = isPreOrder ? ['Под заказ', ...labelsWithNew.filter((label) => label !== 'Под заказ')] : labelsWithNew
 
   const playExpand = () => {
     if (!cardRef.current) {
