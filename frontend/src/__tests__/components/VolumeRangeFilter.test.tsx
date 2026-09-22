@@ -52,4 +52,36 @@ describe('VolumeRangeFilter', () => {
     fireEvent.mouseDown(screen.getByRole('button', { name: 'outside' }))
     expect(screen.queryByPlaceholderText('От')).not.toBeInTheDocument()
   })
+
+  it('keeps a typed range when clicking outside instead of dropping it', () => {
+    const onApply = vi.fn()
+    render(
+      <div>
+        <VolumeRangeFilter min="" max="" onApply={onApply} />
+        <button type="button">outside</button>
+      </div>
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Объём' }))
+    fireEvent.change(screen.getByPlaceholderText('От'), { target: { value: '350' } })
+    fireEvent.mouseDown(screen.getByRole('button', { name: 'outside' }))
+
+    expect(onApply).toHaveBeenCalledWith('350', '')
+  })
+
+  it('applies on Enter and discards on Escape', () => {
+    const onApply = vi.fn()
+    render(<VolumeRangeFilter min="" max="" onApply={onApply} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Объём' }))
+    fireEvent.change(screen.getByPlaceholderText('До'), { target: { value: '500' } })
+    fireEvent.submit(screen.getByPlaceholderText('До').closest('form')!)
+    expect(onApply).toHaveBeenCalledWith('', '500')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Объём' }))
+    fireEvent.change(screen.getByPlaceholderText('До'), { target: { value: '900' } })
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onApply).toHaveBeenCalledTimes(1)
+    expect(screen.queryByPlaceholderText('До')).not.toBeInTheDocument()
+  })
 })
