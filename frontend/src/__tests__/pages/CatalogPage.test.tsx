@@ -134,12 +134,11 @@ describe('CatalogPage', () => {
     })
   })
 
-  it('applies the selected color filter once Save is clicked', () => {
+  it('applies the selected color filter as soon as it is picked', () => {
     renderCatalogPage()
 
     fireEvent.click(screen.getByRole('button', { name: /цвет/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Чёрный' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     expect(mockedUseCatalog).toHaveBeenLastCalledWith(
       {
@@ -154,14 +153,13 @@ describe('CatalogPage', () => {
     )
   })
 
-  it('deselects the color filter when the same option is clicked again before saving', () => {
+  it('clears the color filter when the active option is picked again', () => {
     renderCatalogPage()
 
     fireEvent.click(screen.getByRole('button', { name: /цвет/i }))
-    const option = screen.getByRole('button', { name: 'Чёрный' })
-    fireEvent.click(option)
-    fireEvent.click(option)
-    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Чёрный' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Цвет: Чёрный' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Чёрный' }))
 
     expect(mockedUseCatalog).toHaveBeenLastCalledWith(
       {
@@ -204,7 +202,6 @@ describe('CatalogPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /категория/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Drinkware' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     expect(mockedUseCatalog).toHaveBeenLastCalledWith(
       {
@@ -264,7 +261,6 @@ describe('CatalogPage', () => {
     fireEvent.click(within(screen.getByRole('navigation', { name: 'Страницы' })).getByRole('button', { name: '2' }))
     fireEvent.click(screen.getByRole('button', { name: /цвет/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Чёрный' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     expect(mockedUseCatalog).toHaveBeenLastCalledWith(
       { search: '', category: '', color: 'Чёрный', size: '', volumeMin: '', volumeMax: '' },
@@ -304,7 +300,6 @@ describe('CatalogPage', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /цвет/i }))
       fireEvent.click(screen.getByRole('button', { name: 'Чёрный' }))
-      fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
       expect(currentUrl()).toBe('/catalog?color=Чёрный')
     })
