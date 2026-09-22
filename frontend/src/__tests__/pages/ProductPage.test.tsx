@@ -304,7 +304,7 @@ describe('ProductPage', () => {
     expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'c.jpg')
   })
 
-  it('drops an attribute pick when its active value is clicked again', async () => {
+  it('drops an attribute pick when its active value is clicked again, back to the standard variant', async () => {
     mockedGet.mockResolvedValue({ data: matrixProduct })
     renderPage()
 
@@ -313,6 +313,14 @@ describe('ProductPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'White' }))
     expect(screen.getByRole('button', { name: 'White' })).toHaveAttribute('aria-pressed', 'false')
-    expect(screen.getByRole('button', { name: 'Black' })).toHaveAttribute('aria-pressed', 'false')
+    // the standard (first) variant is what goes in the cart now, and it shows as chosen
+    expect(screen.getByRole('button', { name: 'Black' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('highlights the pre-selected variant values before anything is tapped', async () => {
+    mockedGet.mockResolvedValue({ data: matrixProduct })
+    renderPage()
+
+    expect(await screen.findByRole('button', { name: 'Black' })).toHaveAttribute('aria-pressed', 'true')
   })
 })

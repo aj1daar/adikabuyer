@@ -320,7 +320,13 @@ export default function ProductPage() {
                   <ProductLabels labels={product.labels} size="page" />
                 </motion.div>
 
-                <motion.h1 {...popIn(0.05)} className="font-grotesk text-4xl font-bold text-ink sm:text-5xl">
+                <motion.h1
+                  {...popIn(0.05)}
+                  // long names shrink on phones instead of stacking 7+ lines of 36px type
+                  className={`break-words hyphens-auto font-grotesk font-bold leading-tight text-ink sm:text-5xl ${
+                    product.name.length > 40 ? 'text-xl min-[400px]:text-2xl' : 'text-[clamp(1.75rem,8vw,2.25rem)]'
+                  }`}
+                >
                   {product.name}
                 </motion.h1>
 
@@ -417,7 +423,13 @@ export default function ProductPage() {
                               negative offsets to reveal it) instead of scaling smoothly */}
                           <ScrollFadeRow className="-mx-2 flex h-14 items-center gap-2 overflow-x-auto overscroll-contain px-2">
                             {shownValues.map((value, valueIndex) => {
-                              const selected = selection[key] === value
+                              // an explicit pick stays pinned; a row the shopper hasn't touched
+                              // highlights the value of the variant that will go in the cart, so the
+                              // pre-selected variant never shows as "nothing chosen"
+                              const selected =
+                                selection[key] !== undefined
+                                  ? selection[key] === value
+                                  : pickedValue != null && String(pickedValue) === value
                               const available = isValueAvailable(sellableVariants, selection, key, value)
                               const swatch = useSwatches ? swatches[value] : undefined
                               const popDelay = Math.min(valueIndex, 10) * 0.03
