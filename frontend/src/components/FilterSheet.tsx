@@ -212,7 +212,7 @@ export default function FilterSheet({
               aria-modal="true"
               aria-label="Фильтры"
               tabIndex={-1}
-              className="fixed inset-x-0 bottom-0 z-50 flex h-[70dvh] flex-col outline-none rounded-t-3xl border-2 border-black bg-white shadow-[0_-8px_0_0_#000]"
+              className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col outline-none rounded-t-3xl border-2 border-black bg-white shadow-[0_-8px_0_0_#000]"
             >
               <div className="flex items-center justify-between border-b-2 border-black px-6 py-4">
                 <h2 className="font-grotesk text-lg font-bold text-ink">Фильтры</h2>
@@ -225,7 +225,8 @@ export default function FilterSheet({
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto overscroll-contain px-6">
+              {/* the sheet is only as tall as its content (up to 85%); the list scrolls past that */}
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6">
                 {categoryOptions.length > 0 && (
                   <AccordionSection
                     title="Категория"
