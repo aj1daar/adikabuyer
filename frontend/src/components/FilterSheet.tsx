@@ -181,7 +181,7 @@ export default function FilterSheet({
       <button
         type="button"
         onClick={handleOpen}
-        className={`flex h-14 items-center gap-2 rounded-pill border-2 px-5 font-grotesk text-sm font-bold transition ${
+        className={`flex h-14 items-center gap-2 rounded-pill border-2 px-5 font-grotesk text-sm font-bold transition max-sm:h-11 ${
           activeCount > 0
             ? 'border-black bg-black text-white hover:bg-bubblegum-dark'
             : 'border-black bg-white text-ink hover:bg-bubblegum-dark hover:text-white'

@@ -110,7 +110,7 @@ export default function CatalogPage() {
 
   return (
     <MainLayout>
-      <div className="flex flex-col gap-6 py-8">
+      <div className="flex flex-col gap-4 py-4 sm:gap-6 sm:py-8">
         <motion.div {...popIn(0)}>
           <SearchBar value={searchInput} onChange={setSearchInput} />
         </motion.div>
