@@ -38,20 +38,32 @@ export default function Login() {
       >
         <h1 className="font-grotesk text-xl font-bold text-ink">Вход в админ-панель</h1>
 
-        <input
-          type="text"
-          value={username}
-          onChange={(event) => setUsername(event.target.value)}
-          placeholder="Логин"
-          className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="Пароль"
-          className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
-        />
+        <label className="flex flex-col gap-1">
+          <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">Логин</span>
+          <input
+            type="text"
+            name="username"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            placeholder="Логин"
+            className="min-h-11 rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">Пароль</span>
+          <input
+            type="password"
+            name="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Пароль"
+            className="min-h-11 rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+          />
+        </label>
 
         {error && <p className="text-xs text-red-500">{error}</p>}
 
