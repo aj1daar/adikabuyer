@@ -67,6 +67,13 @@ export default function ProductPage() {
     if (!product) {
       return
     }
+    // what a shopper can actually get: in stock beats pre-order beats sold out
+    const statuses = product.variants.map((variant) => variant.status)
+    const availability = statuses.includes('IN_STOCK')
+      ? 'https://schema.org/InStock'
+      : statuses.includes('PRE_ORDER')
+        ? 'https://schema.org/PreOrder'
+        : 'https://schema.org/OutOfStock'
     const script = document.createElement('script')
     script.type = 'application/ld+json'
     script.text = JSON.stringify({
@@ -79,7 +86,7 @@ export default function ProductPage() {
         '@type': 'Offer',
         price: product.displayPrice,
         priceCurrency: 'KGS',
-        availability: 'https://schema.org/InStock',
+        availability,
       },
     })
     document.head.appendChild(script)

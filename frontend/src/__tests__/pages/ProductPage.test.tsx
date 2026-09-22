@@ -108,6 +108,18 @@ describe('ProductPage', () => {
     expect(useCartStore.getState().isOpen).toBe(false)
   })
 
+  it('tells search engines a product is pre-order only when no variant is in stock', async () => {
+    mockedGet.mockResolvedValue({
+      data: { ...product, variants: product.variants.map((variant) => ({ ...variant, status: 'PRE_ORDER' as const })) },
+    })
+
+    renderPage()
+    await screen.findByRole('button', { name: 'В корзину' })
+
+    const jsonLd = JSON.parse(document.head.querySelector('script[type="application/ld+json"]')!.textContent!)
+    expect(jsonLd.offers.availability).toBe('https://schema.org/PreOrder')
+  })
+
   it('switches the main photo when a thumbnail is clicked', async () => {
     mockedGet.mockResolvedValue({ data: product })
 
