@@ -13,6 +13,7 @@ import notifyAddedToCart from '../utils/notifyAddedToCart'
 import ProductLabels from '../components/ProductLabels'
 import TextBubbleModal from '../components/TextBubbleModal'
 import NotFoundState from '../components/NotFoundState'
+import ScrollFadeRow from '../components/ScrollFadeRow'
 import apiErrorMessage from '../utils/apiErrorMessage'
 import { popIn } from '../utils/motion'
 import type { ProductDto, VariantDto } from '../types/catalog'
@@ -283,7 +284,7 @@ export default function ProductPage() {
                 </div>
 
                 {gallery.length > 1 && (
-                  <div className="relative mt-4 flex gap-3 overflow-x-auto pb-2">
+                  <ScrollFadeRow className="relative mt-4 flex gap-3 overflow-x-auto pb-2">
                     {gallery.map((url, index) => (
                       <button
                         key={url + index}
@@ -300,7 +301,7 @@ export default function ProductPage() {
                         <img src={url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                       </button>
                     ))}
-                  </div>
+                  </ScrollFadeRow>
                 )}
               </div>
 
@@ -414,7 +415,7 @@ export default function ProductPage() {
                               the scroll container's left edge, so its own growth animation gets
                               clipped by the container's overflow-x boundary (can't scroll to
                               negative offsets to reveal it) instead of scaling smoothly */}
-                          <div className="-mx-2 flex h-14 items-center gap-2 overflow-x-auto overscroll-contain px-2">
+                          <ScrollFadeRow className="-mx-2 flex h-14 items-center gap-2 overflow-x-auto overscroll-contain px-2">
                             {shownValues.map((value, valueIndex) => {
                               const selected = selection[key] === value
                               const available = isValueAvailable(sellableVariants, selection, key, value)
@@ -514,7 +515,7 @@ export default function ProductPage() {
                                 +{hiddenCount}
                               </motion.button>
                             )}
-                          </div>
+                          </ScrollFadeRow>
                         </motion.div>
                       )
                     })}
@@ -526,7 +527,7 @@ export default function ProductPage() {
                     <span className="h-5 font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
                       Вариант
                     </span>
-                    <div className="flex h-14 items-center gap-2 overflow-x-auto overscroll-contain">
+                    <ScrollFadeRow className="flex h-14 items-center gap-2 overflow-x-auto overscroll-contain">
                       {sellableVariants.map((variant, index) => (
                         <button
                           key={variant.id}
@@ -542,7 +543,7 @@ export default function ProductPage() {
                           {variantLabel(variant, index)}
                         </button>
                       ))}
-                    </div>
+                    </ScrollFadeRow>
                   </motion.div>
                 )}
 
