@@ -1,92 +1,97 @@
 # Adikabuyer
 
-Custom-order catalog for a small drinkware/apparel shop — customers pick a product and variant; checkout persists the order and notifies the store's Telegram admins instead of going through a payment gateway. Prices shown to customers are entered directly by the admin per variant (no markup math); the shop delivers inside Бишкек only, for a flat 300 KGS, or the customer picks the order up for free. Parcel weight is charged on top from a hand-written tariff (`frontend/src/utils/weightSurcharge.ts`) that the site only quotes — nothing in the catalog carries a weight, so the exact sum is agreed when the order is confirmed.
+Online catalog for a small made-to-order shop (tumblers, clothing, shoes). Customers pick a product and a variant and place an order on the site. There is no online payment: the order is saved, the shop's admins get it in Telegram, and they call the customer to confirm.
+
+Live at [adikabuyer.kg](https://adikabuyer.kg).
+
+## How ordering works
+
+- Prices are set by the admin per variant. What the customer sees is what they pay for the item.
+- Delivery is Бишкек only: 300 KGS by courier, or free pickup.
+- Parcel weight is charged on top. The site shows the tariff (`frontend/src/utils/weightSurcharge.ts`), and the exact amount is agreed when the order is confirmed.
+- Orders move through Новый → Подтверждён → Выкуплен → В пути → Доставлен, or Отменён. Cancelling an open order returns its stock.
 
 ## Stack
 
-React, TypeScript, Vite, Tailwind, Spring Boot 4 / Java 21 (catalog-service, order-service, api-gateway on Spring Cloud Gateway), PostgreSQL + Flyway, RabbitMQ, MinIO, Docker Compose.
+- **Frontend:** React, TypeScript, Vite, Tailwind, framer-motion, zustand
+- **Backend:** Spring Boot 4.1 on Java 21: `catalog-service`, `order-service`, and `api-gateway` (Spring Cloud Gateway)
+- **Data:** PostgreSQL with Flyway (one database per service), RabbitMQ between the services, MinIO for photos
+- **Infra:** Docker Compose, Caddy (HTTPS, static files, proxy), GitHub Actions
 
-catalog-service and order-service each own a separate Postgres database (`adikabuyer` and `adikabuyer_orders`) on the same instance, with independent Flyway migration histories. Both share the same `APP_JWT_SECRET`, so an admin token issued by catalog-service's `/api/auth/login` is also valid for order-service's admin-only `GET /api/orders`.
+## Documentation
 
-Request flow, auth, and the prod-hardening details live in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-Security posture — what's been hardened, the deployer checklist, and accepted limitations — is in [docs/SECURITY.md](docs/SECURITY.md).
+| Doc | What's in it |
+| --- | --- |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Services, order flow, auth, search, error format, framework notes |
+| [docs/CATALOG.md](docs/CATALOG.md) | Products, variants, attributes, stock states, labels, swatches |
+| [docs/FRONTEND.md](docs/FRONTEND.md) | Design system, storefront behaviour, admin panel |
+| [docs/OPERATIONS.md](docs/OPERATIONS.md) | Deploy, secrets, Telegram bot, monitoring, backups |
+| [docs/SECURITY.md](docs/SECURITY.md) | What's hardened, the server checklist, accepted limitations |
 
-The frontend follows a Neo-Y2K / Editorial Futurism design system: Unbounded typography (Space Grotesk is kept only for the logo wordmark), pill-shaped interactive elements, thick black borders (`border-2 border-black`), hard offset shadows instead of soft blurs, a stark white / black / silver / bubblegum-pink palette (`bubblegum-dark` #C24775 is the text/hover pink: 4.7:1 on white and under white text, so small pink labels pass WCAG AA; plain `bubblegum` #E8799F only carries ink text or decoration), and no visible scrollbars anywhere (`index.css` hides the rail on every surface; scrolling itself is untouched) — so sideways strips on the product page (thumbnails, size/colour/variant rows) use `ScrollFadeRow`, which fades whichever edge still has content past it. It is tuned for mobile Safari/Chrome: safe-area insets (`viewport-fit=cover`), 16px inputs to prevent iOS focus zoom, 44px touch targets, `dvh`-based drawer sizing, and scroll locking behind overlays. The catalog grid's mobile column count (1/2/3) is a customer-facing toggle, remembered in `localStorage`. The first load shows `ProductGridSkeleton` in the grid's exact shape (pulsing only when motion is allowed), and a product without a photo shows the `PhotoPlaceholder` «фото скоро» sticker instead of grey initials. Every density keeps the product name: two small lines at 2 columns and two tiny hyphenated lines at 3, with the height reserved so cards stay aligned. The catalog's search, filters and page live in the URL (`?q=…&category=…&color=…&size=…&vmin=…&vmax=…&page=2`, written with `replace` so they don't pile up history), so going back from a product or sharing a link lands on the same results. Results are paged on every screen: 12 per page on phones, 24 on desktop. Desktop filter picks apply at once and name the active value («Цвет: Чёрный»); the volume range applies on Enter or a click outside. While any search or filter is on, a «Найдено N товаров» line (`utils/pluralRu`) and a «Сбросить всё» link sit above the grid. `router/ScrollToTop` opens new pages at the top but restores the saved scroll position on back/forward, retrying while the catalog grid loads in. The cart lines are kept in `localStorage` too (`adikabuyer-cart`), so a reload or a closed tab doesn't empty the cart; prices there are only a preview, since checkout re-prices every line on the server. In-stock lines are capped at their stock (`hooks/useStockLimit`, `maxQuantity` on each cart line): the «+» buttons stop there, the cart says «Больше нет в наличии», and once all of it is in the cart the add button reads «Всё в корзине»; pre-order has no cap. A catalog card adds straight to the cart only when there is nothing left to choose (one sellable variant, or a picked colour with exactly one); otherwise its button reads «Выбрать» and opens the product page. When everything the shopper could pick is pre-order (the whole product, or the picked colour), a «Под заказ» sticker leads the card's sticker stack. Adding — from a card or the product page alike (`utils/notifyAddedToCart`) — confirms with a toast whose «Открыть» button opens the cart; the drawer never pops open on its own, so adding a second size stays one tap. An empty cart shows a «пусто» sticker and a «Смотреть каталог» button instead of a delivery fee, total and greyed-out checkout. The checkout form has visible labels, `autocomplete` name/tel hints for autofill and a `+996 700 123 456` example; Enter or the keyboard's «Go» submits (jumping to the empty field if one is left), and a line under the button says what is still missing. Every storefront page (via `MainLayout`) sits on a fixed `SiteBackdrop` layer — a faint graph-paper grid plus a few hard-edged outline rings and squares, arranged differently per route (`home` / `catalog` / `product` / `about`) from the same shape vocabulary, and a `DotField` canvas whose dots roam the whole viewport along a slow flow field — smooth, non-repeating curves that curl away from the edges — each leaving a short fading trail (every dot has its own radius, speed, and field offset). With `prefers-reduced-motion` (iOS Reduce Motion, Android Remove animations) nothing freezes: the dots drift at about a third of the speed without trails, and the pop-in animations (`utils/motion.ts`) play a smaller, bounce-free version — `App.tsx` sets `MotionConfig reducedMotion="never"` and these components pick the gentle variant themselves. The landing hero and the About page each fill one desktop viewport (no scroll) — as a minimum height, so on short screens (landscape phones, small laptop windows) they grow and scroll instead of clipping the heading and buttons — as an asymmetric left/right spread; the hero's Instagram badge floats, its glow rotates, and an SVG dashed ring (evenly spaced via `pathLength`) spins around it, with faded `ScribbleNote` doodle arrows pointing at the CTAs. The arrows are desktop-only (absolute-positioned, they'd overlap in a stacked layout); on mobile `HeroBubbles` (`overlay`) replaces them with the same phrases as sticker chips that bloom onto the top edge of their own button (and the Instagram badge), sitting above the label so they never cover its text (the About page's heading chips sit fully above their heading the same way), styled like the About page's info clouds. Overlays are real modal dialogs through `hooks/useDialog`: focus moves in on open, Tab stays inside, Escape closes the topmost one (on the admin product form it goes through the same guard as «Закрыть»: with unsaved edits it asks «Закрыть без сохранения?» first) and focus returns to whatever opened it. Keyboard focus shows a thick bubblegum-dark ring (`:focus-visible` in `index.css`, so mouse and touch never see it). Toasts (`SiteToaster`) are Neo-Y2K stickers too — ink border, hard shadow, bubblegum for errors — parked just under the sticky header, and API errors are always shown in Russian (`utils/apiErrorMessage.ts` maps known server messages and falls back by status; callers that show an error inline pass `skipErrorToast`). Any unknown path renders a Neo-Y2K 404 (`NotFoundPage`, built on the reusable `NotFoundState` block: sticker tag, display heading, pill CTAs back to the catalog and home) inside the normal layout instead of a blank screen. A crash anywhere in the app lands on the same Neo-Y2K look (`ErrorBoundary`: «упс» sticker, «что-то сломалось», reload and home buttons) built from plain markup, so it renders even when the router or animation code is what failed. On phones the bottom tab bar has icons and a fourth «Корзина» tab with the item count, so the cart is always in the thumb zone. While scrolling down only the header slides away; the tab bar stays put (it steps aside only for the filter sheet). The nav bar carries its own tinted micro-grid, a dashed "sticker" frame around the logo, sparkle accents, animated link underlines, and spring-bounce hover on the logo and cart button.
+## Run locally
 
-## Run it
+You need Docker and git-bash. `scripts/local.sh` covers both setups. The admin login is `admin` / `devpassword`.
 
-`scripts/local.sh` wraps both local setups (needs Docker + git-bash). Admin login is `admin` / `devpassword` either way (the dev-only fallback in `application.yml`; production requires `APP_JWT_SECRET` and `APP_SECURITY_ADMIN_PASSWORD_HASH`).
-
-**Full stack in Docker** — one command, everything at `http://localhost` (plain HTTP locally — Caddy does automatic HTTPS in prod):
-
-```bash
-scripts/local.sh up       # writes .env (git-ignored, throwaway secrets), builds, waits for health
-scripts/local.sh smoke    # scripts/e2e-smoke.sh against the running stack
-scripts/local.sh down     # stop, keep data   |   reset = stop + wipe volumes
-```
-
-**Dev mode** — infra in Docker, services on the host for hot reload:
+Full stack at `http://localhost`:
 
 ```bash
-scripts/local.sh infra    # Postgres/RabbitMQ/MinIO/gateway in Docker
-cd catalog-service && mvn spring-boot:run          # :8081
-cd order-service   && mvn spring-boot:run          # :8082
-cd frontend        && npm install && npm run dev   # :5173  -> http://localhost:5173
+scripts/local.sh up       # writes a throwaway .env, builds, waits until healthy
+scripts/local.sh smoke    # end-to-end smoke test against the running stack
+scripts/local.sh down     # stop and keep data; `reset` also wipes volumes
 ```
 
-`postgres-init/` creates the `adikabuyer_orders` database on a fresh Postgres volume. If the volume predates that script: `docker exec adikabuyer-dev-postgres psql -U adikabuyer -d adikabuyer -c "CREATE DATABASE adikabuyer_orders"` (`adikabuyer-postgres` for the full stack).
-
-`scripts/seed-demo.sh [base-url] [user] [pass]` populates the catalog with 10 demo products via the admin API — keyworded stock photos (loremflickr → picsum → flat-colour fallback), multi-paragraph descriptions, colour/size/volume attributes, swatches and labels, plus one multi-photo gallery. Run it once against a fresh DB.
-
-Tests: `mvn test` in each backend service, `npm run test` in `frontend`. `scripts/e2e-smoke.sh <base-url> <user> <pass>` runs an end-to-end smoke against a live stack — CI does this in the `e2e-smoke` job.
-
-### Telegram order notifications
-
-order-service polls the Telegram Bot API (long polling, no public webhook needed) and notifies registered admin chats whenever a checkout completes. To wire it up locally: create a bot via [@BotFather](https://t.me/BotFather), then run order-service with `TELEGRAM_BOT_TOKEN` and `TELEGRAM_REGISTRATION_PASSWORD` set. Message the bot `/start`, then send the registration password as plain text — the chat is stored in the `telegram_admin` table and starts receiving order notifications. Send `/stop` to unsubscribe. Every new-order message carries "✅ Подтвердить" / "❌ Отменить" buttons: a tap from a registered admin chat changes the order's status through the same rules as the admin panel (cancelling returns the stock), and the message is rewritten with the outcome and who acted. With a public https `TELEGRAM_ADMIN_URL` (compose defaults it to `https://$DOMAIN/admin`) an "Открыть админку" link button is added too. When an order leaves an in-stock variant at `TELEGRAM_LOW_STOCK_THRESHOLD` units or fewer (default 2), admins also get one "⚠️ Заканчивается" message listing those variants. A registered chat receives every customer's name and phone, so registration is guarded: the password comparison is constant-time, each chat gets 5 guesses per hour and the whole bot 30 (`RegistrationAttemptLimiter`), bot commands like `/start` don't count as guesses, and every existing admin chat is told when a new chat subscribes. Without a token configured, the poller and notifier silently no-op (checkout and the admin panel still work). Run only one `order-service` instance against a given bot token — two pollers racing for the same `getUpdates` response will register an admin in whichever instance's database won the race.
-
-Production-parity stack, fully containerized with TLS (Caddy serves the built frontend, proxies `/api/*` to the gateway and `/media/*` to MinIO):
+Dev mode, with the infrastructure in Docker and the apps on your machine for hot reload:
 
 ```bash
-cp .env.prod.example .env.prod
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+scripts/local.sh infra                            # Postgres, RabbitMQ, MinIO, gateway
+cd catalog-service && mvn spring-boot:run         # :8081
+cd order-service   && mvn spring-boot:run         # :8082
+cd frontend        && npm install && npm run dev  # http://localhost:5173
 ```
 
-## Monitoring
+Demo data: `scripts/seed-demo.sh [base-url] [user] [pass]` adds 10 products with photos, attributes and labels. Run it once on an empty database.
 
-A `monitor` sidecar (`scripts/monitor.sh`, same postgres image as the backups) checks every minute: catalog-service, order-service, api-gateway, Caddy, Postgres, RabbitMQ, MinIO, disk usage (alert at 85%, `MONITOR_DISK_ALERT_PERCENT`) and whether a database backup newer than two backup intervals exists. It messages every registered Telegram admin chat (the same bot and `telegram_admin` table as order notifications) only when a check changes state — one "⚠️ … не отвечает" when it breaks, one "✅ … снова работает" when it recovers. Without `TELEGRAM_BOT_TOKEN` it just logs (`docker compose -f docker-compose.prod.yml logs monitor`); one pass by hand: `docker compose -f docker-compose.prod.yml exec monitor sh /scripts/monitor.sh --once`.
-
-The sidecar can't report the whole VPS going down, so add one free external check as well: e.g. UptimeRobot → HTTP(s) monitor on `https://adikabuyer.kg` every 5 minutes, with its Telegram integration pointed at your chat.
-
-## Backups
-
-The full stack runs a `db-backup` sidecar (`scripts/backup-db.sh`, invoked through `sh` so it runs regardless of the file's exec bit; `.gitattributes` keeps every `*.sh` on LF so Windows checkouts bind-mount a runnable script): one `pg_dump` of **both** databases on boot and every `BACKUP_INTERVAL_SECONDS` (default 24h), gzipped into the `db-backups` volume, pruned after `BACKUP_RETENTION_DAYS` (default 14). It ships with the stack — a normal deploy starts it, nothing to install on the server.
+If Postgres runs on an old volume that predates `postgres-init/`, create the orders database by hand:
 
 ```bash
-docker compose -f docker-compose.prod.yml exec db-backup ls -la /backups     # what's there
-docker compose -f docker-compose.prod.yml exec db-backup /scripts/backup-db.sh   # dump right now
-docker cp adikabuyer-db-backup:/backups ./local-backups                      # pull a copy off the box
+docker exec adikabuyer-dev-postgres psql -U adikabuyer -d adikabuyer -c "CREATE DATABASE adikabuyer_orders"
 ```
 
-Restore one database (this **overwrites** it — restore into a scratch DB first if you only need to look):
+## Tests
 
 ```bash
-docker compose -f docker-compose.prod.yml exec db-backup \
-  sh -c 'gunzip -c /backups/adikabuyer-<stamp>.sql.gz' \
-  | docker compose -f docker-compose.prod.yml exec -T postgres-db psql -U adikabuyer -d adikabuyer
+cd catalog-service && mvn test
+cd order-service   && mvn test
+cd frontend        && npm run test
+scripts/e2e-smoke.sh <base-url> <user> <pass>   # against a running stack
 ```
 
-**What this does and doesn't cover.** The local dumps cover deleting the wrong thing — a product, a variant, a bad migration — but they live on the same disk as the database. Losing the VPS is covered by the `backup-offsite` sidecar (`scripts/backup-offsite.sh`, MinIO's `mc`): every `BACKUP_OFFSITE_INTERVAL_SECONDS` (default 24h) it copies the dumps to `<BACKUP_S3_BUCKET>/<BACKUP_S3_PREFIX>/db/` and mirrors the product-photo bucket to `…/media/` in any S3-compatible bucket (Hetzner Object Storage, Cloudflare R2, Backblaze B2), pruning remote dumps after `BACKUP_OFFSITE_RETENTION_DAYS` (default 30). Set `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY`, `BACKUP_S3_SECRET_KEY` as GitHub secrets of the same names (the deploy appends them to `.env.prod`), or directly in `.env.prod` for a manual stack; until then it only logs a reminder. Once configured, the monitor alerts when no off-site copy has landed for two intervals. Restoring from off-site: `mc cp offsite/<bucket>/<prefix>/db/<dump>.sql.gz .` then the `gunzip | psql` above, and `mc mirror offsite/<bucket>/<prefix>/media local/adikabuyer-media` for photos.
+CI runs all of these, plus a dependency scan, on every pull request. `main` only accepts merges with green checks.
 
 ## Deploy
 
-Live at `https://adikabuyer.kg` (Hetzner VPS, DNS via Cloudflare, NS delegated from cctld.kg). Pushing to `main` runs CI first; only when CI passes for that push does `.github/workflows/deploy.yml` start (a `workflow_run` trigger, with `workflow_dispatch` kept for manual deploys). It SSHes into the production server (`/opt/adikabuyer`), resets to the exact commit CI verified, writes `.env.prod` from the base64-encoded `ENV_PROD_B64` secret (plain env content breaks on the bcrypt hash's `$` signs when piped through a shell, hence the base64 wrapping), and rebuilds the compose stack, force-recreating `caddy` separately since its config is bind-mounted and won't otherwise pick up changes. Required GitHub secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `ENV_PROD_B64`; optional `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY`, `BACKUP_S3_SECRET_KEY` are appended to `.env.prod` so off-site backup keys rotate without re-encoding the env file.
+Merging to `main` runs CI. When it passes, `.github/workflows/deploy.yml` connects to the server over SSH, checks out that exact commit and rebuilds the Compose stack. Details and the list of GitHub secrets are in [docs/OPERATIONS.md](docs/OPERATIONS.md#deploy).
 
-The admin panel (`/admin`, `/admin/login`) is lazy-loaded as its own chunk, so shoppers never download the product form, cropper or orders UI. SEO basics are in place: meta description and Open Graph tags in `index.html` (describing the real flow — order on the site, we call back — not the old WhatsApp hand-off), a web manifest with PNG home-screen icons (`public/manifest.webmanifest`, `apple-touch-icon.png`, `icon-192/512.png`, rendered from `favicon.svg`) and a white `theme-color`, per-page titles via `usePageTitle`, JSON-LD Product markup on product pages (availability follows the variants: InStock, else PreOrder, else OutOfStock), `robots.txt` (blocks `/admin`), and a static `sitemap.xml`. The sitemap and robots URLs use the placeholder domain `adikabuyer.com` — replace it on deploy. Being a client-rendered SPA, link previews for individual products still need prerendering/SSR.
+To run the production setup yourself:
 
-## Known limitations / not done yet
+```bash
+cp .env.prod.example .env.prod   # fill in the values
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
 
-- One hardcoded admin user. No signup, no password reset, no roles beyond admin/staff.
-- The login and checkout rate limiters are in-memory — they reset on restart and won't work once there's more than one catalog-service / order-service instance. Checkout allows 5 orders per client IP per 10 minutes by default (`APP_SECURITY_CHECKOUT_MAX_PER_IP`); `scripts/local.sh` writes 100 into a fresh `.env` so local testing doesn't trip it.
-- Catalog filter pills for color/size are a hardcoded list on the frontend (`utils/attributeOptions.ts`), not derived from real product data. The admin's size picker is dropdown-only from that same list, so sizes stay filterable; colour is a free-text field (the `ATTRIBUTE_VALUE_OPTIONS` presets are offered only as `<datalist>` autocomplete), so a hand-typed colour like `Мятный` won't match a filter pill. Volume is a real от/до numeric range instead (мл), not a preset. Admins can also add a fully custom attribute (free-typed key and value) for descriptive tags — those are shown on product cards but aren't filterable, by design. The category filter is derived from real data via a dedicated `GET /api/catalog/categories` distinct-values endpoint, scoped by the other active filters. Products also carry a separate optional `brand` (`product.brand`, its own admin input, migration `V9`); it isn't filterable and renders as a solid ink pill ahead of the bubblegum category label on both the card and the product page. A variant's SKU is optional in the admin form — left blank, the backend builds one from the variant's attributes (`ЧЁРНЫЙ-M-591`, ordered colour → size → volume → rest), appending `-2`, `-3`… on collision, and falls back to a `DEFAULT-…` placeholder only when the variant has no attributes. The form blocks saving a variant that repeats the same attribute key (two different volumes belong in two separate variants, not one) and caps a variant at five attributes (`@Size(max = 5)` on `VariantRequest.attributes` backs it up). Each variant row collapses to a one-line SKU · price · status summary (loaded variants and every existing row when you add a new one start collapsed; a "Свернуть все / Развернуть все" toggle sits by the section header) so a product with many variants stays scrollable. The catalog card trims a product's description to 160 characters on a word boundary (`utils/truncate`); the product page teases the first two lines and opens the rest in a speech-bubble modal (`TextBubbleModal`) that grows with the text up to the viewport and scrolls internally beyond it, fading its bottom edge while more text is left. A product can also carry free-text labels (`Limited`, `С принтом`, …), stored on `product.labels`, capped client-side at 8 labels of 40 characters each (mirroring `ProductRequest`'s `@Size` constraints, so a full or overlong label is rejected in the form instead of surfacing as a bare 400) and, on `PUT`, left untouched when the request omits `labels`/`colorSwatches` entirely — only an explicit empty array/map clears them; `ProductLabels` renders them as rotated Neo-Y2K sticker badges — stacked on the catalog card's image corner (capped at 3, and scaled down on mobile so they don't blanket the photo), in a row beside the category on the product page. On top of those, the backend derives a non-stored `isNew` flag on `ProductDto` (`util/ProductFlags`, true for two weeks after `product.created_at`); the catalog card prepends a `Новинка` sticker when it's set, ahead of the admin's own labels. The catalog card caps colour swatches at four on desktop, three on mobile (the rest collapse into a `+N` link); the 2-column mobile view reserves the swatch row so every card is the same height, and the 3-column view drops the row (and shrinks the price) since the card is too narrow for it and appends `+N` to an attribute tag when a product spans several values of it. On the product page each attribute (colour, size, volume, custom) is its own row of clickable values (`utils/variantSelection.ts`). Picking a value pins it and resolves to the closest variant: the just-touched attribute is a hard constraint, the other picks relax to the nearest real variant, and the page swaps in that variant's photo, price, and stock. A second click on an already-active value drops that pick (no variant is ever fully unselected — the row just stops constraining). Values that can't co-exist with the current picks are struck through. Per-combination photos come from `variant.imageUrls`; a variant with none borrows the gallery of the most attribute-similar variant that has one, so uploading a photo on one "чёрный" variant covers every "чёрный" size. Separately, each colour value can carry one round swatch image, stored per product in `product.color_swatches` (`{colourValue: url}`, pruned on save to colours the variants still use); the admin uploads it from inside the variant row it belongs to (shared across variants of the same colour) and crops it from any photo with a mobile-friendly circular cropper (`components/admin/CircleCropper.tsx`, drag to pan, slider to zoom, exports a transparent-cornered PNG). The catalog card shows the swatches as a row of circles that swap the card photo on tap; the product page renders the colour row as circles with the colour name beneath.
-- A variant has one of three states: `IN_STOCK`, `PRE_ORDER`, or `SOLD_OUT` (admin toggle on each variant). `SOLD_OUT` (like `PRE_ORDER`) forces the variant's stock to `0` and, unlike `PRE_ORDER`, also marks it inactive — the backend does this in `VariantReconciler` and the `InventoryListener`, so it holds however the variant is saved; the admin form has no per-variant active checkbox. `SOLD_OUT` variants are dropped from the storefront — hidden from the attribute selectors and the catalog card. A product whose variants are **all** `SOLD_OUT` is archived: excluded from `GET /api/catalog/products` and `/categories`, and `GET /api/catalog/products/{id}` returns 404. The admin dashboard passes `?includeArchived=true` so archived products stay visible there (with an "В архиве" badge) and can be brought back by switching a variant off `SOLD_OUT`. On phones (<640px) the product tab swaps the table for `ProductCardList` — one card per product with its actions up top and every variant stacked underneath — so nothing hides behind a sideways scroll; the Заказы tab shows order cards at every width — number, status sticker, tap-to-call phone, total including the agreed weight fee, admin note — with a status filter (Все / Новые / В работе / Доставлены / Отменены), a one-tap "→ next step" button, an inline editor for the weight fee and note, and confirm dialogs for cancelling (stock returns) and deleting. Its product tab has a search box that filters the already-loaded list client-side (`utils/filterAdminProducts.ts`) across name, description, category, brand, labels, variant SKUs and attribute values — every typed word has to match, in any order.
-- `postgres`/`rabbitmq`/`caddy` base images are tag-pinned (major/minor), not digest-pinned; MinIO is digest-pinned and `appleboy/ssh-action` is SHA-pinned. Dependabot (`.github/dependabot.yml`) opens at most one grouped minor/patch PR per ecosystem a month, plus immediate security PRs; major upgrades and the Java/Node base-image lines are bumped by hand.
+## Backups and monitoring
+
+- Both databases are dumped daily and kept for 14 days. A second job copies the dumps and all product photos to an S3-compatible bucket (Cloudflare R2 in production) and keeps them for 30 days.
+- A monitor container checks every service, the disk, and backup freshness each minute, and messages the Telegram admins when something breaks or recovers.
+- It can't report the whole server going down, so also point an external uptime check (for example UptimeRobot) at the site.
+
+Commands and restore steps are in [docs/OPERATIONS.md](docs/OPERATIONS.md#backups).
+
+## Known limitations
+
+- One admin account. No sign-up, password reset or per-person accounts.
+- The login and checkout rate limits live in memory, so they reset on restart and don't work across several instances. Checkout allows 5 orders per IP per 10 minutes (`APP_SECURITY_CHECKOUT_MAX_PER_IP`; local setups use 100).
+- Colour and size filters use a fixed list of values. A colour typed by hand in the admin form won't match a filter.
+- The site renders in the browser, so shared product links don't show the product's photo or title in previews.
+- `sitemap.xml` and `robots.txt` still use the placeholder domain `adikabuyer.com`.
+- Dependabot opens one grouped minor/patch PR per ecosystem each month, plus security fixes. Major upgrades, and the Java and Node versions in the Docker images, are done by hand.
