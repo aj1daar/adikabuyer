@@ -58,7 +58,7 @@ describe('CatalogPage', () => {
 
     renderCatalogPage()
 
-    expect(screen.getByText('Загрузка товаров...')).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Загрузка товаров...' })).toBeInTheDocument()
   })
 
   it('shows an error message when the catalog fails to load', () => {

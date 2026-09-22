@@ -12,6 +12,7 @@ import { COLOR_ATTRIBUTE_KEY, formatAttributeValue } from '../utils/attributeOpt
 import { resolveVariantGallery } from '../utils/variantImage'
 import type { MobileColumns } from './MobileColumnsToggle'
 import ProductLabels from './ProductLabels'
+import PhotoPlaceholder from './PhotoPlaceholder'
 
 const MAX_SWATCHES_DESKTOP = 4
 const MAX_SWATCHES_MOBILE = 3
@@ -40,13 +41,6 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
   const hideSwatchRow = isMobile && mobileColumns >= 3
   // smaller swatches in the cramped 2-col mobile card so a full row + "+N" never wraps
   const swatchSizeClass = mobileColumns >= 2 ? 'max-sm:h-6 max-sm:w-6' : 'max-sm:h-7 max-sm:w-7'
-
-  const initials = product.name
-    .split(' ')
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join('')
-    .toUpperCase()
 
   const sellableVariants = product.variants.filter((variant) => variant.status !== 'SOLD_OUT')
   const sellableColors = new Set(
@@ -194,9 +188,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
             className="h-full w-full object-cover"
           />
         ) : (
-          <span className="font-grotesk text-4xl font-semibold text-ink/20">
-            {initials}
-          </span>
+          <PhotoPlaceholder compact={mobileColumns >= 2} />
         )}
 
         {cardImages.length > 1 && (

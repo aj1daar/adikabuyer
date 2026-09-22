@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import MainLayout from '../layouts/MainLayout'
 import { popIn } from '../utils/motion'
 import ProductGrid from '../components/ProductGrid'
+import ProductGridSkeleton from '../components/ProductGridSkeleton'
 import SearchBar from '../components/SearchBar'
 import FilterBar from '../components/FilterBar'
 import FilterSheet from '../components/FilterSheet'
@@ -139,7 +140,7 @@ export default function CatalogPage() {
           <MobileColumnsToggle value={mobileColumns} onChange={setMobileColumns} />
         </motion.div>
 
-        {loading && products.length === 0 && <p className="text-ink/60">Загрузка товаров...</p>}
+        {loading && products.length === 0 && <ProductGridSkeleton mobileColumns={mobileColumns} />}
         {error && <p className="text-red-500">{error}</p>}
         {!loading && !error && products.length === 0 && (
           <p className="text-ink/60">Товары не найдены.</p>

@@ -134,10 +134,10 @@ describe('ProductCard', () => {
     expect(priceRow).not.toContainElement(screen.getByRole('button', { name: 'Добавить в корзину' }))
   })
 
-  it('renders the product image when imageUrl is set and initials otherwise', () => {
+  it('renders the product image when imageUrl is set and a «фото скоро» placeholder otherwise', () => {
     const { rerender } = render(<ProductCard product={product} />, { wrapper: MemoryRouter })
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
-    expect(screen.getByText('CT')).toBeInTheDocument()
+    expect(screen.getByText('фото скоро')).toBeInTheDocument()
 
     rerender(
       <ProductCard product={{ ...product, imageUrl: 'http://localhost:9000/adikabuyer-media/photo.jpg' }} />,

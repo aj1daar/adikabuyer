@@ -13,6 +13,7 @@ import notifyAddedToCart from '../utils/notifyAddedToCart'
 import ProductLabels from '../components/ProductLabels'
 import TextBubbleModal from '../components/TextBubbleModal'
 import NotFoundState from '../components/NotFoundState'
+import PhotoPlaceholder from '../components/PhotoPlaceholder'
 import ScrollFadeRow from '../components/ScrollFadeRow'
 import apiErrorMessage from '../utils/apiErrorMessage'
 import { popIn } from '../utils/motion'
@@ -172,13 +173,6 @@ export default function ProductPage() {
     })
   }
 
-  const initials = (product?.name ?? '')
-    .split(' ')
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join('')
-    .toUpperCase()
-
   const handleAddToCart = () => {
     if (!product || !selectedVariant) {
       return
@@ -244,7 +238,7 @@ export default function ProductPage() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <span className="font-grotesk text-6xl font-semibold text-ink/20">{initials}</span>
+                    <PhotoPlaceholder />
                   )}
 
                   {gallery.length > 1 && (

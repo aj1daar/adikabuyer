@@ -2,17 +2,12 @@ import { motion } from 'framer-motion'
 import type { ProductDto } from '../types/catalog'
 import ProductCard from './ProductCard'
 import { popInView } from '../utils/motion'
+import { MOBILE_COLUMN_CLASSES } from '../utils/gridColumns'
 import type { MobileColumns } from './MobileColumnsToggle'
 
 type ProductGridProps = {
   products: ProductDto[]
   mobileColumns?: MobileColumns
-}
-
-const MOBILE_COLUMN_CLASSES: Record<MobileColumns, string> = {
-  1: 'grid-cols-1 gap-6',
-  2: 'grid-cols-2 gap-4',
-  3: 'grid-cols-3 gap-3',
 }
 
 export default function ProductGrid({ products, mobileColumns = 1 }: ProductGridProps) {
