@@ -14,6 +14,7 @@ import useCatalog from '../hooks/useCatalog'
 import useCategories from '../hooks/useCategories'
 import useIsMobileViewport from '../hooks/useIsMobileViewport'
 import usePageTitle from '../hooks/usePageTitle'
+import pluralRu from '../utils/pluralRu'
 
 const MOBILE_COLUMNS_STORAGE_KEY = 'catalog-mobile-columns'
 // phones page 12 at a time; desktop 24 (six rows of four) instead of pulling the whole
@@ -103,6 +104,12 @@ export default function CatalogPage() {
   const setColor = (value: string) => updateParams({ color: value })
   const setSize = (value: string) => updateParams({ size: value })
 
+  const isFiltered = Boolean(search || category || color || size || volumeMin || volumeMax)
+  const resetAll = () => {
+    setSearchInput('')
+    updateParams({ search: '', category: '', color: '', size: '', volumeMin: '', volumeMax: '' })
+  }
+
   const handlePageChange = (nextPage: number) => {
     updateParams({ page: nextPage > 0 ? String(nextPage + 1) : '' })
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -142,6 +149,22 @@ export default function CatalogPage() {
           />
           <MobileColumnsToggle value={mobileColumns} onChange={setMobileColumns} />
         </motion.div>
+
+        {/* while narrowing down: how many matched, and one tap back to everything */}
+        {isFiltered && !error && !(loading && products.length === 0) && (
+          <div className="-mt-1 flex flex-wrap items-center justify-between gap-2">
+            <p className="font-grotesk text-sm font-bold text-ink/60" aria-live="polite">
+              Найдено {totalCount} {pluralRu(totalCount, ['товар', 'товара', 'товаров'])}
+            </p>
+            <button
+              type="button"
+              onClick={resetAll}
+              className="relative font-grotesk text-sm font-bold text-bubblegum-dark underline decoration-dotted underline-offset-4 after:absolute after:-inset-x-2 after:-inset-y-3 after:content-[''] hover:text-ink"
+            >
+              Сбросить всё
+            </button>
+          </div>
+        )}
 
         {loading && products.length === 0 && <ProductGridSkeleton mobileColumns={mobileColumns} />}
         {error && <p className="text-red-500">{error}</p>}

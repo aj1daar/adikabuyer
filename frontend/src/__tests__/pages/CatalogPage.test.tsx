@@ -281,6 +281,18 @@ describe('CatalogPage', () => {
     expect(within(screen.getByRole('navigation', { name: 'Страницы' })).getByRole('button', { name: '3' })).toBeInTheDocument()
   })
 
+  it('shows how many products match while filtering, and resets everything in one tap', () => {
+    mockedUseCatalog.mockReturnValue({ products: [product], totalCount: 3, loading: false, error: null, refetch: vi.fn() })
+    renderCatalogPage('/catalog?q=tumbler&color=Чёрный&page=2')
+
+    expect(screen.getByText('Найдено 3 товара')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Сбросить всё' }))
+
+    expect(currentUrl()).toBe('/catalog')
+    expect(screen.getByPlaceholderText('Искать товары...')).toHaveValue('')
+    expect(screen.queryByText(/^Найдено/)).not.toBeInTheDocument()
+  })
+
   describe('URL state', () => {
     it('restores search, filters and page from the URL, e.g. after going back from a product', () => {
       mockedUseCatalog.mockReturnValue({ products: [product], totalCount: 36, loading: false, error: null, refetch: vi.fn() })
