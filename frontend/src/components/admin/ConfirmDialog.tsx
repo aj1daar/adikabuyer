@@ -1,3 +1,6 @@
+import { useRef } from 'react'
+import useDialog from '../../hooks/useDialog'
+
 type ConfirmDialogProps = {
   open: boolean
   title: string
@@ -19,6 +22,10 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const panelRef = useRef<HTMLDivElement>(null)
+  // Escape = Отмена (never while the delete is in flight); focus lands on Отмена, the safe choice
+  useDialog(panelRef, open, busy ? undefined : onCancel)
+
   if (!open) {
     return null
   }
@@ -26,10 +33,12 @@ export default function ConfirmDialog({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/50 px-4">
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="w-full max-w-md rounded-3xl border-4 border-black bg-white p-6 shadow-[8px_8px_0_0_#000]"
+        tabIndex={-1}
+        className="w-full max-w-md outline-none rounded-3xl border-4 border-black bg-white p-6 shadow-[8px_8px_0_0_#000]"
       >
         <h2 className="font-grotesk text-lg font-bold text-ink">{title}</h2>
         <p className="mt-2 text-sm leading-relaxed text-ink/70">{message}</p>

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import ProductCard from '../../components/ProductCard'
 import useCartStore from '../../store/useCartStore'
 import useIsMobileViewport from '../../hooks/useIsMobileViewport'
@@ -76,21 +76,24 @@ describe('ProductCard', () => {
     expect(screen.getByText('Custom Tumbler').closest('a')).not.toHaveClass('max-sm:hidden')
   })
 
-  it('additionally hides the name on mobile once 3 columns are selected', () => {
+  it('keeps the name, in tiny type on two lines, once 3 columns are selected', () => {
     render(<ProductCard product={product} mobileColumns={3} />, { wrapper: MemoryRouter })
 
     expect(screen.getByText('Insulated steel tumbler')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Drinkware').closest('div')).toHaveClass('max-sm:hidden')
     expect(screen.getByText('Black').closest('div')).toHaveClass('max-sm:hidden')
-    expect(screen.getByText('Custom Tumbler').closest('a')).toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Custom Tumbler').closest('a')).not.toHaveClass('max-sm:hidden')
+    expect(screen.getByText('Custom Tumbler')).toHaveClass('line-clamp-2', 'max-sm:text-[10px]')
   })
 
-  it('shrinks and truncates the title to one line on mobile once a compact density is selected', () => {
+  it('shrinks the title to two small lines on mobile once a compact density is selected', () => {
     const { rerender } = render(<ProductCard product={product} />, { wrapper: MemoryRouter })
-    expect(screen.getByText('Custom Tumbler')).not.toHaveClass('max-sm:truncate')
+    expect(screen.getByText('Custom Tumbler')).not.toHaveClass('max-sm:text-xs')
 
     rerender(<ProductCard product={product} mobileColumns={2} />)
-    expect(screen.getByText('Custom Tumbler')).toHaveClass('max-sm:truncate', 'max-sm:text-xs')
+    const title = screen.getByText('Custom Tumbler')
+    expect(title).toHaveClass('line-clamp-2', 'max-sm:text-xs', 'max-sm:min-h-8')
+    expect(title).not.toHaveClass('max-sm:truncate')
   })
 
   it('hides the quantity stepper and full-width cart button on mobile once compact', () => {
@@ -131,10 +134,10 @@ describe('ProductCard', () => {
     expect(priceRow).not.toContainElement(screen.getByRole('button', { name: 'Добавить в корзину' }))
   })
 
-  it('renders the product image when imageUrl is set and initials otherwise', () => {
+  it('renders the product image when imageUrl is set and a «фото скоро» placeholder otherwise', () => {
     const { rerender } = render(<ProductCard product={product} />, { wrapper: MemoryRouter })
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
-    expect(screen.getByText('CT')).toBeInTheDocument()
+    expect(screen.getByText('фото скоро')).toBeInTheDocument()
 
     rerender(
       <ProductCard product={{ ...product, imageUrl: 'http://localhost:9000/adikabuyer-media/photo.jpg' }} />,
@@ -334,7 +337,101 @@ describe('ProductCard', () => {
         unitPrice: 25,
         quantity: 1,
         status: 'IN_STOCK',
+        maxQuantity: 10,
       },
     ])
+  })
+
+  it('stops the stepper at what is left in stock and says when all of it is in the cart', () => {
+    const lowStock: ProductDto = { ...product, variants: [{ ...product.variants[0], stockQuantity: 2 }] }
+    render(<ProductCard product={lowStock} />, { wrapper: MemoryRouter })
+
+    const plus = screen.getByRole('button', { name: 'Увеличить количество' })
+    fireEvent.click(plus)
+    expect(plus).toBeDisabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'В корзину' }))
+
+    expect(useCartStore.getState().items[0]).toMatchObject({ quantity: 2, maxQuantity: 2 })
+    expect(screen.getByRole('button', { name: 'Всё в корзине' })).toBeDisabled()
+  })
+
+  describe('pre-order sticker', () => {
+    const mixed: ProductDto = {
+      ...product,
+      colorSwatches: { Black: 'black.jpg', White: 'white.jpg' },
+      variants: [
+        { ...product.variants[0], id: 1, attributes: { color: 'Black' }, status: 'IN_STOCK' },
+        { ...product.variants[0], id: 2, sku: 'W', attributes: { color: 'White' }, status: 'PRE_ORDER' },
+      ],
+    }
+
+    it('marks a product whose every variant is pre-order', () => {
+      render(
+        <ProductCard product={{ ...product, variants: [{ ...product.variants[0], status: 'PRE_ORDER' }] }} />,
+        { wrapper: MemoryRouter },
+      )
+
+      expect(screen.getByText('Под заказ')).toBeInTheDocument()
+    })
+
+    it('stays off while an in-stock option exists, and appears once a pre-order colour is picked', () => {
+      render(<ProductCard product={mixed} />, { wrapper: MemoryRouter })
+      expect(screen.queryByText('Под заказ')).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: 'White' }))
+
+      expect(screen.getByText('Под заказ')).toBeInTheDocument()
+    })
+  })
+
+  describe('when the shopper still has to choose', () => {
+    const sized: ProductDto = {
+      ...product,
+      colorSwatches: { Black: 'black.jpg', White: 'white.jpg' },
+      variants: [
+        { ...product.variants[0], id: 1, sku: 'TEE-BLK-S', attributes: { color: 'Black', size: 'S' } },
+        { ...product.variants[0], id: 2, sku: 'TEE-BLK-M', attributes: { color: 'Black', size: 'M' } },
+        { ...product.variants[0], id: 3, sku: 'TEE-WHT-S', attributes: { color: 'White', size: 'S' } },
+      ],
+    }
+
+    const renderWithRoutes = (card: ProductDto, mobileColumns: 1 | 2 = 1) =>
+      render(
+        <MemoryRouter initialEntries={['/catalog']}>
+          <Routes>
+            <Route path="/catalog" element={<ProductCard product={card} mobileColumns={mobileColumns} />} />
+            <Route path="/catalog/:id" element={<p>product page</p>} />
+          </Routes>
+        </MemoryRouter>,
+      )
+
+    it('opens the product page instead of silently adding the first variant', () => {
+      renderWithRoutes(sized)
+
+      expect(screen.queryByRole('button', { name: 'Увеличить количество' })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Выбрать' }))
+
+      expect(useCartStore.getState().items).toHaveLength(0)
+      expect(screen.getByText('product page')).toBeInTheDocument()
+    })
+
+    it('labels the compact mobile button as a choice too', () => {
+      renderWithRoutes(sized, 2)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Выбрать вариант' }))
+
+      expect(useCartStore.getState().items).toHaveLength(0)
+      expect(screen.getByText('product page')).toBeInTheDocument()
+    })
+
+    it('adds straight away once the picked colour leaves a single variant', () => {
+      renderWithRoutes(sized)
+
+      fireEvent.click(screen.getByRole('button', { name: 'White' }))
+      fireEvent.click(screen.getByRole('button', { name: 'В корзину' }))
+
+      expect(useCartStore.getState().items).toEqual([expect.objectContaining({ variantId: 3, quantity: 1 })])
+    })
   })
 })

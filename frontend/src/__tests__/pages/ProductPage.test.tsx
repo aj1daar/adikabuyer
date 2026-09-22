@@ -104,7 +104,21 @@ describe('ProductPage', () => {
     const items = useCartStore.getState().items
     expect(items).toHaveLength(1)
     expect(items[0]).toMatchObject({ variantId: 2, sku: 'TUM-WHT', unitPrice: 30, quantity: 2, status: 'PRE_ORDER' })
-    expect(useCartStore.getState().isOpen).toBe(true)
+    // confirms with the shared toast instead of throwing the drawer over the page
+    expect(useCartStore.getState().isOpen).toBe(false)
+  })
+
+  it('tells search engines a product is pre-order only when no variant is in stock', async () => {
+    mockedGet.mockResolvedValue({
+      data: { ...product, variants: product.variants.map((variant) => ({ ...variant, status: 'PRE_ORDER' as const })) },
+    })
+
+    renderPage()
+
+    await waitFor(() => {
+      const script = document.head.querySelector('script[type="application/ld+json"]')
+      expect(JSON.parse(script!.textContent!).offers.availability).toBe('https://schema.org/PreOrder')
+    })
   })
 
   it('switches the main photo when a thumbnail is clicked', async () => {
@@ -290,7 +304,7 @@ describe('ProductPage', () => {
     expect(screen.getByAltText('Custom Tumbler')).toHaveAttribute('src', 'c.jpg')
   })
 
-  it('drops an attribute pick when its active value is clicked again', async () => {
+  it('drops an attribute pick when its active value is clicked again, back to the standard variant', async () => {
     mockedGet.mockResolvedValue({ data: matrixProduct })
     renderPage()
 
@@ -299,6 +313,14 @@ describe('ProductPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'White' }))
     expect(screen.getByRole('button', { name: 'White' })).toHaveAttribute('aria-pressed', 'false')
-    expect(screen.getByRole('button', { name: 'Black' })).toHaveAttribute('aria-pressed', 'false')
+    // the standard (first) variant is what goes in the cart now, and it shows as chosen
+    expect(screen.getByRole('button', { name: 'Black' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('highlights the pre-selected variant values before anything is tapped', async () => {
+    mockedGet.mockResolvedValue({ data: matrixProduct })
+    renderPage()
+
+    expect(await screen.findByRole('button', { name: 'Black' })).toHaveAttribute('aria-pressed', 'true')
   })
 })

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import useDialog from '../../hooks/useDialog'
 
 type CircleCropperProps = {
   file: File
@@ -27,6 +28,9 @@ export default function CircleCropper({ file, title = 'Кружок цвета',
   const drag = useRef<{ pointer: Point; offset: Point } | null>(null)
   const pinch = useRef<{ distance: number; zoom: number; mid: Point; offset: Point } | null>(null)
   const imageRef = useRef<HTMLImageElement | null>(null)
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  // stacked over the product form: Escape cancels just the crop
+  useDialog(panelRef, true, busy ? undefined : onCancel)
 
   useEffect(() => {
     const objectUrl = URL.createObjectURL(file)
@@ -156,7 +160,14 @@ export default function CircleCropper({ file, title = 'Кружок цвета',
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/50 px-4">
-      <div className="flex w-full max-w-sm flex-col gap-4 rounded-3xl border-4 border-black bg-white p-5 shadow-[8px_8px_0_0_#000]">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        tabIndex={-1}
+        className="flex w-full max-w-sm flex-col gap-4 rounded-3xl border-4 border-black bg-white p-5 shadow-[8px_8px_0_0_#000] outline-none"
+      >
         <h3 className="font-grotesk text-base font-bold text-ink">{title}</h3>
 
         <div

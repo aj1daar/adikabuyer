@@ -26,7 +26,7 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
         onChange={(event) => onChange(event.target.value)}
         placeholder="Искать товары..."
         aria-label="Искать товары"
-        className="h-16 w-full rounded-pill border-2 border-black bg-white pl-14 pr-14 font-grotesk text-base font-bold text-ink shadow-[6px_6px_0_0_#E8799F] outline-none transition placeholder:font-semibold placeholder:text-ink/40 focus:shadow-[8px_8px_0_0_#E8799F] [&::-webkit-search-cancel-button]:hidden"
+        className="h-16 w-full rounded-pill border-2 border-black bg-white pl-14 pr-14 font-grotesk text-base font-bold text-ink shadow-[6px_6px_0_0_#E8799F] max-sm:h-12 max-sm:shadow-[4px_4px_0_0_#E8799F] outline-none transition placeholder:font-semibold placeholder:text-ink/40 focus:shadow-[8px_8px_0_0_#E8799F] [&::-webkit-search-cancel-button]:hidden"
       />
 
       {value !== '' && (

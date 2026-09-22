@@ -1,4 +1,4 @@
-import { useId, useState, type ChangeEvent } from 'react'
+import { useId, useRef, useState, type ChangeEvent } from 'react'
 import type { ProductDto, VariantStatus } from '../../types/catalog'
 import type { ProductPayload, VariantPayload } from '../../types/admin'
 import uploadMedia from '../../api/media'
@@ -12,6 +12,8 @@ import {
 } from '../../utils/attributeOptions'
 import OptionDropdown from '../OptionDropdown'
 import CircleCropper from './CircleCropper'
+import ConfirmDialog from './ConfirmDialog'
+import useDialog from '../../hooks/useDialog'
 
 const KNOWN_ATTRIBUTE_KEYS = ATTRIBUTE_KEY_OPTIONS.map((option) => option.value).filter(
   (value) => value !== CUSTOM_ATTRIBUTE_KEY
@@ -117,6 +119,8 @@ function toVariantDraft(product?: ProductDto): VariantDraft[] {
 export default function ProductForm({ product, onSubmit, onClose, isSubmitting }: ProductFormProps) {
   const imageUploadId = useId()
   const colorListId = useId()
+  const titleId = useId()
+  const panelRef = useRef<HTMLDivElement>(null)
   const [name, setName] = useState(product?.name ?? '')
   const [description, setDescription] = useState(product?.description ?? '')
   const [category, setCategory] = useState(product?.category ?? '')
@@ -131,6 +135,21 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   const [colorSwatches, setColorSwatches] = useState<Record<string, string>>(product?.colorSwatches ?? {})
   const [cropper, setCropper] = useState<{ color: string; file: File } | null>(null)
   const [swatchUploading, setSwatchUploading] = useState(false)
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
+
+  // everything the shop owner can edit, as one comparable value: the first render's copy is
+  // the "saved" state, so closing only asks when something actually differs from it
+  const editableState = JSON.stringify({ name, description, category, brand, active, labels, variants, colorSwatches })
+  const [initialState] = useState(editableState)
+  const isDirty = editableState !== initialState || labelDraft.trim() !== ''
+
+  const requestClose = () => {
+    if (isDirty) {
+      setConfirmDiscard(true)
+    } else {
+      onClose()
+    }
+  }
 
   const variantColor = (variant: VariantDraft) =>
     variant.attributes.find((attribute) => attribute.key === COLOR_ATTRIBUTE_KEY)?.value.trim() ?? ''
@@ -304,17 +323,27 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
     (variant) => variant.priceOverride.trim() !== '' && !Number.isNaN(Number(variant.priceOverride))
   )
 
+  // Escape goes through the same guard as «Закрыть»: unsaved edits ask before vanishing
+  useDialog(panelRef, true, requestClose)
+
   const canSubmit =
     name.trim() !== '' && hasPricedVariant && uploadingVariantIndex === null && !swatchUploading
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4">
-      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border-4 border-black bg-white shadow-[8px_8px_0_0_#000]">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border-4 border-black bg-white shadow-[8px_8px_0_0_#000] outline-none"
+      >
         <div className="flex items-center justify-between border-b-2 border-black px-6 py-4">
-          <h2 className="font-grotesk text-lg font-bold text-ink">
+          <h2 id={titleId} className="font-grotesk text-lg font-bold text-ink">
             {product ? 'Редактировать товар' : 'Новый товар'}
           </h2>
-          <button type="button" onClick={onClose} className="font-grotesk text-sm font-bold text-ink/50 hover:text-ink">
+          <button type="button" onClick={requestClose} className="font-grotesk text-sm font-bold text-ink/50 hover:text-ink">
             Закрыть
           </button>
         </div>
@@ -415,7 +444,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
               <button
                 type="button"
                 onClick={addVariant}
-                className="rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink hover:bg-bubblegum hover:text-white"
+                className="rounded-pill border-2 border-black bg-silver px-3 py-1 font-grotesk text-xs font-bold text-ink hover:bg-bubblegum-dark hover:text-white"
               >
                 Добавить вариант
               </button>
@@ -551,7 +580,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
                   />
                   <label
                     htmlFor={`${imageUploadId}-variant-${variantIndex}`}
-                    className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-black bg-silver font-grotesk text-xs font-bold text-ink transition hover:bg-bubblegum hover:text-white aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                    className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-black bg-silver font-grotesk text-xs font-bold text-ink transition hover:bg-bubblegum-dark hover:text-white aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                     aria-disabled={uploadingVariantIndex !== null}
                   >
                     {uploadingVariantIndex === variantIndex ? '...' : '+'}
@@ -745,6 +774,15 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
             onConfirm={handleCropperConfirm}
           />
         )}
+
+        <ConfirmDialog
+          open={confirmDiscard}
+          title="Закрыть без сохранения?"
+          message="Изменения в этом товаре не сохранены и пропадут."
+          confirmLabel="Закрыть без сохранения"
+          onConfirm={onClose}
+          onCancel={() => setConfirmDiscard(false)}
+        />
 
         <div className="border-t-2 border-black px-6 py-4">
           <button

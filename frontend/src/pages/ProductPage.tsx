@@ -7,10 +7,14 @@ import useCartStore from '../store/useCartStore'
 import useCardTransitionStore from '../store/useCardTransitionStore'
 import { resolveVariantGallery } from '../utils/variantImage'
 import usePageTitle from '../hooks/usePageTitle'
+import useStockLimit from '../hooks/useStockLimit'
 import formatPrice from '../utils/formatPrice'
+import notifyAddedToCart from '../utils/notifyAddedToCart'
 import ProductLabels from '../components/ProductLabels'
 import TextBubbleModal from '../components/TextBubbleModal'
 import NotFoundState from '../components/NotFoundState'
+import PhotoPlaceholder from '../components/PhotoPlaceholder'
+import ScrollFadeRow from '../components/ScrollFadeRow'
 import apiErrorMessage from '../utils/apiErrorMessage'
 import { popIn } from '../utils/motion'
 import type { ProductDto, VariantDto } from '../types/catalog'
@@ -37,7 +41,6 @@ function variantLabel(variant: VariantDto, index: number): string {
 export default function ProductPage() {
   const { id } = useParams()
   const addItem = useCartStore((state) => state.addItem)
-  const openCart = useCartStore((state) => state.openCart)
   const playTransition = useCardTransitionStore((state) => state.play)
 
   const [product, setProduct] = useState<ProductDto | null>(null)
@@ -67,6 +70,13 @@ export default function ProductPage() {
     if (!product) {
       return
     }
+    // what a shopper can actually get: in stock beats pre-order beats sold out
+    const statuses = product.variants.map((variant) => variant.status)
+    const availability = statuses.includes('IN_STOCK')
+      ? 'https://schema.org/InStock'
+      : statuses.includes('PRE_ORDER')
+        ? 'https://schema.org/PreOrder'
+        : 'https://schema.org/OutOfStock'
     const script = document.createElement('script')
     script.type = 'application/ld+json'
     script.text = JSON.stringify({
@@ -79,7 +89,7 @@ export default function ProductPage() {
         '@type': 'Offer',
         price: product.displayPrice,
         priceCurrency: 'KGS',
-        availability: 'https://schema.org/InStock',
+        availability,
       },
     })
     document.head.appendChild(script)
@@ -128,6 +138,7 @@ export default function ProductPage() {
   const stepPhoto = (delta: number) =>
     setPhotoIndex((current) => (current + delta + gallery.length) % gallery.length)
   const price = selectedVariant?.displayPrice ?? product?.displayPrice ?? 0
+  const { maxQuantity, remaining } = useStockLimit(selectedVariant)
 
   const chooseVariant = (variantId: number) => {
     setSelectedVariantId(variantId)
@@ -162,13 +173,6 @@ export default function ProductPage() {
     })
   }
 
-  const initials = (product?.name ?? '')
-    .split(' ')
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join('')
-    .toUpperCase()
-
   const handleAddToCart = () => {
     if (!product || !selectedVariant) {
       return
@@ -182,10 +186,11 @@ export default function ProductPage() {
       unitPrice: selectedVariant.displayPrice ?? product.displayPrice,
       quantity,
       status: selectedVariant.status,
+      maxQuantity,
     })
     setQuantity(1)
     setJustAdded(true)
-    openCart()
+    notifyAddedToCart(product.name, selectedVariant.id)
   }
 
   return (
@@ -194,7 +199,7 @@ export default function ProductPage() {
           <Link
             to="/catalog"
             onClick={() => playTransition('collapse')}
-            className="inline-flex items-center gap-2 rounded-pill border-2 border-black bg-white px-4 py-2 font-grotesk text-sm font-bold text-ink transition hover:bg-bubblegum hover:text-white"
+            className="inline-flex items-center gap-2 rounded-pill border-2 border-black bg-white px-4 py-2 font-grotesk text-sm font-bold text-ink transition hover:bg-bubblegum-dark hover:text-white"
           >
             ← Каталог
           </Link>
@@ -225,9 +230,15 @@ export default function ProductPage() {
                 />
                 <div className="relative flex aspect-[4/5] items-center justify-center overflow-hidden rounded-3xl border-2 border-black bg-silver shadow-[8px_8px_0_0_#000]">
                   {imageUrl ? (
-                    <img src={imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                    <img
+                      src={imageUrl}
+                      alt={product.name}
+                      // the page's largest element: fetch it before anything else
+                      fetchPriority="high"
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
-                    <span className="font-grotesk text-6xl font-semibold text-ink/20">{initials}</span>
+                    <PhotoPlaceholder />
                   )}
 
                   {gallery.length > 1 && (
@@ -236,7 +247,7 @@ export default function ProductPage() {
                         type="button"
                         onClick={() => stepPhoto(-1)}
                         aria-label="Предыдущее фото"
-                        className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[3px_3px_0_0_#000] transition hover:bg-bubblegum hover:text-white active:scale-90"
+                        className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[3px_3px_0_0_#000] transition hover:bg-bubblegum-dark hover:text-white active:scale-90"
                       >
                         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
                           <path d="M15 18l-6-6 6-6" />
@@ -246,7 +257,7 @@ export default function ProductPage() {
                         type="button"
                         onClick={() => stepPhoto(1)}
                         aria-label="Следующее фото"
-                        className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[3px_3px_0_0_#000] transition hover:bg-bubblegum hover:text-white active:scale-90"
+                        className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black bg-white text-ink shadow-[3px_3px_0_0_#000] transition hover:bg-bubblegum-dark hover:text-white active:scale-90"
                       >
                         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
                           <path d="M9 6l6 6-6 6" />
@@ -267,7 +278,7 @@ export default function ProductPage() {
                 </div>
 
                 {gallery.length > 1 && (
-                  <div className="relative mt-4 flex gap-3 overflow-x-auto pb-2">
+                  <ScrollFadeRow className="relative mt-4 flex gap-3 overflow-x-auto pb-2">
                     {gallery.map((url, index) => (
                       <button
                         key={url + index}
@@ -281,10 +292,10 @@ export default function ProductPage() {
                             : 'border-black/30 opacity-70 hover:opacity-100'
                         }`}
                       >
-                        <img src={url} alt="" className="h-full w-full object-cover" />
+                        <img src={url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                       </button>
                     ))}
-                  </div>
+                  </ScrollFadeRow>
                 )}
               </div>
 
@@ -303,7 +314,13 @@ export default function ProductPage() {
                   <ProductLabels labels={product.labels} size="page" />
                 </motion.div>
 
-                <motion.h1 {...popIn(0.05)} className="font-grotesk text-4xl font-bold text-ink sm:text-5xl">
+                <motion.h1
+                  {...popIn(0.05)}
+                  // long names shrink on phones instead of stacking 7+ lines of 36px type
+                  className={`break-words hyphens-auto font-grotesk font-bold leading-tight text-ink sm:text-5xl ${
+                    product.name.length > 40 ? 'text-xl min-[400px]:text-2xl' : 'text-[clamp(1.75rem,8vw,2.25rem)]'
+                  }`}
+                >
                   {product.name}
                 </motion.h1>
 
@@ -345,7 +362,7 @@ export default function ProductPage() {
                     transition={{ type: 'spring', stiffness: 340, damping: 14 }}
                     className="w-fit rounded-2xl border-2 border-black bg-bubblegum px-5 py-2 shadow-[4px_4px_0_0_#000]"
                   >
-                    <span className="font-grotesk text-3xl font-black tracking-tight text-white sm:text-4xl">
+                    <span className="font-grotesk text-3xl font-black tracking-tight text-ink sm:text-4xl">
                       {formatPrice(price)}
                     </span>
                   </motion.div>
@@ -398,9 +415,15 @@ export default function ProductPage() {
                               the scroll container's left edge, so its own growth animation gets
                               clipped by the container's overflow-x boundary (can't scroll to
                               negative offsets to reveal it) instead of scaling smoothly */}
-                          <div className="-mx-2 flex h-14 items-center gap-2 overflow-x-auto overscroll-contain px-2">
+                          <ScrollFadeRow className="-mx-2 flex h-14 items-center gap-2 overflow-x-auto overscroll-contain px-2">
                             {shownValues.map((value, valueIndex) => {
-                              const selected = selection[key] === value
+                              // an explicit pick stays pinned; a row the shopper hasn't touched
+                              // highlights the value of the variant that will go in the cart, so the
+                              // pre-selected variant never shows as "nothing chosen"
+                              const selected =
+                                selection[key] !== undefined
+                                  ? selection[key] === value
+                                  : pickedValue != null && String(pickedValue) === value
                               const available = isValueAvailable(sellableVariants, selection, key, value)
                               const swatch = useSwatches ? swatches[value] : undefined
                               const popDelay = Math.min(valueIndex, 10) * 0.03
@@ -436,7 +459,7 @@ export default function ProductPage() {
                                             : 'border-black/30 opacity-40 hover:opacity-100'
                                       }`}
                                     >
-                                      <img src={swatch} alt="" className="h-full w-full object-cover" />
+                                      <img src={swatch} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                                     </motion.button>
                                   </motion.div>
                                 )
@@ -466,8 +489,8 @@ export default function ProductPage() {
                                       selected
                                         ? 'bg-ink text-white shadow-[3px_3px_0_0_#E8799F]'
                                         : available
-                                          ? 'bg-white text-ink hover:bg-bubblegum hover:text-white'
-                                          : 'bg-white text-ink/40 line-through hover:bg-bubblegum hover:text-white hover:no-underline'
+                                          ? 'bg-white text-ink hover:bg-bubblegum-dark hover:text-white'
+                                          : 'bg-white text-ink/40 line-through hover:bg-bubblegum-dark hover:text-white hover:no-underline'
                                     }`}
                                   >
                                     {formatAttributeValue(key, value)}
@@ -491,14 +514,14 @@ export default function ProductPage() {
                                 }}
                                 className={
                                   useSwatches
-                                    ? 'flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-black bg-silver font-grotesk text-xs font-bold text-ink transition hover:border-bubblegum-dark hover:bg-bubblegum hover:text-white'
-                                    : 'flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-pill border-2 border-black bg-silver px-4 font-grotesk text-sm font-bold text-ink transition hover:border-bubblegum-dark hover:bg-bubblegum hover:text-white'
+                                    ? 'flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-black bg-silver font-grotesk text-xs font-bold text-ink transition hover:border-bubblegum-dark hover:bg-bubblegum-dark hover:text-white'
+                                    : 'flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-pill border-2 border-black bg-silver px-4 font-grotesk text-sm font-bold text-ink transition hover:border-bubblegum-dark hover:bg-bubblegum-dark hover:text-white'
                                 }
                               >
                                 +{hiddenCount}
                               </motion.button>
                             )}
-                          </div>
+                          </ScrollFadeRow>
                         </motion.div>
                       )
                     })}
@@ -510,7 +533,7 @@ export default function ProductPage() {
                     <span className="h-5 font-grotesk text-sm font-bold uppercase tracking-wide text-ink/60">
                       Вариант
                     </span>
-                    <div className="flex h-14 items-center gap-2 overflow-x-auto overscroll-contain">
+                    <ScrollFadeRow className="flex h-14 items-center gap-2 overflow-x-auto overscroll-contain">
                       {sellableVariants.map((variant, index) => (
                         <button
                           key={variant.id}
@@ -520,13 +543,13 @@ export default function ProductPage() {
                           className={`h-11 shrink-0 whitespace-nowrap rounded-pill border-2 border-black px-4 font-grotesk text-sm font-bold transition ${
                             variant.id === selectedVariantId
                               ? 'bg-ink text-white shadow-[3px_3px_0_0_#E8799F]'
-                              : 'bg-white text-ink hover:bg-bubblegum hover:text-white'
+                              : 'bg-white text-ink hover:bg-bubblegum-dark hover:text-white'
                           }`}
                         >
                           {variantLabel(variant, index)}
                         </button>
                       ))}
-                    </div>
+                    </ScrollFadeRow>
                   </motion.div>
                 )}
 
@@ -544,7 +567,7 @@ export default function ProductPage() {
                     disabled={!selectedVariant || quantity <= 1}
                     aria-label="Уменьшить количество"
                     whileTap={{ scale: 0.85 }}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-lg font-bold text-ink transition hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-lg font-bold text-ink transition hover:bg-bubblegum-dark hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
                   >
                     −
                   </motion.button>
@@ -554,17 +577,17 @@ export default function ProductPage() {
                   <motion.button
                     type="button"
                     onClick={() => setQuantity((current) => current + 1)}
-                    disabled={!selectedVariant}
+                    disabled={!selectedVariant || quantity >= remaining}
                     aria-label="Увеличить количество"
                     whileTap={{ scale: 0.85 }}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-lg font-bold text-ink transition hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-lg font-bold text-ink transition hover:bg-bubblegum-dark hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
                   >
                     +
                   </motion.button>
                   <motion.button
                     type="button"
                     onClick={handleAddToCart}
-                    disabled={!selectedVariant}
+                    disabled={!selectedVariant || remaining === 0}
                     whileTap={{ scale: 0.93, rotate: -1 }}
                     transition={{ type: 'spring', stiffness: 500, damping: 14 }}
                     className="flex-1 overflow-hidden whitespace-nowrap rounded-pill border-2 border-black bg-ink px-4 py-3 font-grotesk min-[380px]:px-6 text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F] disabled:cursor-not-allowed disabled:opacity-40"
@@ -578,7 +601,7 @@ export default function ProductPage() {
                         transition={{ duration: 0.16 }}
                         className="block"
                       >
-                        {justAdded ? '✓ Добавлено' : 'В корзину'}
+                        {justAdded ? '✓ Добавлено' : remaining === 0 ? 'Всё в корзине' : 'В корзину'}
                       </motion.span>
                     </AnimatePresence>
                   </motion.button>

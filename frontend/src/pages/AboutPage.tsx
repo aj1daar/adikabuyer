@@ -45,7 +45,7 @@ export default function AboutPage() {
 
   return (
     <MainLayout>
-      <section className="relative flex items-center py-16 sm:h-[calc(100dvh-10rem)] sm:overflow-hidden sm:py-0">
+      <section className="relative flex items-center py-16 sm:min-h-[calc(100dvh-10rem)] sm:overflow-hidden sm:py-10">
         <div className="mx-auto grid w-full max-w-6xl gap-10 sm:grid-cols-[1.05fr_0.95fr] sm:items-center sm:gap-16">
           {/* left — the story, shoved to the edge */}
           <div className="flex flex-col items-center gap-4 text-center sm:items-start sm:text-left">

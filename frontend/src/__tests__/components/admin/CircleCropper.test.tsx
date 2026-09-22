@@ -21,6 +21,16 @@ describe('CircleCropper', () => {
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
 
+  it('is a modal dialog that cancels on Escape', () => {
+    const onCancel = vi.fn()
+    render(<CircleCropper file={file} title="Кружок цвета" onCancel={onCancel} onConfirm={vi.fn()} />)
+
+    expect(screen.getByRole('dialog', { name: 'Кружок цвета' })).toHaveAttribute('aria-modal', 'true')
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(onCancel).toHaveBeenCalledTimes(1)
+  })
+
   it('disables the confirm button while busy', () => {
     render(<CircleCropper file={file} busy onCancel={vi.fn()} onConfirm={vi.fn()} />)
 

@@ -17,7 +17,7 @@ export default function HeroSection() {
     : { type: 'spring' as const, stiffness: 500, damping: 11, mass: 0.6 }
 
   return (
-    <section className="relative flex items-center overflow-hidden py-16 sm:h-[calc(100dvh-10rem)] sm:py-0">
+    <section className="relative flex items-center overflow-hidden py-16 sm:min-h-[calc(100dvh-10rem)] sm:py-10">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
@@ -38,7 +38,7 @@ export default function HeroSection() {
           >
             сделано
             <br />
-            для <span className="text-bubblegum">тебя</span>
+            для <span className="text-bubblegum-dark">тебя</span>
           </motion.h1>
 
           <motion.p {...popIn(0.12)} className="max-w-xl text-lg text-ink/70">
@@ -94,7 +94,7 @@ export default function HeroSection() {
               />
               <MotionLink
                 to="/about"
-                className="block rounded-pill border-2 border-black bg-white px-8 py-3 font-grotesk text-sm font-bold text-ink transition-[background-color,color] hover:bg-bubblegum hover:text-white"
+                className="block rounded-pill border-2 border-black bg-white px-8 py-3 font-grotesk text-sm font-bold text-ink transition-[background-color,color] hover:bg-bubblegum-dark hover:text-white"
                 initial={{ opacity: 0, scale: 0.85, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 whileHover={{ ...ctaHover, transition: ctaSpring }}

@@ -130,3 +130,49 @@ describe('useCartStore', () => {
     expect(useCartStore.getState().isOpen).toBe(false)
   })
 })
+
+describe('useCartStore persistence', () => {
+  it('keeps the cart lines in localStorage but not the drawer state', () => {
+    useCartStore.getState().addItem(item({ quantity: 2 }))
+    useCartStore.getState().openCart()
+
+    const saved = JSON.parse(localStorage.getItem('adikabuyer-cart') ?? '{}')
+
+    expect(saved.state.items).toHaveLength(1)
+    expect(saved.state.items[0].quantity).toBe(2)
+    expect(saved.state).not.toHaveProperty('isOpen')
+  })
+
+  it('restores the cart lines from localStorage after a reload', async () => {
+    localStorage.setItem('adikabuyer-cart', JSON.stringify({ state: { items: [item({ variantId: 7, quantity: 3 })] }, version: 1 }))
+
+    await useCartStore.persist.rehydrate()
+
+    expect(useCartStore.getState().items).toEqual([expect.objectContaining({ variantId: 7, quantity: 3 })])
+    expect(useCartStore.getState().isOpen).toBe(false)
+  })
+})
+
+describe('useCartStore stock caps', () => {
+  it('never lets an in-stock line go past its stock, whether added or stepped up', () => {
+    useCartStore.getState().addItem(item({ quantity: 2, maxQuantity: 3 }))
+    useCartStore.getState().addItem(item({ quantity: 5, maxQuantity: 3 }))
+    expect(useCartStore.getState().items[0].quantity).toBe(3)
+
+    useCartStore.getState().changeQuantity(1, 1)
+    expect(useCartStore.getState().items[0].quantity).toBe(3)
+  })
+
+  it('leaves pre-order lines uncapped', () => {
+    useCartStore.getState().addItem(item({ quantity: 40, status: 'PRE_ORDER' }))
+    useCartStore.getState().changeQuantity(1, 10)
+
+    expect(useCartStore.getState().items[0].quantity).toBe(50)
+  })
+
+  it('ignores an add when the stock is zero', () => {
+    useCartStore.getState().addItem(item({ maxQuantity: 0 }))
+
+    expect(useCartStore.getState().items).toHaveLength(0)
+  })
+})

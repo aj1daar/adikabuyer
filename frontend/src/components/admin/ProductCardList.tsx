@@ -47,7 +47,7 @@ export default function ProductCardList({ products, onEdit, onDeleteProduct, onD
             <button
               type="button"
               onClick={() => onDeleteProduct(product)}
-              className="min-h-11 rounded-pill border-2 border-black bg-white px-4 py-2 font-grotesk text-sm font-bold text-ink hover:bg-bubblegum hover:text-white"
+              className="min-h-11 rounded-pill border-2 border-black bg-white px-4 py-2 font-grotesk text-sm font-bold text-ink hover:bg-bubblegum-dark hover:text-white"
             >
               Удалить товар
             </button>

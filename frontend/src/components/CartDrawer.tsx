@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import useCartStore, { type CartItem } from '../store/useCartStore'
 import submitCheckout from '../api/checkout'
 import formatPrice from '../utils/formatPrice'
@@ -7,6 +8,7 @@ import resolveDeliveryFee, { COURIER, DELIVERY_OPTIONS, PICKUP } from '../utils/
 import WeightTariffNote from './WeightTariffNote'
 import { popIn } from '../utils/motion'
 import apiErrorMessage from '../utils/apiErrorMessage'
+import useDialog from '../hooks/useDialog'
 
 type DeliveryMode = 'together' | 'separate'
 
@@ -27,6 +29,7 @@ type CartItemRowProps = {
 }
 
 function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
+  const atStockLimit = item.maxQuantity != null && item.quantity >= item.maxQuantity
   return (
     <motion.div
       layout
@@ -35,9 +38,10 @@ function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
       exit={{ opacity: 0, scale: 0.9, height: 0, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
       transition={{ type: 'spring', stiffness: 340, damping: 20 }}
       className="flex items-center justify-between gap-3 overflow-hidden border-b border-ink/10 py-3">
-      <div>
-        <p className="font-grotesk text-sm font-bold text-ink">{item.productName}</p>
-        <p className="text-xs text-ink/50">
+      {/* min-w-0 lets a long name wrap instead of pushing the price and «Удалить» off the edge */}
+      <div className="min-w-0 flex-1">
+        <p className="line-clamp-2 break-words font-grotesk text-sm font-bold text-ink">{item.productName}</p>
+        <p className="truncate text-xs text-ink/50">
           {Object.values(item.attributes).join(', ')}
         </p>
         <div className="mt-2 flex items-center gap-2">
@@ -46,7 +50,7 @@ function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
             onClick={() => onChangeQuantity(item.variantId, -1)}
             disabled={item.quantity <= 1}
             aria-label="Уменьшить количество"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum-dark hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
             −
           </button>
@@ -56,21 +60,23 @@ function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
           <button
             type="button"
             onClick={() => onChangeQuantity(item.variantId, 1)}
+            disabled={atStockLimit}
             aria-label="Увеличить количество"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum hover:text-white"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum-dark hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
             +
           </button>
         </div>
+        {atStockLimit && <p className="mt-1 text-[11px] text-ink/50">Больше нет в наличии</p>}
       </div>
-      <div className="flex items-center gap-3">
-        <span className="font-grotesk text-sm font-bold text-ink">
+      <div className="flex shrink-0 flex-col items-end gap-2">
+        <span className="whitespace-nowrap font-grotesk text-sm font-bold text-ink">
           {formatPrice(item.unitPrice * item.quantity)}
         </span>
         <button
           type="button"
           onClick={() => onRemove(item.variantId)}
-          className="-m-3.5 p-3.5 font-grotesk text-xs font-bold text-ink/40 transition hover:text-bubblegum-dark"
+          className="-m-2 p-2 font-grotesk text-xs font-bold text-ink/40 transition hover:text-bubblegum-dark"
         >
           Удалить
         </button>
@@ -99,6 +105,9 @@ export default function CartDrawer() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [orderNumbers, setOrderNumbers] = useState<number[]>([])
+  const nameInputRef = useRef<HTMLInputElement>(null)
+  const phoneInputRef = useRef<HTMLInputElement>(null)
+  const panelRef = useRef<HTMLElement>(null)
 
   const inStockItems = items.filter((item) => item.status !== 'PRE_ORDER')
   const preOrderItems = items.filter((item) => item.status === 'PRE_ORDER')
@@ -117,6 +126,13 @@ export default function CartDrawer() {
 
   const canCheckout =
     items.length > 0 && customerName.trim() !== '' && customerPhone.trim() !== '' && region.trim() !== ''
+
+  // spelled out under the checkout button, so a greyed-out button never leaves the
+  // shopper guessing what it still needs
+  const missingFields = [
+    customerName.trim() === '' ? 'имя' : null,
+    customerPhone.trim() === '' ? 'телефон' : null,
+  ].filter((field): field is string => field !== null)
 
   const isSplitDelivery = hasBothGroups && deliveryMode === 'separate'
   const singleDeliveryFee = region ? resolveDeliveryFee(region) : 0
@@ -152,6 +168,28 @@ export default function CartDrawer() {
     }
   }
 
+  // Enter / the keyboard's «Go» submits; with a field still empty it jumps there instead
+  const handleSubmit = (event: FormEvent | KeyboardEvent) => {
+    event.preventDefault()
+    if (customerName.trim() === '') {
+      nameInputRef.current?.focus()
+      return
+    }
+    if (customerPhone.trim() === '') {
+      phoneInputRef.current?.focus()
+      return
+    }
+    void handleCheckout()
+  }
+
+  // browsers skip Enter-to-submit while the submit button is disabled (it is, until both
+  // fields are filled), so the inputs handle Enter themselves
+  const handleFieldKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
+    if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
+      handleSubmit(event)
+    }
+  }
+
   const handleClose = () => {
     closeCart()
     if (orderPlaced) {
@@ -162,6 +200,8 @@ export default function CartDrawer() {
       setDeliveryMode('together')
     }
   }
+
+  useDialog(panelRef, isOpen, handleClose)
 
   return (
     <AnimatePresence>
@@ -181,10 +221,15 @@ export default function CartDrawer() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.3, ease: 'easeOut' }}
-            className="fixed right-0 top-0 z-50 flex h-dvh w-full max-w-sm flex-col border-l-4 border-black bg-white pt-[env(safe-area-inset-top)] shadow-[-8px_0_0_0_#000]"
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cart-title"
+            tabIndex={-1}
+            className="fixed right-0 top-0 z-50 flex h-dvh w-full max-w-sm flex-col outline-none border-l-4 border-black bg-white pt-[env(safe-area-inset-top)] shadow-[-8px_0_0_0_#000]"
           >
             <div className="flex items-center justify-between border-b-2 border-black px-6 py-4">
-              <h2 className="font-grotesk text-lg font-bold text-ink">Корзина</h2>
+              <h2 id="cart-title" className="font-grotesk text-lg font-bold text-ink">Корзина</h2>
               <button
                 type="button"
                 onClick={handleClose}
@@ -224,7 +269,23 @@ export default function CartDrawer() {
               <>
             <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-4">
               {items.length === 0 && (
-                <p className="text-sm text-ink/50">Корзина пуста.</p>
+                <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+                  <motion.span
+                    {...popIn(0.05)}
+                    className="rotate-[-4deg] rounded-pill border-2 border-black bg-bubblegum-light px-4 py-1 font-grotesk text-xs font-bold uppercase tracking-wider text-ink shadow-[3px_3px_0_0_#000]"
+                  >
+                    пусто
+                  </motion.span>
+                  <h3 className="font-grotesk text-lg font-bold text-ink">Корзина пуста.</h3>
+                  <p className="max-w-60 text-sm text-ink/60">Загляни в каталог — выбери вариант, и он появится здесь.</p>
+                  <Link
+                    to="/catalog"
+                    onClick={handleClose}
+                    className="flex min-h-11 items-center rounded-pill border-2 border-black bg-ink px-6 font-grotesk text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition hover:bg-bubblegum-dark"
+                  >
+                    Смотреть каталог
+                  </Link>
+                </div>
               )}
               {hasBothGroups ? (
                 <>
@@ -269,21 +330,42 @@ export default function CartDrawer() {
               )}
 
               {items.length > 0 && (
-                <div className="mt-4 flex flex-col gap-3">
-                  <input
-                    type="text"
-                    value={customerName}
-                    onChange={(event) => setCustomerName(event.target.value)}
-                    placeholder="Имя и фамилия"
-                    className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
-                  />
-                  <input
-                    type="tel"
-                    value={customerPhone}
-                    onChange={(event) => setCustomerPhone(event.target.value)}
-                    placeholder="Номер телефона"
-                    className="rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
-                  />
+                <form
+                  id="checkout-form"
+                  onSubmit={handleSubmit}
+                  onKeyDown={handleFieldKeyDown}
+                  noValidate
+                  className="mt-4 flex flex-col gap-3"
+                >
+                  <label className="flex flex-col gap-1">
+                    <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">Имя</span>
+                    <input
+                      ref={nameInputRef}
+                      type="text"
+                      name="name"
+                      autoComplete="name"
+                      enterKeyHint="next"
+                      value={customerName}
+                      onChange={(event) => setCustomerName(event.target.value)}
+                      placeholder="Имя и фамилия"
+                      className="min-h-11 rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">Телефон</span>
+                    <input
+                      ref={phoneInputRef}
+                      type="tel"
+                      name="tel"
+                      autoComplete="tel"
+                      inputMode="tel"
+                      enterKeyHint="send"
+                      value={customerPhone}
+                      onChange={(event) => setCustomerPhone(event.target.value)}
+                      placeholder="+996 700 123 456"
+                      className="min-h-11 rounded-pill border-2 border-black px-4 py-2 font-grotesk text-base font-semibold sm:text-sm text-ink outline-none focus:border-bubblegum-dark"
+                    />
+                  </label>
                   <div className="flex flex-col gap-1">
                     <span className="font-grotesk text-xs font-bold uppercase tracking-wide text-ink/50">
                       Как получить
@@ -342,54 +424,61 @@ export default function CartDrawer() {
                     </div>
                   )}
                   {submitError && <p className="text-xs text-red-500">{submitError}</p>}
-                </div>
+                </form>
               )}
             </div>
 
-            <div className="border-t-2 border-black px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-              {items.length > 0 && (
+            {/* nothing to total yet: an empty cart shows no delivery fee, sum or disabled button */}
+            {items.length > 0 && (
+              <div className="border-t-2 border-black px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                 <p className="mb-3 text-xs text-ink/50">
                   Доставка займёт от 7 до 14 дней — заказы едут напрямую из США и Кореи.
                 </p>
-              )}
-              <div className="mb-1 flex items-center justify-between font-grotesk text-sm text-ink/60">
-                <span>Товары</span>
-                <span>{formatPrice(totalPrice)}</span>
-              </div>
-              {isSplitDelivery ? (
-                <>
-                  <div className="mb-1 flex items-center justify-between font-grotesk text-sm text-ink/60">
-                    <span>{deliveryLabel} — в наличии</span>
-                    <span>{formatPrice(singleDeliveryFee)}</span>
-                  </div>
-                  <div className="mb-4 flex items-center justify-between font-grotesk text-sm text-ink/60">
-                    <span>{deliveryLabel} — под заказ</span>
-                    <span>{formatPrice(singleDeliveryFee)}</span>
-                  </div>
-                </>
-              ) : (
-                <div className="mb-4 flex items-center justify-between font-grotesk text-sm text-ink/60">
-                  <span>{deliveryLabel}</span>
-                  <span>{formatPrice(deliveryFee)}</span>
+                <div className="mb-1 flex items-center justify-between font-grotesk text-sm text-ink/60">
+                  <span>Товары</span>
+                  <span>{formatPrice(totalPrice)}</span>
                 </div>
-              )}
-              <div className="mb-1 flex items-center justify-between border-t border-ink/10 pt-3 font-grotesk text-base font-bold text-ink">
-                <span>Итого</span>
-                <span>{formatPrice(grandTotal)}</span>
+                {isSplitDelivery ? (
+                  <>
+                    <div className="mb-1 flex items-center justify-between font-grotesk text-sm text-ink/60">
+                      <span>{deliveryLabel} — в наличии</span>
+                      <span>{formatPrice(singleDeliveryFee)}</span>
+                    </div>
+                    <div className="mb-4 flex items-center justify-between font-grotesk text-sm text-ink/60">
+                      <span>{deliveryLabel} — под заказ</span>
+                      <span>{formatPrice(singleDeliveryFee)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="mb-4 flex items-center justify-between font-grotesk text-sm text-ink/60">
+                    <span>{deliveryLabel}</span>
+                    <span>{formatPrice(deliveryFee)}</span>
+                  </div>
+                )}
+                <div className="mb-1 flex items-center justify-between border-t border-ink/10 pt-3 font-grotesk text-base font-bold text-ink">
+                  <span>Итого</span>
+                  <span>{formatPrice(grandTotal)}</span>
+                </div>
+                <div className="mb-4 flex items-center justify-between gap-2 font-grotesk text-xs text-ink/45">
+                  <span>Плюс вес посылки — посчитаем при подтверждении</span>
+                  <WeightTariffNote label="Тариф" className="shrink-0" />
+                </div>
+                <button
+                  type="submit"
+                  form="checkout-form"
+                  disabled={!canCheckout || isSubmitting}
+                  aria-describedby={missingFields.length > 0 ? 'checkout-missing' : undefined}
+                  className="w-full rounded-pill border-2 border-black bg-ink px-4 py-3 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isSubmitting ? 'Оформляем заказ...' : 'Оформить заказ'}
+                </button>
+                {missingFields.length > 0 && (
+                  <p id="checkout-missing" className="mt-2 text-center font-grotesk text-xs text-ink/50">
+                    Чтобы оформить, укажите {missingFields.join(' и ')}.
+                  </p>
+                )}
               </div>
-              <div className="mb-4 flex items-center justify-between gap-2 font-grotesk text-xs text-ink/45">
-                <span>Плюс вес посылки — посчитаем при подтверждении</span>
-                <WeightTariffNote label="Тариф" className="shrink-0" />
-              </div>
-              <button
-                type="button"
-                onClick={handleCheckout}
-                disabled={!canCheckout || isSubmitting}
-                className="w-full rounded-pill border-2 border-black bg-ink px-4 py-3 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {isSubmitting ? 'Оформляем заказ...' : 'Оформить заказ'}
-              </button>
-            </div>
+            )}
               </>
             )}
           </motion.aside>

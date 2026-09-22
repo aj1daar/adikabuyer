@@ -61,4 +61,11 @@ describe('Login', () => {
     )
     expect(useAuthStore.getState().token).toBeNull()
   })
+
+  it('labels the fields so password managers can fill them', () => {
+    renderLogin()
+
+    expect(screen.getByLabelText('Логин')).toHaveAttribute('autocomplete', 'username')
+    expect(screen.getByLabelText('Пароль')).toHaveAttribute('autocomplete', 'current-password')
+  })
 })

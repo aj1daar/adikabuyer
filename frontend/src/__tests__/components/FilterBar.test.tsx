@@ -36,22 +36,20 @@ describe('FilterBar', () => {
     expect(screen.getByRole('button', { name: /объём/i })).toBeInTheDocument()
   })
 
-  it('applies the selected color once Save is clicked inside the color dropdown', () => {
+  it('applies the selected color as soon as it is picked', () => {
     const { onColorChange } = renderFilterBar()
 
     fireEvent.click(screen.getByRole('button', { name: /цвет/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Розовый' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     expect(onColorChange).toHaveBeenCalledWith('Розовый')
   })
 
-  it('applies the selected size once Save is clicked inside the size dropdown', () => {
+  it('applies the selected size as soon as it is picked', () => {
     const { onSizeChange } = renderFilterBar()
 
     fireEvent.click(screen.getByRole('button', { name: /размер/i }))
     fireEvent.click(screen.getByRole('button', { name: 'M' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     expect(onSizeChange).toHaveBeenCalledWith('M')
   })
@@ -80,7 +78,6 @@ describe('FilterBar', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /категория/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Drinkware' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     expect(onCategoryChange).toHaveBeenCalledWith('Drinkware')
   })

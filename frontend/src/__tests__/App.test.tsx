@@ -51,23 +51,23 @@ describe('App routing', () => {
     expect(screen.getByRole('link', { name: 'На главную' })).toHaveAttribute('href', '/')
   })
 
-  it('renders the login page at /admin/login', () => {
+  it('renders the login page at /admin/login', async () => {
     renderAt('/admin/login')
 
-    expect(screen.getByRole('heading', { name: /вход в админ-панель/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /вход в админ-панель/i })).toBeInTheDocument()
   })
 
-  it('redirects /admin to the login page when unauthenticated', () => {
+  it('redirects /admin to the login page when unauthenticated', async () => {
     renderAt('/admin')
 
-    expect(screen.getByRole('heading', { name: /вход в админ-панель/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /вход в админ-панель/i })).toBeInTheDocument()
   })
 
-  it('renders the admin dashboard at /admin when authenticated', () => {
+  it('renders the admin dashboard at /admin when authenticated', async () => {
     useAuthStore.setState({ token: 'valid-token' })
 
     renderAt('/admin')
 
-    expect(screen.getByRole('heading', { name: /админ-панель/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /админ-панель/i })).toBeInTheDocument()
   })
 })

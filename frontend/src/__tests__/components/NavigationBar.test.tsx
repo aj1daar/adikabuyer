@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import NavigationBar from '../../components/NavigationBar'
 import useCartStore from '../../store/useCartStore'
@@ -38,8 +38,40 @@ describe('NavigationBar', () => {
 
     expect(useCartStore.getState().isOpen).toBe(false)
 
-    screen.getByRole('button', { name: /корзина/i }).click()
+    screen.getByRole('button', { name: 'Корзина (0)' }).click()
 
     expect(useCartStore.getState().isOpen).toBe(true)
+  })
+
+  it('puts a cart tab with the item count in the mobile tab bar', () => {
+    useCartStore.setState({
+      items: [
+        { variantId: 1, productId: 1, productName: 'Худи', sku: 'H1', attributes: {}, unitPrice: 10, quantity: 2, status: 'IN_STOCK' },
+      ],
+      isOpen: false,
+    })
+    renderNavigationBar()
+
+    const tab = screen.getByRole('button', { name: 'Корзина, товаров: 2' })
+    expect(tab.closest('[data-mobile-tabbar]')).not.toBeNull()
+    expect(tab).toHaveTextContent('2')
+
+    tab.click()
+    expect(useCartStore.getState().isOpen).toBe(true)
+  })
+
+  it('hides only the header when scrolling down; the tab bar with the cart stays', () => {
+    const { container } = renderNavigationBar()
+    const scrollTo = (y: number) => {
+      Object.defineProperty(window, 'scrollY', { value: y, configurable: true })
+      window.dispatchEvent(new Event('scroll'))
+    }
+
+    act(() => scrollTo(100))
+    act(() => scrollTo(400))
+
+    expect(container.querySelector('header')).toHaveClass('-translate-y-full')
+    expect(container.querySelector('[data-mobile-tabbar]')).toHaveClass('translate-y-0')
+    act(() => scrollTo(0))
   })
 })

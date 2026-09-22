@@ -1,6 +1,7 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import useFilterSheetStore from '../store/useFilterSheetStore'
+import useDialog from '../hooks/useDialog'
 import { SINGLE_SELECT_FILTERS, type FilterOption } from '../utils/attributeOptions'
 
 type AccordionSectionProps = {
@@ -112,6 +113,7 @@ export default function FilterSheet({
   const [draftSize, setDraftSize] = useState(size)
   const [draftVolumeMin, setDraftVolumeMin] = useState(volumeMin)
   const [draftVolumeMax, setDraftVolumeMax] = useState(volumeMax)
+  const panelRef = useRef<HTMLDivElement>(null)
 
   const openSheet = useFilterSheetStore((state) => state.open)
   const closeSheet = useFilterSheetStore((state) => state.close)
@@ -169,6 +171,8 @@ export default function FilterSheet({
     setOpenSection((current) => (current === key ? null : key))
   }
 
+  useDialog(panelRef, isOpen, handleClose)
+
   const volumeSummary =
     draftVolumeMin || draftVolumeMax ? `${draftVolumeMin || '0'}–${draftVolumeMax || '∞'} мл` : null
 
@@ -177,10 +181,10 @@ export default function FilterSheet({
       <button
         type="button"
         onClick={handleOpen}
-        className={`flex h-14 items-center gap-2 rounded-pill border-2 px-5 font-grotesk text-sm font-bold transition ${
+        className={`flex h-14 items-center gap-2 rounded-pill border-2 px-5 font-grotesk text-sm font-bold transition max-sm:h-11 ${
           activeCount > 0
             ? 'border-black bg-black text-white hover:bg-bubblegum-dark'
-            : 'border-black bg-white text-ink hover:bg-bubblegum hover:text-white'
+            : 'border-black bg-white text-ink hover:bg-bubblegum-dark hover:text-white'
         }`}
       >
         Фильтры{activeCount > 0 ? ` (${activeCount})` : ''}
@@ -203,9 +207,12 @@ export default function FilterSheet({
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'tween', duration: 0.3, ease: 'easeOut' }}
+              ref={panelRef}
               role="dialog"
+              aria-modal="true"
               aria-label="Фильтры"
-              className="fixed inset-x-0 bottom-0 z-50 flex h-[70dvh] flex-col rounded-t-3xl border-2 border-black bg-white shadow-[0_-8px_0_0_#000]"
+              tabIndex={-1}
+              className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col outline-none rounded-t-3xl border-2 border-black bg-white shadow-[0_-8px_0_0_#000]"
             >
               <div className="flex items-center justify-between border-b-2 border-black px-6 py-4">
                 <h2 className="font-grotesk text-lg font-bold text-ink">Фильтры</h2>
@@ -218,7 +225,8 @@ export default function FilterSheet({
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto overscroll-contain px-6">
+              {/* the sheet is only as tall as its content (up to 85%); the list scrolls past that */}
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6">
                 {categoryOptions.length > 0 && (
                   <AccordionSection
                     title="Категория"
