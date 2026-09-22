@@ -337,8 +337,23 @@ describe('ProductCard', () => {
         unitPrice: 25,
         quantity: 1,
         status: 'IN_STOCK',
+        maxQuantity: 10,
       },
     ])
+  })
+
+  it('stops the stepper at what is left in stock and says when all of it is in the cart', () => {
+    const lowStock: ProductDto = { ...product, variants: [{ ...product.variants[0], stockQuantity: 2 }] }
+    render(<ProductCard product={lowStock} />, { wrapper: MemoryRouter })
+
+    const plus = screen.getByRole('button', { name: 'Увеличить количество' })
+    fireEvent.click(plus)
+    expect(plus).toBeDisabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'В корзину' }))
+
+    expect(useCartStore.getState().items[0]).toMatchObject({ quantity: 2, maxQuantity: 2 })
+    expect(screen.getByRole('button', { name: 'Всё в корзине' })).toBeDisabled()
   })
 
   describe('pre-order sticker', () => {

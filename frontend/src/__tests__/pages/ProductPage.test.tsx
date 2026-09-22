@@ -114,10 +114,11 @@ describe('ProductPage', () => {
     })
 
     renderPage()
-    await screen.findByRole('button', { name: 'В корзину' })
 
-    const jsonLd = JSON.parse(document.head.querySelector('script[type="application/ld+json"]')!.textContent!)
-    expect(jsonLd.offers.availability).toBe('https://schema.org/PreOrder')
+    await waitFor(() => {
+      const script = document.head.querySelector('script[type="application/ld+json"]')
+      expect(JSON.parse(script!.textContent!).offers.availability).toBe('https://schema.org/PreOrder')
+    })
   })
 
   it('switches the main photo when a thumbnail is clicked', async () => {

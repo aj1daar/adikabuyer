@@ -7,6 +7,7 @@ import useCartStore from '../store/useCartStore'
 import useCardTransitionStore from '../store/useCardTransitionStore'
 import { resolveVariantGallery } from '../utils/variantImage'
 import usePageTitle from '../hooks/usePageTitle'
+import useStockLimit from '../hooks/useStockLimit'
 import formatPrice from '../utils/formatPrice'
 import notifyAddedToCart from '../utils/notifyAddedToCart'
 import ProductLabels from '../components/ProductLabels'
@@ -135,6 +136,7 @@ export default function ProductPage() {
   const stepPhoto = (delta: number) =>
     setPhotoIndex((current) => (current + delta + gallery.length) % gallery.length)
   const price = selectedVariant?.displayPrice ?? product?.displayPrice ?? 0
+  const { maxQuantity, remaining } = useStockLimit(selectedVariant)
 
   const chooseVariant = (variantId: number) => {
     setSelectedVariantId(variantId)
@@ -189,6 +191,7 @@ export default function ProductPage() {
       unitPrice: selectedVariant.displayPrice ?? product.displayPrice,
       quantity,
       status: selectedVariant.status,
+      maxQuantity,
     })
     setQuantity(1)
     setJustAdded(true)
@@ -567,7 +570,7 @@ export default function ProductPage() {
                   <motion.button
                     type="button"
                     onClick={() => setQuantity((current) => current + 1)}
-                    disabled={!selectedVariant}
+                    disabled={!selectedVariant || quantity >= remaining}
                     aria-label="Увеличить количество"
                     whileTap={{ scale: 0.85 }}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-lg font-bold text-ink transition hover:bg-bubblegum-dark hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
@@ -577,7 +580,7 @@ export default function ProductPage() {
                   <motion.button
                     type="button"
                     onClick={handleAddToCart}
-                    disabled={!selectedVariant}
+                    disabled={!selectedVariant || remaining === 0}
                     whileTap={{ scale: 0.93, rotate: -1 }}
                     transition={{ type: 'spring', stiffness: 500, damping: 14 }}
                     className="flex-1 overflow-hidden whitespace-nowrap rounded-pill border-2 border-black bg-ink px-4 py-3 font-grotesk min-[380px]:px-6 text-sm font-bold text-white shadow-[4px_4px_0_0_#E8799F] transition hover:bg-bubblegum-dark hover:shadow-[6px_6px_0_0_#E8799F] disabled:cursor-not-allowed disabled:opacity-40"
@@ -591,7 +594,7 @@ export default function ProductPage() {
                         transition={{ duration: 0.16 }}
                         className="block"
                       >
-                        {justAdded ? '✓ Добавлено' : 'В корзину'}
+                        {justAdded ? '✓ Добавлено' : remaining === 0 ? 'Всё в корзине' : 'В корзину'}
                       </motion.span>
                     </AnimatePresence>
                   </motion.button>

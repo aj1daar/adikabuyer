@@ -29,6 +29,7 @@ type CartItemRowProps = {
 }
 
 function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
+  const atStockLimit = item.maxQuantity != null && item.quantity >= item.maxQuantity
   return (
     <motion.div
       layout
@@ -59,12 +60,14 @@ function CartItemRow({ item, onChangeQuantity, onRemove }: CartItemRowProps) {
           <button
             type="button"
             onClick={() => onChangeQuantity(item.variantId, 1)}
+            disabled={atStockLimit}
             aria-label="Увеличить количество"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum-dark hover:text-white"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum-dark hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
             +
           </button>
         </div>
+        {atStockLimit && <p className="mt-1 text-[11px] text-ink/50">Больше нет в наличии</p>}
       </div>
       <div className="flex shrink-0 flex-col items-end gap-2">
         <span className="whitespace-nowrap font-grotesk text-sm font-bold text-ink">

@@ -11,7 +11,13 @@ export type CartItem = {
   unitPrice: number
   quantity: number
   status: VariantStatus
+  /** in-stock units available; absent for pre-order (no cap) and for carts saved before caps */
+  maxQuantity?: number
 }
+
+/** keep a quantity between 1 and the item's stock cap, when it has one */
+export const clampQuantity = (quantity: number, maxQuantity?: number) =>
+  Math.max(1, maxQuantity != null ? Math.min(quantity, maxQuantity) : quantity)
 
 type CartStore = {
   items: CartItem[]
@@ -36,7 +42,7 @@ const useCartStore = create<CartStore>()(
       isOpen: false,
       addItem: (item) =>
         set((state) => {
-          if (item.quantity <= 0) {
+          if (item.quantity <= 0 || item.maxQuantity === 0) {
             return state
           }
           const existing = state.items.find((cartItem) => cartItem.variantId === item.variantId)
@@ -44,12 +50,17 @@ const useCartStore = create<CartStore>()(
             return {
               items: state.items.map((cartItem) =>
                 cartItem.variantId === item.variantId
-                  ? { ...cartItem, quantity: cartItem.quantity + item.quantity }
+                  ? {
+                      ...cartItem,
+                      // the newest stock figure wins over the one saved with the cart
+                      maxQuantity: item.maxQuantity,
+                      quantity: clampQuantity(cartItem.quantity + item.quantity, item.maxQuantity),
+                    }
                   : cartItem
               ),
             }
           }
-          return { items: [...state.items, item] }
+          return { items: [...state.items, { ...item, quantity: clampQuantity(item.quantity, item.maxQuantity) }] }
         }),
       removeItem: (variantId) =>
         set((state) => ({
@@ -59,7 +70,7 @@ const useCartStore = create<CartStore>()(
         set((state) => ({
           items: state.items.map((cartItem) =>
             cartItem.variantId === variantId
-              ? { ...cartItem, quantity: Math.max(1, cartItem.quantity + delta) }
+              ? { ...cartItem, quantity: clampQuantity(cartItem.quantity + delta, cartItem.maxQuantity) }
               : cartItem
           ),
         })),

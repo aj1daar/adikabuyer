@@ -152,3 +152,27 @@ describe('useCartStore persistence', () => {
     expect(useCartStore.getState().isOpen).toBe(false)
   })
 })
+
+describe('useCartStore stock caps', () => {
+  it('never lets an in-stock line go past its stock, whether added or stepped up', () => {
+    useCartStore.getState().addItem(item({ quantity: 2, maxQuantity: 3 }))
+    useCartStore.getState().addItem(item({ quantity: 5, maxQuantity: 3 }))
+    expect(useCartStore.getState().items[0].quantity).toBe(3)
+
+    useCartStore.getState().changeQuantity(1, 1)
+    expect(useCartStore.getState().items[0].quantity).toBe(3)
+  })
+
+  it('leaves pre-order lines uncapped', () => {
+    useCartStore.getState().addItem(item({ quantity: 40, status: 'PRE_ORDER' }))
+    useCartStore.getState().changeQuantity(1, 10)
+
+    expect(useCartStore.getState().items[0].quantity).toBe(50)
+  })
+
+  it('ignores an add when the stock is zero', () => {
+    useCartStore.getState().addItem(item({ maxQuantity: 0 }))
+
+    expect(useCartStore.getState().items).toHaveLength(0)
+  })
+})

@@ -7,6 +7,7 @@ import formatPrice from '../utils/formatPrice'
 import truncate from '../utils/truncate'
 import notifyAddedToCart from '../utils/notifyAddedToCart'
 import useIsMobileViewport from '../hooks/useIsMobileViewport'
+import useStockLimit from '../hooks/useStockLimit'
 import { COLOR_ATTRIBUTE_KEY, formatAttributeValue } from '../utils/attributeOptions'
 import { resolveVariantGallery } from '../utils/variantImage'
 import type { MobileColumns } from './MobileColumnsToggle'
@@ -73,6 +74,9 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
     ? sellableVariants.filter((variant) => String(variant.attributes[COLOR_ATTRIBUTE_KEY] ?? '') === activeColor)
     : sellableVariants
   const needsChoice = candidateVariants.length > 1
+  const { maxQuantity, remaining } = useStockLimit(shownVariant)
+  // the whole stock of this variant is already in the cart
+  const soldOutForShopper = !needsChoice && remaining === 0
   // «Под заказ» when everything the shopper could pick right now is pre-order (the picked
   // colour, or the whole product) — a 7–14 day wait they should see before opening the card
   const isPreOrder = candidateVariants.length > 0 && candidateVariants.every((variant) => variant.status === 'PRE_ORDER')
@@ -156,6 +160,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
       unitPrice: shownVariant.displayPrice ?? product.displayPrice,
       quantity,
       status: shownVariant.status,
+      maxQuantity,
     })
     setQuantity(1)
     notifyAddedToCart(product.name, shownVariant.id)
@@ -342,7 +347,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
           <button
             type="button"
             onClick={handleAddToCart}
-            disabled={!shownVariant}
+            disabled={!shownVariant || soldOutForShopper}
             aria-label={needsChoice ? 'Выбрать вариант' : 'Добавить в корзину'}
             className="relative hidden w-full items-center justify-center gap-1 rounded-pill border-2 border-black bg-ink py-2 text-white transition after:absolute after:inset-x-0 after:-inset-y-2 after:content-[''] hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40 max-sm:flex"
           >
@@ -385,7 +390,7 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
               <button
                 type="button"
                 onClick={() => setQuantity((current) => current + 1)}
-                disabled={!shownVariant}
+                disabled={!shownVariant || quantity >= remaining}
                 aria-label="Увеличить количество"
                 className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-grotesk text-base font-bold text-ink transition after:absolute after:-inset-2 after:content-[''] hover:bg-bubblegum-dark hover:text-white active:scale-90 active:bg-bubblegum-dark active:text-white disabled:cursor-not-allowed disabled:opacity-30"
               >
@@ -396,10 +401,10 @@ export default function ProductCard({ product, mobileColumns = 1 }: ProductCardP
           <button
             type="button"
             onClick={handleAddToCart}
-            disabled={!shownVariant}
+            disabled={!shownVariant || soldOutForShopper}
             className="flex-1 rounded-pill border-2 border-black bg-ink px-4 py-2 font-grotesk text-sm font-bold text-white transition hover:bg-bubblegum-dark disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {needsChoice ? 'Выбрать' : 'В корзину'}
+            {needsChoice ? 'Выбрать' : soldOutForShopper ? 'Всё в корзине' : 'В корзину'}
           </button>
         </div>
       </div>

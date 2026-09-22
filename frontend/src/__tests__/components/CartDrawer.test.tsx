@@ -66,6 +66,14 @@ describe('CartDrawer', () => {
     expect(useCartStore.getState().isOpen).toBe(true)
   })
 
+  it('stops + at the stock and says there is no more', () => {
+    useCartStore.setState({ items: [cartItem({ quantity: 3, maxQuantity: 3 })], isOpen: true })
+    render(<CartDrawer />, { wrapper: MemoryRouter })
+
+    expect(screen.getByRole('button', { name: 'Увеличить количество' })).toBeDisabled()
+    expect(screen.getByText('Больше нет в наличии')).toBeInTheDocument()
+  })
+
   it('offers the catalog from an empty cart and shows no totals or checkout button', () => {
     render(<CartDrawer />, { wrapper: MemoryRouter })
 
