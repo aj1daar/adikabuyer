@@ -272,17 +272,17 @@ describe('CatalogPage', () => {
     )
   })
 
-  it('does not paginate on a desktop viewport, fetching everything in one page', () => {
+  it('pages the desktop catalog 24 at a time instead of fetching it all at once', () => {
     mockedUseIsMobileViewport.mockReturnValue(false)
-    mockedUseCatalog.mockReturnValue({ products: [product], totalCount: 36, loading: false, error: null, refetch: vi.fn() })
+    mockedUseCatalog.mockReturnValue({ products: [product], totalCount: 60, loading: false, error: null, refetch: vi.fn() })
 
     renderCatalogPage()
 
     expect(mockedUseCatalog).toHaveBeenLastCalledWith(
       { search: '', category: '', color: '', size: '', volumeMin: '', volumeMax: '' },
-      { page: 0, pageSize: 1000 }
+      { page: 0, pageSize: 24 }
     )
-    expect(screen.queryByRole('navigation', { name: 'Страницы' })).not.toBeInTheDocument()
+    expect(within(screen.getByRole('navigation', { name: 'Страницы' })).getByRole('button', { name: '3' })).toBeInTheDocument()
   })
 
   describe('URL state', () => {

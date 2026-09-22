@@ -16,8 +16,10 @@ import useIsMobileViewport from '../hooks/useIsMobileViewport'
 import usePageTitle from '../hooks/usePageTitle'
 
 const MOBILE_COLUMNS_STORAGE_KEY = 'catalog-mobile-columns'
-const PAGE_SIZE = 12
-const UNPAGINATED_SIZE = 1000
+// phones page 12 at a time; desktop 24 (six rows of four) instead of pulling the whole
+// catalog in one request
+const MOBILE_PAGE_SIZE = 12
+const DESKTOP_PAGE_SIZE = 24
 
 // URL query keys for the catalog state, so going back from a product (or sharing the
 // link) lands on the same search, filters and page
@@ -50,6 +52,7 @@ export default function CatalogPage() {
   const [searchInput, setSearchInput] = useState(search)
   const [mobileColumns, setMobileColumns] = useState<MobileColumns>(readStoredMobileColumns)
   const isMobile = useIsMobileViewport()
+  const pageSize = isMobile ? MOBILE_PAGE_SIZE : DESKTOP_PAGE_SIZE
 
   // replace, not push: filter tweaks shouldn't pile up history entries behind the back button
   const updateParams = useCallback((changes: Partial<Record<keyof typeof PARAM, string>>) => {
@@ -90,7 +93,7 @@ export default function CatalogPage() {
 
   const { products, totalCount, loading, error } = useCatalog(
     { search, category, color, size, volumeMin, volumeMax },
-    isMobile ? { page, pageSize: PAGE_SIZE } : { page: 0, pageSize: UNPAGINATED_SIZE }
+    { page, pageSize }
   )
 
   const handleVolumeChange = (min: string, max: string) => {
@@ -151,8 +154,8 @@ export default function CatalogPage() {
           </div>
         )}
 
-        {isMobile && !error && (
-          <Pagination page={page} pageSize={PAGE_SIZE} totalCount={totalCount} onPageChange={handlePageChange} />
+        {!error && (
+          <Pagination page={page} pageSize={pageSize} totalCount={totalCount} onPageChange={handlePageChange} />
         )}
       </div>
     </MainLayout>
