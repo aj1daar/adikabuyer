@@ -28,7 +28,8 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     )
 
-    expect(screen.getByRole('heading', { name: /что-то пошло не так/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /что-тосломалось/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'На главную' })).toHaveAttribute('href', '/')
     expect(screen.queryByText('All good')).not.toBeInTheDocument()
   })
 
