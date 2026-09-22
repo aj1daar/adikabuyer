@@ -48,14 +48,33 @@ beforeEach(() => {
 })
 
 describe('ProductForm', () => {
-  it('is a labelled modal dialog that Escape does not close, so unsaved edits survive', () => {
+  it('is a labelled modal dialog that closes straight away when nothing was changed', () => {
     const onClose = vi.fn()
     render(<ProductForm onSubmit={vi.fn()} onClose={onClose} />)
 
     expect(screen.getByRole('dialog', { name: 'Новый товар' })).toHaveAttribute('aria-modal', 'true')
     fireEvent.keyDown(document, { key: 'Escape' })
 
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('asks before throwing away unsaved edits, from Закрыть or Escape', () => {
+    const onClose = vi.fn()
+    render(<ProductForm onSubmit={vi.fn()} onClose={onClose} />)
+    fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'Худи' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Закрыть' }))
+    const confirm = screen.getByRole('dialog', { name: 'Закрыть без сохранения?' })
     expect(onClose).not.toHaveBeenCalled()
+
+    // Escape answers the confirm on top, keeping the form and its edits
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(confirm).not.toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Название')).toHaveValue('Худи')
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent.click(screen.getByRole('button', { name: 'Закрыть без сохранения' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('renders empty fields in create mode', () => {

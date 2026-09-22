@@ -12,6 +12,7 @@ import {
 } from '../../utils/attributeOptions'
 import OptionDropdown from '../OptionDropdown'
 import CircleCropper from './CircleCropper'
+import ConfirmDialog from './ConfirmDialog'
 import useDialog from '../../hooks/useDialog'
 
 const KNOWN_ATTRIBUTE_KEYS = ATTRIBUTE_KEY_OPTIONS.map((option) => option.value).filter(
@@ -134,6 +135,21 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
   const [colorSwatches, setColorSwatches] = useState<Record<string, string>>(product?.colorSwatches ?? {})
   const [cropper, setCropper] = useState<{ color: string; file: File } | null>(null)
   const [swatchUploading, setSwatchUploading] = useState(false)
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
+
+  // everything the shop owner can edit, as one comparable value: the first render's copy is
+  // the "saved" state, so closing only asks when something actually differs from it
+  const editableState = JSON.stringify({ name, description, category, brand, active, labels, variants, colorSwatches })
+  const [initialState] = useState(editableState)
+  const isDirty = editableState !== initialState || labelDraft.trim() !== ''
+
+  const requestClose = () => {
+    if (isDirty) {
+      setConfirmDiscard(true)
+    } else {
+      onClose()
+    }
+  }
 
   const variantColor = (variant: VariantDraft) =>
     variant.attributes.find((attribute) => attribute.key === COLOR_ATTRIBUTE_KEY)?.value.trim() ?? ''
@@ -307,8 +323,8 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
     (variant) => variant.priceOverride.trim() !== '' && !Number.isNaN(Number(variant.priceOverride))
   )
 
-  // modal focus handling but no Escape: closing drops every unsaved field
-  useDialog(panelRef, true)
+  // Escape goes through the same guard as «Закрыть»: unsaved edits ask before vanishing
+  useDialog(panelRef, true, requestClose)
 
   const canSubmit =
     name.trim() !== '' && hasPricedVariant && uploadingVariantIndex === null && !swatchUploading
@@ -327,7 +343,7 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
           <h2 id={titleId} className="font-grotesk text-lg font-bold text-ink">
             {product ? 'Редактировать товар' : 'Новый товар'}
           </h2>
-          <button type="button" onClick={onClose} className="font-grotesk text-sm font-bold text-ink/50 hover:text-ink">
+          <button type="button" onClick={requestClose} className="font-grotesk text-sm font-bold text-ink/50 hover:text-ink">
             Закрыть
           </button>
         </div>
@@ -758,6 +774,15 @@ export default function ProductForm({ product, onSubmit, onClose, isSubmitting }
             onConfirm={handleCropperConfirm}
           />
         )}
+
+        <ConfirmDialog
+          open={confirmDiscard}
+          title="Закрыть без сохранения?"
+          message="Изменения в этом товаре не сохранены и пропадут."
+          confirmLabel="Закрыть без сохранения"
+          onConfirm={onClose}
+          onCancel={() => setConfirmDiscard(false)}
+        />
 
         <div className="border-t-2 border-black px-6 py-4">
           <button
