@@ -59,11 +59,13 @@ services:
   # S3-compatible bucket (scripts/backup-offsite.sh) so losing the VPS loses nothing.
   # Idle, with a log reminder, until BACKUP_S3_BUCKET and its keys are set.
   backup-offsite:
-    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    image: docker.io/bitnamilegacy/minio-client:2025.7.21-debian-12-r3@sha256:9aa490587da3c5b6e0e77319fab2b34bc2ef61a03a7f6463575e533793bf7108
     container_name: adikabuyer-backup-offsite
     restart: unless-stopped
     logging: *default-logging
     mem_limit: 128m
+    # root so it can write its status stamp into the shared backup-status volume
+    user: "0:0"
     depends_on:
       - minio
       - db-backup
@@ -137,16 +139,22 @@ services:
     networks:
       - adikabuyer-network
 
+  # MinIO's own images (docker.io/minio, quay.io/minio) stopped being pullable without a
+  # subscription in September 2025, which broke every clean build. These are Bitnami's
+  # archived copies of the same server, pinned by digest; the data layout is unchanged.
+  # Runs as root because the existing minio-data volume is root-owned (Bitnami defaults
+  # to uid 1001). Replacing this with a maintained S3 server is tracked as future work.
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    image: docker.io/bitnamilegacy/minio:2025.7.23-debian-12-r5@sha256:f24044f19432b7664fb956eade7dbb55ed5f7f22f08eb7c8fce68ac0ffaceca4
     container_name: adikabuyer-minio
     restart: unless-stopped
     logging: *default-logging
     mem_limit: 512m
+    user: "0:0"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-adikabuyer}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set}
-    command: server /data --console-address ":9001"
+      MINIO_DATA_DIR: /data
     # Public media is served through Caddy (handle_path /media/*), which reaches MinIO
     # over the bridge network. Host ports are bound to loopback only — for `mc` / the
     # console, tunnel in: `ssh -L 9000:localhost:9000 -L 9001:localhost:9001 <server>`.
