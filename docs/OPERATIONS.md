@@ -101,6 +101,12 @@ docker compose -f docker-compose.prod.yml exec backup-offsite sh /scripts/backup
 2. Load it with the `gunzip | psql` command above.
 3. Restore photos with `mc mirror offsite/<bucket>/<prefix>/media local/adikabuyer-media`.
 
+## Container images
+
+MinIO stopped publishing free public images in September 2025: both `docker.io/minio/minio` and `quay.io/minio/minio` now refuse anonymous pulls, including the digests this repo used to pin, which broke every clean build. The stack uses Bitnami's archived copies instead (`bitnamilegacy/minio` and `bitnamilegacy/minio-client`), pinned by digest. It is the same MinIO server and the same on-disk layout, so existing data keeps working, but those images are frozen and get no further updates. Moving the photo storage to a maintained S3-compatible server is open work.
+
+Both containers run as root, because the existing volumes are root-owned while Bitnami images default to uid 1001.
+
 ## Scripts
 
 Every `*.sh` file is kept with LF line endings (`.gitattributes`) and run through `sh`, so the scripts work from a Windows checkout and don't depend on the executable bit.
