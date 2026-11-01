@@ -11,28 +11,28 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "axios": "^1.20.0",
-    "framer-motion": "^13.4.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "react-hot-toast": "^2.6.0",
-    "react-router-dom": "^7.18.3",
-    "zustand": "^5.0.15"
+    "axios": "^1.21.0",
+    "framer-motion": "^13.5.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-hot-toast": "^2.6.1",
+    "react-router-dom": "^7.18.5",
+    "zustand": "^5.0.16"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
-    "@types/node": "^24.13.4",
+    "@types/node": "^24.19.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.1.1",
-    "@vitest/coverage-v8": "^4.1.11",
-    "jsdom": "^30.0.1",
-    "oxlint": "^1.83.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "@vitest/coverage-v8": "^4.1.12",
+    "jsdom": "^30.1.3",
+    "oxlint": "^1.90.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
-    "vite": "^8.3.0",
+    "vite": "^8.3.5",
     "vitest": "^4.1.10"
   }
 }
